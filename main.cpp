@@ -376,8 +376,6 @@ int main() {
             vkQueuePresentKHR(presentQueue, &presentInfo);
 
             glfwPollEvents();
-
-            // break;  // temporary: render only one frame.
         }
 
         vkDeviceWaitIdle(logicalDevice);
