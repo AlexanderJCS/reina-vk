@@ -271,39 +271,56 @@ int main() {
             VkPipelineStageFlags srcStages = makeAccessMaskPipelineStageFlags(srcAccesses);
             VkPipelineStageFlags dstStages = makeAccessMaskPipelineStageFlags(dstAccesses);
 
-            VkImageMemoryBarrier barrier        = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-            barrier.srcAccessMask               = srcAccesses;
-            barrier.dstAccessMask               = dstAccesses;
-            barrier.oldLayout                   = VK_IMAGE_LAYOUT_GENERAL;
-            barrier.newLayout                   = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-            barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-            barrier.image                       = rtImageObjects.image;
-            barrier.subresourceRange            = {0};
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-            barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+            VkImageMemoryBarrier dstBarrier{};
+            dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            dstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // or your current layout
+            dstBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            dstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            dstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            dstBarrier.image = swapchainObjects.swapchainImages[imageIndex]; // Your R8G8B8A8 image
+            dstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            dstBarrier.subresourceRange.baseMipLevel = 0;
+            dstBarrier.subresourceRange.levelCount = 1;
+            dstBarrier.subresourceRange.baseArrayLayer = 0;
+            dstBarrier.subresourceRange.layerCount = 1;
+            dstBarrier.srcAccessMask = 0;
+            dstBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-            VkImageCopy region{
-                .srcSubresource = {
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .mipLevel = 0,
-                        .baseArrayLayer = 0,
-                        .layerCount = 1
-                },
-                .srcOffset = {0, 0, 0},
-                .dstSubresource = region.srcSubresource,
-                .dstOffset = {0, 0, 0},
-                .extent = {swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height, 1}
-            };
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    0,
+                    0, nullptr,
+                    0, nullptr,
+                    1, &dstBarrier
+            );
 
-            vkCmdCopyImage(
+            // Define the blit region
+            VkImageBlit blitRegion{};
+            blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitRegion.srcSubresource.mipLevel = 0;
+            blitRegion.srcSubresource.baseArrayLayer = 0;
+            blitRegion.srcSubresource.layerCount = 1;
+            blitRegion.srcOffsets[0] = {0, 0, 0}; // Start at the top-left
+            blitRegion.srcOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the source image dimensions
+
+            blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitRegion.dstSubresource.mipLevel = 0;
+            blitRegion.dstSubresource.baseArrayLayer = 0;
+            blitRegion.dstSubresource.layerCount = 1;
+            blitRegion.dstOffsets[0] = {0, 0, 0}; // Start at the top-left
+            blitRegion.dstOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the destination image dimensions
+
+            vkCmdBlitImage(
                     commandBuffer,
                     rtImageObjects.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     swapchainObjects.swapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    1, &region
+                    1, &blitRegion,
+                    VK_FILTER_LINEAR // Use linear filtering for HDR downsampling
             );
 
+            // todo: is this memory barrier needed?
             VkMemoryBarrier memoryBarrier{
                 .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
                 .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -320,20 +337,17 @@ int main() {
                     0, nullptr, 0, nullptr
             );
 
-            VkImageMemoryBarrier swapchainToPresentBarrier{};
-            swapchainToPresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            swapchainToPresentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            swapchainToPresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            swapchainToPresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            swapchainToPresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            swapchainToPresentBarrier.image = swapchainObjects.swapchainImages[imageIndex];
-            swapchainToPresentBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            swapchainToPresentBarrier.subresourceRange.baseMipLevel = 0;
-            swapchainToPresentBarrier.subresourceRange.levelCount = 1;
-            swapchainToPresentBarrier.subresourceRange.baseArrayLayer = 0;
-            swapchainToPresentBarrier.subresourceRange.layerCount = 1;
-            swapchainToPresentBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            swapchainToPresentBarrier.dstAccessMask = 0;
+            // Transition the destination image back to its original layout (e.g., for presentation)
+            VkImageMemoryBarrier presentBarrier{};
+            presentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            presentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            presentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            presentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            presentBarrier.image = swapchainObjects.swapchainImages[imageIndex];
+            presentBarrier.subresourceRange = dstBarrier.subresourceRange;
+            presentBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            presentBarrier.dstAccessMask = 0;
 
             vkCmdPipelineBarrier(
                     commandBuffer,
@@ -342,7 +356,7 @@ int main() {
                     0,
                     0, nullptr,
                     0, nullptr,
-                    1, &swapchainToPresentBarrier
+                    1, &presentBarrier
             );
 
             vkEndCommandBuffer(commandBuffer);
@@ -380,7 +394,7 @@ int main() {
 
             glfwPollEvents();
 
-            break;  // temporary: render only one frame.
+            // break;  // temporary: render only one frame.
         }
 
         vkDeviceWaitIdle(logicalDevice);
