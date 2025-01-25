@@ -320,23 +320,6 @@ int main() {
                     VK_FILTER_LINEAR // Use linear filtering for HDR downsampling
             );
 
-            // todo: is this memory barrier needed?
-            VkMemoryBarrier memoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_HOST_READ_BIT
-            };
-
-            vkCmdPipelineBarrier(
-                    commandBuffer,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_HOST_BIT,
-                    0,
-                    1,
-                    &memoryBarrier,
-                    0, nullptr, 0, nullptr
-            );
-
             // Transition the destination image back to its original layout (e.g., for presentation)
             VkImageMemoryBarrier presentBarrier{};
             presentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
