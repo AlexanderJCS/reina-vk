@@ -19,6 +19,82 @@ VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
     return vkGetBufferDeviceAddress(device, &addressInfo);
 }
 
+uint32_t makeAccessMaskPipelineStageFlags(uint32_t accessMask)
+{
+    VkPipelineStageFlags supportedShaderBits = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT
+                                               | VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT
+                                               | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                                               | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+    static const uint32_t accessPipes[] = {
+            VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+            VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+            VK_ACCESS_INDEX_READ_BIT,
+            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+            VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+            VK_ACCESS_UNIFORM_READ_BIT,
+            supportedShaderBits,
+            VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_SHADER_READ_BIT,
+            supportedShaderBits,
+            VK_ACCESS_SHADER_WRITE_BIT,
+            supportedShaderBits,
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_ACCESS_HOST_READ_BIT,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_ACCESS_HOST_WRITE_BIT,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_ACCESS_MEMORY_READ_BIT,
+            0,
+            VK_ACCESS_MEMORY_WRITE_BIT,
+            0,
+#if VK_NV_device_generated_commands
+            VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,
+            VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
+            VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,
+            VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
+#endif
+#if VK_NV_ray_tracing
+            VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV,
+            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV | supportedShaderBits | VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,
+            VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV,
+            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,
+#endif
+    };
+    if(!accessMask)
+    {
+        return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    }
+
+    uint32_t pipes = 0;
+
+    for(uint32_t i = 0; i < sizeof(accessPipes) / sizeof(accessPipes[0]); i += 2)
+    {
+        if(accessPipes[i] & accessMask)
+        {
+            pipes |= accessPipes[i + 1];
+        }
+    }
+    assert(pipes != 0);
+
+    return pipes;
+}
+
 int main() {
     try {
         // init
@@ -189,51 +265,59 @@ int main() {
             );
 
             // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-            VkImageMemoryBarrier swapchainToDstBarrier{};
-            swapchainToDstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            swapchainToDstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            swapchainToDstBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            swapchainToDstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            swapchainToDstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            swapchainToDstBarrier.image = swapchainObjects.swapchainImages[imageIndex];
-            swapchainToDstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            swapchainToDstBarrier.subresourceRange.baseMipLevel = 0;
-            swapchainToDstBarrier.subresourceRange.levelCount = 1;
-            swapchainToDstBarrier.subresourceRange.baseArrayLayer = 0;
-            swapchainToDstBarrier.subresourceRange.layerCount = 1;
-            swapchainToDstBarrier.srcAccessMask = 0;
-            swapchainToDstBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            VkAccessFlags srcAccesses = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            VkAccessFlags dstAccesses = VK_ACCESS_TRANSFER_READ_BIT;
 
-            vkCmdPipelineBarrier(
-                    commandBuffer,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0,
-                    0, nullptr,
-                    0, nullptr,
-                    1, &swapchainToDstBarrier
-            );
+            VkPipelineStageFlags srcStages = makeAccessMaskPipelineStageFlags(srcAccesses);
+            VkPipelineStageFlags dstStages = makeAccessMaskPipelineStageFlags(dstAccesses);
 
-            VkImageCopy copyRegion{};
-            copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            copyRegion.srcSubresource.mipLevel = 0;
-            copyRegion.srcSubresource.baseArrayLayer = 0;
-            copyRegion.srcSubresource.layerCount = 1;
-            copyRegion.srcOffset = {0, 0, 0};
-            copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            copyRegion.dstSubresource.mipLevel = 0;
-            copyRegion.dstSubresource.baseArrayLayer = 0;
-            copyRegion.dstSubresource.layerCount = 1;
-            copyRegion.dstOffset = {0, 0, 0};
-            copyRegion.extent.width = swapchainObjects.swapchainExtent.width;
-            copyRegion.extent.height = swapchainObjects.swapchainExtent.height;
-            copyRegion.extent.depth = 1;
+            VkImageMemoryBarrier barrier        = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            barrier.srcAccessMask               = srcAccesses;
+            barrier.dstAccessMask               = dstAccesses;
+            barrier.oldLayout                   = VK_IMAGE_LAYOUT_GENERAL;
+            barrier.newLayout                   = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+            barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+            barrier.image                       = rtImageObjects.image;
+            barrier.subresourceRange            = {0};
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+            barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+            VkImageCopy region{
+                .srcSubresource = {
+                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .mipLevel = 0,
+                        .baseArrayLayer = 0,
+                        .layerCount = 1
+                },
+                .srcOffset = {0, 0, 0},
+                .dstSubresource = region.srcSubresource,
+                .dstOffset = {0, 0, 0},
+                .extent = {swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height, 1}
+            };
 
             vkCmdCopyImage(
                     commandBuffer,
                     rtImageObjects.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     swapchainObjects.swapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    1, &copyRegion
+                    1, &region
+            );
+
+            VkMemoryBarrier memoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .dstAccessMask = VK_ACCESS_HOST_READ_BIT
+            };
+
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_HOST_BIT,
+                    0,
+                    1,
+                    &memoryBarrier,
+                    0, nullptr, 0, nullptr
             );
 
             VkImageMemoryBarrier swapchainToPresentBarrier{};
