@@ -126,13 +126,8 @@ int main() {
         VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
         // render
-
-        // look at line 521 of my main cpp file for vk mini path tracer
-
         while (!renderWindow.shouldClose()) {
-            int width, height;
-            glfwGetFramebufferSize(renderWindow.getGlfwWindow(), &width, &height);
-            if (width == 0 || height == 0) {
+            if (renderWindow.isMinimized()) {
                 glfwPollEvents();
                 continue; // Skip rendering when minimized
             }
