@@ -100,7 +100,7 @@ int main() {
         // init
         window::Window renderWindow{800, 600};
         VkInstance instance = vktools::createInstance();
-        VkDebugUtilsMessengerEXT debugMessenger = vktools::createDebugMessenger(instance);
+        std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
         VkSurfaceKHR surface = vktools::createSurface(instance, renderWindow.getGlfwWindow());
         VkPhysicalDevice physicalDevice = vktools::pickPhysicalDevice(instance, surface);
         VkDevice logicalDevice = vktools::createLogicalDevice(surface, physicalDevice);
@@ -404,8 +404,8 @@ int main() {
 
         vkDestroyDevice(logicalDevice, nullptr);
 
-        if (consts::ENABLE_VALIDATION_LAYERS) {
-            vktools::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        if (debugMessenger.has_value()) {
+            vktools::DestroyDebugUtilsMessengerEXT(instance, debugMessenger.value(), nullptr);
         }
 
         vkDestroySurfaceKHR(instance, surface, nullptr);

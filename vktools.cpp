@@ -754,9 +754,9 @@ void vktools::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMes
     }
 }
 
-VkDebugUtilsMessengerEXT vktools::createDebugMessenger(VkInstance instance) {
+std::optional<VkDebugUtilsMessengerEXT> vktools::createDebugMessenger(VkInstance instance) {
     if (!consts::ENABLE_VALIDATION_LAYERS) {
-        return VkDebugUtilsMessengerEXT{};  // todo: handle this more gracefully
+        return std::nullopt;
     }
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
