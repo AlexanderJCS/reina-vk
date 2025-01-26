@@ -179,8 +179,68 @@ uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeF
     throw std::runtime_error("Failed to find suitable memory type");
 }
 
-bool vktools::isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device) {
-    return true;  // todo: do not just say any device is suitable
+uint64_t vktools::getDeviceLocalMemory(VkPhysicalDevice device) {
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(device, &memoryProperties);
+
+    uint64_t deviceLocalMemorySize = 0;
+
+    for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; ++i) {
+        // Check if the heap is device-local (VRAM)
+        if (memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+            deviceLocalMemorySize += memoryProperties.memoryHeaps[i].size;
+        }
+    }
+
+    return deviceLocalMemorySize;
+}
+
+bool vktools::isDeviceSuitable(VkPhysicalDevice device) {
+    // Check if all required extensions are supported
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensionsSet(consts::DEVICE_EXTENSIONS.begin(), consts::DEVICE_EXTENSIONS.end());
+    for (const auto& extension : availableExtensions) {
+        requiredExtensionsSet.erase(extension.extensionName);
+    }
+
+    if (!requiredExtensionsSet.empty()) {
+        return false;  // Missing required ray tracing extensions
+    }
+
+    // 2. Check Vulkan API version compatibility
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    if (deviceProperties.apiVersion < VK_API_VERSION_1_3) {
+        return false;  // This application requires RT version 1.3 or later
+    }
+
+    // 3. Check for required ray tracing features
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
+    rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelStructureFeatures{};
+    accelStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    rayTracingPipelineFeatures.pNext = &accelStructureFeatures;
+
+    VkPhysicalDeviceFeatures2 deviceFeatures2{};
+    deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.pNext = &rayTracingPipelineFeatures;
+
+    vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
+
+    if (!rayTracingPipelineFeatures.rayTracingPipeline || !accelStructureFeatures.accelerationStructure) {
+        return false;  // Device does not support ray tracing
+    }
+
+    // Additional checks like memory limits, queue families, etc., can go here
+
+    return true;  // Device satisfies all requirements
 }
 
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -714,26 +774,40 @@ VkPhysicalDevice vktools::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR s
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
-    if (deviceCount == 0) {
-        throw std::runtime_error("Failed to find GPU with Vulkan support");
-    }
-
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkPhysicalDevice highestScoreDevice = VK_NULL_HANDLE;
+    uint32_t highestScore = 0;
     for (VkPhysicalDevice device : devices) {
-        if (isDeviceSuitable(surface, device)) {
-            physicalDevice = device;
-            break;
+        if (!isDeviceSuitable(device)) {
+            continue;
+        }
+
+        // not the most efficient since I call vkGetPhysicalDeviceProperties here and also in isDeviceSuitable()
+        //  but in the grand scheme of things it doesn't matter that much
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        // VRAM is an indicator of a GPU's strength
+        uint32_t score = vktools::getDeviceLocalMemory(device);
+
+        // favor discrete GPUs
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            score *= 2;
+        }
+
+        if (score > highestScore) {
+            highestScore = score;
+            highestScoreDevice = device;
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (deviceCount == 0 || highestScoreDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("Failed to find a suitable GPU");
     }
 
-    return physicalDevice;
+    return highestScoreDevice;
 }
 
 

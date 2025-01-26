@@ -75,7 +75,8 @@ namespace vktools {
     // todo: rename the create and destroy debug utils messenger EXT functions to something in-line with other code standards
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-    bool isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device);
+    uint64_t getDeviceLocalMemory(VkPhysicalDevice device);
+    bool isDeviceSuitable(VkPhysicalDevice device);
 
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     VkShaderModule createShaderModule(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, const std::vector<char>& code);
