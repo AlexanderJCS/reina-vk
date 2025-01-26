@@ -398,7 +398,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
     auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkGetRayTracingShaderGroupHandlesKHR"));
 
-    if (vkGetRayTracingShaderGroupHandlesKHR(logicalDevice, rtPipeline, 0, /* shader group count: */ 1, cpuShaderHandleStorage.size(),cpuShaderHandleStorage.data()) != VK_SUCCESS) {
+    if (vkGetRayTracingShaderGroupHandlesKHR(logicalDevice, rtPipeline, 0, /* shader group count: */ 1, cpuShaderHandleStorage.size(), cpuShaderHandleStorage.data()) != VK_SUCCESS) {
         throw std::runtime_error("Could not get RT shader group handles");
     }
 
@@ -437,6 +437,20 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
     }
 
     vkBindBufferMemory(logicalDevice, sbtBuffer, sbtBufferMemory, 0);
+
+    void* sbtMappedMemory;
+    vkMapMemory(logicalDevice, sbtBufferMemory, 0, sbtSize, 0, &sbtMappedMemory);
+
+    uint8_t* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
+    for (uint32_t groupIdx = 0; groupIdx < 1 /* num shader groups */; groupIdx++) {
+        // Calculate the destination offset in the SBT buffer
+        size_t dstOffset = groupIdx * sbtSpacing.handleAlignment;
+
+        // Copy the handle to the aligned position
+        memcpy(&sbtPtr[groupIdx * sbtSpacing.stride], &cpuShaderHandleStorage[groupIdx * sbtSpacing.headerSize], sbtSpacing.headerSize);
+    }
+
+    vkUnmapMemory(logicalDevice, sbtBufferMemory);
 
     vkDestroyShaderModule(logicalDevice, rtShaderModule, nullptr);  // todo: can this be further up?
 
