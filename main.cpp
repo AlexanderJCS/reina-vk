@@ -117,7 +117,16 @@ int main() {
         vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height);
         VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
-        vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(physicalDevice, logicalDevice);
+        vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
+        std::vector<Shader> shaders = {
+                Shader(logicalDevice, "../shaders/raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+        };
+        vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(physicalDevice, logicalDevice, sbtSpacing, shaders);
+
+        for (Shader& shader : shaders) {
+            shader.destroy();
+        }
+
         vktools::SyncObjects syncObjects = vktools::createSyncObjects(logicalDevice);
 
         // future: create render pass, frame buffer, and (maybe?) graphics pipeline for imgui stuff
@@ -126,9 +135,6 @@ int main() {
         VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
         // render
-
-        // look at line 521 of my main cpp file for vk mini path tracer
-
         while (!renderWindow.shouldClose()) {
             vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX);
             vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence);
@@ -208,8 +214,8 @@ int main() {
             VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, rtPipelineInfo.sbtBuffer);
 
             sbtRayGenRegion.deviceAddress = sbtStartAddress;
-            sbtRayGenRegion.stride = rtPipelineInfo.sbtSpacing.stride;
-            sbtRayGenRegion.size = rtPipelineInfo.sbtSpacing.stride;
+            sbtRayGenRegion.stride = sbtSpacing.stride;
+            sbtRayGenRegion.size = sbtSpacing.stride;
 
             sbtMissRegion = sbtRayGenRegion;
             sbtMissRegion.size = 0;  // empty

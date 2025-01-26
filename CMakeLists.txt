@@ -11,7 +11,9 @@ add_executable(raygun_vk main.cpp
         vktools.cpp
         vktools.h
         Window.cpp
-        Window.h)
+        Window.h
+        Shader.cpp
+        Shader.h)
 
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 

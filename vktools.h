@@ -7,6 +7,9 @@
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#include <memory>
+
+#include "Shader.h"
 
 namespace vktools {
     struct QueueFamilyIndices {
@@ -49,7 +52,6 @@ namespace vktools {
         VkDescriptorSet descriptorSet;
         VkBuffer sbtBuffer;
         VkDeviceMemory sbtBufferMemory;
-        SbtSpacing sbtSpacing;
     };
 
     struct SyncObjects {
@@ -79,10 +81,9 @@ namespace vktools {
     bool isDeviceSuitable(VkPhysicalDevice device);
 
     SyncObjects createSyncObjects(VkDevice logicalDevice);
-    VkShaderModule createShaderModule(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, const std::vector<char>& code);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     // todo: make SBT creation its own function
-    PipelineInfo createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
+    PipelineInfo createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, SbtSpacing sbtSpacing, const std::vector<Shader>& shaders);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 

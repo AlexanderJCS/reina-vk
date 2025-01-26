@@ -17,27 +17,6 @@ bool vktools::QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-std::vector<char> vktools::readFile(const std::string &filename) {
-    // std::ios::ate - start at the end of the file
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    // use the current pos to tell the size and allocate a buffer
-    auto fileSize = (size_t) file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    // go to the beginning and read allat
-    file.seekg(0);
-    file.read(buffer.data(), static_cast<std::streamsize>(fileSize));
-
-    file.close();
-
-    return buffer;
-}
-
 bool vktools::hasValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -304,22 +283,6 @@ vktools::SyncObjects vktools::createSyncObjects(VkDevice logicalDevice) {
     return syncObjects;
 }
 
-VkShaderModule vktools::createShaderModule(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, const std::vector<char> &code) {
-    VkShaderModuleCreateInfo createInfo{
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .codeSize = code.size(),
-            // I think this reinterpret cast is why we need a std::vector<char> instead of std::string
-            .pCode = reinterpret_cast<const uint32_t*>(code.data())
-    };
-
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create shader module");
-    }
-
-    return shaderModule;
-}
-
 vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice) {
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtPipelineProperties{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR
@@ -349,29 +312,21 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
-    VkShaderModule rtShaderModule = vktools::createShaderModule(physicalDevice, logicalDevice, readFile("../shaders/raygen.spv"));
-    vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
-
-    VkPipelineShaderStageCreateInfo raygenStageCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        .stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-        .module = rtShaderModule,
-        .pName = "main"
-    };
+vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, SbtSpacing sbtSpacing, const std::vector<Shader>& shaders) {
+    VkPipelineShaderStageCreateInfo raygenStageCreateInfo = shaders[0].pipelineShaderStageCreateInfo();
 
     VkDescriptorSetLayoutBinding layoutBinding{
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-            .pImmutableSamplers = nullptr
+        .binding = 0,
+        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .descriptorCount = 1,
+        .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+        .pImmutableSamplers = nullptr
     };
 
     VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = 1,
-            .pBindings = &layoutBinding
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = 1,
+        .pBindings = &layoutBinding
     };
 
     VkDescriptorSetLayout descriptorSetLayout;
@@ -418,11 +373,11 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = 1,
-            .pSetLayouts = &descriptorSetLayout,
-            .pushConstantRangeCount = 0,  // todo: add push constants
-            .pPushConstantRanges = nullptr
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 1,
+        .pSetLayouts = &descriptorSetLayout,
+        .pushConstantRangeCount = 0,  // todo: add push constants
+        .pPushConstantRanges = nullptr
     };
 
     VkPipelineLayout pipelineLayout;
@@ -437,8 +392,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
         .groupCount = 1,  // one shader group
         .pGroups = &raygenGroup,
         .maxPipelineRayRecursionDepth = 1,
-        .layout = pipelineLayout,
-        // might need to include something about libraries
+        .layout = pipelineLayout
     };
 
     auto vkCreateRayTracingPipelinesKHR = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(
@@ -479,9 +433,9 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
     vkGetBufferMemoryRequirements(logicalDevice, sbtBuffer, &memoryRequirements);
 
     VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-            .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,  // needed for buffers with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT when VkPhysicalDeviceBufferDeviceAddressFeatures::bufferDeviceAddress is enabled
-            .deviceMask = 0
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+        .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,  // needed for buffers with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT when VkPhysicalDeviceBufferDeviceAddressFeatures::bufferDeviceAddress is enabled
+        .deviceMask = 0
     };
 
     VkMemoryAllocateInfo memoryAllocateInfo{
@@ -508,13 +462,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
 
     vkUnmapMemory(logicalDevice, sbtBufferMemory);
 
-    vkDestroyShaderModule(logicalDevice, rtShaderModule, nullptr);  // todo: can this be further up?
-
-    // todo: see if these can be here instead of returning a struct
-//    vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
-//    vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, nullptr);
-
-    return {rtPipeline, pipelineLayout, descriptorSetLayout, descriptorPool, descriptorSet, sbtBuffer, sbtBufferMemory, sbtSpacing};
+    return {rtPipeline, pipelineLayout, descriptorSetLayout, descriptorPool, descriptorSet, sbtBuffer, sbtBufferMemory};
 }
 
 VkImageView vktools::createRtImageView(VkDevice logicalDevice, VkImage rtImage) {
