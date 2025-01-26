@@ -100,7 +100,7 @@ int main() {
         // init
         window::Window renderWindow{800, 600};
         VkInstance instance = vktools::createInstance();
-        VkDebugUtilsMessengerEXT debugMessenger = vktools::createDebugMessenger(instance);
+        std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
         VkSurfaceKHR surface = vktools::createSurface(instance, renderWindow.getGlfwWindow());
         VkPhysicalDevice physicalDevice = vktools::pickPhysicalDevice(instance, surface);
         VkDevice logicalDevice = vktools::createLogicalDevice(surface, physicalDevice);
@@ -126,20 +126,32 @@ int main() {
         VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
         // render
-
-        // look at line 521 of my main cpp file for vk mini path tracer
-
         while (!renderWindow.shouldClose()) {
+            if (renderWindow.isMinimized()) {
+                glfwPollEvents();
+                continue; // Skip rendering when minimized
+            }
+
             vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX);
             vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence);
 
             uint32_t imageIndex;
             VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-            if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-                // todo: handle swapchain recreation
-                break;
-            } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+                // This swapchain recreation code might be incorrect. Not sure
+                vkDeviceWaitIdle(logicalDevice);
+
+                for (VkImageView imageView : swapchainImageViews) {
+                    vkDestroyImageView(logicalDevice, imageView, nullptr);
+                }
+
+                vkDestroySwapchainKHR(logicalDevice, swapchainObjects.swapchain, nullptr);
+
+                swapchainObjects = vktools::createSwapchain(surface, physicalDevice, logicalDevice, renderWindow.getWidth(), renderWindow.getHeight());
+
+                std::cout << "Recreated swapchain" << std::endl;
+            } else if (result != VK_SUCCESS) {
                 throw std::runtime_error("Failed to acquire swapchain image");
             }
 
@@ -404,8 +416,8 @@ int main() {
 
         vkDestroyDevice(logicalDevice, nullptr);
 
-        if (consts::ENABLE_VALIDATION_LAYERS) {
-            vktools::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        if (debugMessenger.has_value()) {
+            vktools::DestroyDebugUtilsMessengerEXT(instance, debugMessenger.value(), nullptr);
         }
 
         vkDestroySurfaceKHR(instance, surface, nullptr);

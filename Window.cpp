@@ -36,3 +36,9 @@ GLFWwindow *window::Window::getGlfwWindow() const {
 bool window::Window::shouldClose() {
     return glfwWindowShouldClose(glfwWindow);
 }
+
+bool window::Window::isMinimized() const {
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(glfwWindow, &fbWidth, &fbHeight);
+    return fbWidth == 0 || fbHeight == 0;
+}

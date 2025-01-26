@@ -16,6 +16,8 @@ namespace window {
         [[nodiscard]] int getHeight() const;
         [[nodiscard]] GLFWwindow* getGlfwWindow() const;
 
+        bool isMinimized() const;
+
         bool shouldClose();
 
         void destroy();

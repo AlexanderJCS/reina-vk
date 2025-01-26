@@ -93,7 +93,7 @@ namespace vktools {
     VkDevice createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice);
     VkPhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
     VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow* window);
-    VkDebugUtilsMessengerEXT createDebugMessenger(VkInstance instance);
+    std::optional<VkDebugUtilsMessengerEXT> createDebugMessenger(VkInstance instance);
     VkInstance createInstance();
 }
 
