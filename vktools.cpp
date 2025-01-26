@@ -441,12 +441,8 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
     void* sbtMappedMemory;
     vkMapMemory(logicalDevice, sbtBufferMemory, 0, sbtSize, 0, &sbtMappedMemory);
 
-    uint8_t* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
+    auto* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
     for (uint32_t groupIdx = 0; groupIdx < 1 /* num shader groups */; groupIdx++) {
-        // Calculate the destination offset in the SBT buffer
-        size_t dstOffset = groupIdx * sbtSpacing.handleAlignment;
-
-        // Copy the handle to the aligned position
         memcpy(&sbtPtr[groupIdx * sbtSpacing.stride], &cpuShaderHandleStorage[groupIdx * sbtSpacing.headerSize], sbtSpacing.headerSize);
     }
 
