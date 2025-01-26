@@ -6,6 +6,5 @@ layout(binding = 0, set = 0, rgba32f) uniform image2D image;
 
 void main()
 {
-    debugPrintfEXT("Hello from raygen shader at %f %f", float(gl_LaunchIDEXT.x), float(gl_LaunchIDEXT.y));
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(1.0, 0.0, 0.0, 1.0));
 }

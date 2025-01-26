@@ -195,13 +195,13 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>
 
 VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
-        // todo: change this default mode customizable. this is framerate-locked which may not be good for some specific
-        //  applications. docs: https://docs.vulkan.org/tutorial/latest/03_Drawing_a_triangle/01_Presentation/01_Swap_chain.html
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        // since we want to render as fast as possible and don't really care about tearing, we can use VK_PRESENT_MODE_IMMEDIATE
+        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
             return availablePresentMode;
         }
     }
 
+    // this is the only one guaranteed to be available, so use this as a fallback
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -804,9 +804,6 @@ VkInstance vktools::createInstance() {
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
-    } else {
-        createInfo.enabledLayerCount = 0;  // is this really needed?
-        createInfo.pNext = nullptr;  // same here
     }
 
     VkInstance instance;
