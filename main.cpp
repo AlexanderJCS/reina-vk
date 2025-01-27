@@ -95,6 +95,41 @@ uint32_t makeAccessMaskPipelineStageFlags(uint32_t accessMask)
     return pipes;
 }
 
+void transitionImage(
+        VkCommandBuffer cmdBuffer,
+        VkImage image,
+        VkImageLayout oldLayout,
+        VkImageLayout newLayout,
+        VkAccessFlagBits srcAccessMask,
+        VkAccessFlagBits dstAccessMask
+        ) {
+    VkImageMemoryBarrier rayTracingToGeneralBarrier{};
+    rayTracingToGeneralBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    rayTracingToGeneralBarrier.oldLayout = oldLayout;
+    rayTracingToGeneralBarrier.newLayout = newLayout;
+    rayTracingToGeneralBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    rayTracingToGeneralBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    rayTracingToGeneralBarrier.image = image;
+    rayTracingToGeneralBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    rayTracingToGeneralBarrier.subresourceRange.baseMipLevel = 0;
+    rayTracingToGeneralBarrier.subresourceRange.levelCount = 1;
+    rayTracingToGeneralBarrier.subresourceRange.baseArrayLayer = 0;
+    rayTracingToGeneralBarrier.subresourceRange.layerCount = 1;
+    rayTracingToGeneralBarrier.srcAccessMask = srcAccessMask;
+    rayTracingToGeneralBarrier.dstAccessMask = dstAccessMask;
+
+    vkCmdPipelineBarrier(
+            cmdBuffer,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &rayTracingToGeneralBarrier
+    );
+}
+
+
 int main() {
     try {
         // init
@@ -173,29 +208,11 @@ int main() {
 
             vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-            VkImageMemoryBarrier rayTracingToGeneralBarrier{};
-            rayTracingToGeneralBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            rayTracingToGeneralBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            rayTracingToGeneralBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-            rayTracingToGeneralBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            rayTracingToGeneralBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            rayTracingToGeneralBarrier.image = rtImageObjects.image;
-            rayTracingToGeneralBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            rayTracingToGeneralBarrier.subresourceRange.baseMipLevel = 0;
-            rayTracingToGeneralBarrier.subresourceRange.levelCount = 1;
-            rayTracingToGeneralBarrier.subresourceRange.baseArrayLayer = 0;
-            rayTracingToGeneralBarrier.subresourceRange.layerCount = 1;
-            rayTracingToGeneralBarrier.srcAccessMask = 0;
-            rayTracingToGeneralBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-
-            vkCmdPipelineBarrier(
+            transitionImage(
                     commandBuffer,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-                    0,
-                    0, nullptr,
-                    0, nullptr,
-                    1, &rayTracingToGeneralBarrier
+                    rtImageObjects.image,
+                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                    static_cast<VkAccessFlagBits>(0), VK_ACCESS_SHADER_WRITE_BIT
             );
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
@@ -261,30 +278,38 @@ int main() {
             );
 
             // Transition rayTracingImage to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-            VkImageMemoryBarrier rayTracingToSrcBarrier{};
-            rayTracingToSrcBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            rayTracingToSrcBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-            rayTracingToSrcBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            rayTracingToSrcBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            rayTracingToSrcBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            rayTracingToSrcBarrier.image = rtImageObjects.image;
-            rayTracingToSrcBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            rayTracingToSrcBarrier.subresourceRange.baseMipLevel = 0;
-            rayTracingToSrcBarrier.subresourceRange.levelCount = 1;
-            rayTracingToSrcBarrier.subresourceRange.baseArrayLayer = 0;
-            rayTracingToSrcBarrier.subresourceRange.layerCount = 1;
-            rayTracingToSrcBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            rayTracingToSrcBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-            vkCmdPipelineBarrier(
+            // todo: the transitionImage call makes a lot of errors in the console. likely the parameters are slightly different
+            transitionImage(
                     commandBuffer,
-                    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0,
-                    0, nullptr,
-                    0, nullptr,
-                    1, &rayTracingToSrcBarrier
-            );
+                    rtImageObjects.image,
+                    VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT
+                    );
+
+//            VkImageMemoryBarrier rayTracingToSrcBarrier{};
+//            rayTracingToSrcBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+//            rayTracingToSrcBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+//            rayTracingToSrcBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+//            rayTracingToSrcBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+//            rayTracingToSrcBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+//            rayTracingToSrcBarrier.image = rtImageObjects.image;
+//            rayTracingToSrcBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+//            rayTracingToSrcBarrier.subresourceRange.baseMipLevel = 0;
+//            rayTracingToSrcBarrier.subresourceRange.levelCount = 1;
+//            rayTracingToSrcBarrier.subresourceRange.baseArrayLayer = 0;
+//            rayTracingToSrcBarrier.subresourceRange.layerCount = 1;
+//            rayTracingToSrcBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+//            rayTracingToSrcBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+//
+//            vkCmdPipelineBarrier(
+//                    commandBuffer,
+//                    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+//                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+//                    0,
+//                    0, nullptr,
+//                    0, nullptr,
+//                    1, &rayTracingToSrcBarrier
+//            );
 
             // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             VkAccessFlags srcAccesses = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
