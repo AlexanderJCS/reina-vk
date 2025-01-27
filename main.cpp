@@ -281,7 +281,6 @@ int main() {
             );
 
             // Transition rayTracingImage to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-            // todo: the transitionImage call makes a lot of errors in the console. likely the parameters are slightly different
             transitionImage(
                     commandBuffer,
                     rtImageObjects.image,
