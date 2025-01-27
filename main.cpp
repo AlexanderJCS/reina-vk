@@ -101,7 +101,9 @@ void transitionImage(
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
         VkAccessFlagBits srcAccessMask,
-        VkAccessFlagBits dstAccessMask
+        VkAccessFlagBits dstAccessMask,
+        VkPipelineStageFlagBits srcStageMask,
+        VkPipelineStageFlagBits dstStageMask
         ) {
     VkImageMemoryBarrier rayTracingToGeneralBarrier{};
     rayTracingToGeneralBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -120,8 +122,8 @@ void transitionImage(
 
     vkCmdPipelineBarrier(
             cmdBuffer,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+            srcStageMask,
+            dstStageMask,
             0,
             0, nullptr,
             0, nullptr,
@@ -212,7 +214,8 @@ int main() {
                     commandBuffer,
                     rtImageObjects.image,
                     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-                    static_cast<VkAccessFlagBits>(0), VK_ACCESS_SHADER_WRITE_BIT
+                    static_cast<VkAccessFlagBits>(0), VK_ACCESS_SHADER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
             );
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
@@ -283,33 +286,10 @@ int main() {
                     commandBuffer,
                     rtImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT
+                    VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT
                     );
-
-//            VkImageMemoryBarrier rayTracingToSrcBarrier{};
-//            rayTracingToSrcBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-//            rayTracingToSrcBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-//            rayTracingToSrcBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-//            rayTracingToSrcBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-//            rayTracingToSrcBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-//            rayTracingToSrcBarrier.image = rtImageObjects.image;
-//            rayTracingToSrcBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//            rayTracingToSrcBarrier.subresourceRange.baseMipLevel = 0;
-//            rayTracingToSrcBarrier.subresourceRange.levelCount = 1;
-//            rayTracingToSrcBarrier.subresourceRange.baseArrayLayer = 0;
-//            rayTracingToSrcBarrier.subresourceRange.layerCount = 1;
-//            rayTracingToSrcBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-//            rayTracingToSrcBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-//
-//            vkCmdPipelineBarrier(
-//                    commandBuffer,
-//                    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-//                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-//                    0,
-//                    0, nullptr,
-//                    0, nullptr,
-//                    1, &rayTracingToSrcBarrier
-//            );
 
             // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             VkAccessFlags srcAccesses = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
@@ -318,30 +298,16 @@ int main() {
             VkPipelineStageFlags srcStages = makeAccessMaskPipelineStageFlags(srcAccesses);
             VkPipelineStageFlags dstStages = makeAccessMaskPipelineStageFlags(dstAccesses);
 
-            VkImageMemoryBarrier dstBarrier{};
-            dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            dstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // or your current layout
-            dstBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            dstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            dstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            dstBarrier.image = swapchainObjects.swapchainImages[imageIndex]; // Your R8G8B8A8 image
-            dstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            dstBarrier.subresourceRange.baseMipLevel = 0;
-            dstBarrier.subresourceRange.levelCount = 1;
-            dstBarrier.subresourceRange.baseArrayLayer = 0;
-            dstBarrier.subresourceRange.layerCount = 1;
-            dstBarrier.srcAccessMask = 0;
-            dstBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            vkCmdPipelineBarrier(
+            transitionImage(
                     commandBuffer,
+                    swapchainObjects.swapchainImages[imageIndex],
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    static_cast<VkAccessFlagBits>(0),
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0,
-                    0, nullptr,
-                    0, nullptr,
-                    1, &dstBarrier
-            );
+                    VK_PIPELINE_STAGE_TRANSFER_BIT
+                    );
 
             // Define the blit region
             VkImageBlit blitRegion{};
@@ -365,29 +331,16 @@ int main() {
                     swapchainObjects.swapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     1, &blitRegion,
                     VK_FILTER_LINEAR // Use linear filtering for HDR downsampling
-            );
+                    );
 
             // Transition the destination image back to its original layout (e.g., for presentation)
-            VkImageMemoryBarrier presentBarrier{};
-            presentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            presentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            presentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            presentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            presentBarrier.image = swapchainObjects.swapchainImages[imageIndex];
-            presentBarrier.subresourceRange = dstBarrier.subresourceRange;
-            presentBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            presentBarrier.dstAccessMask = 0;
-
-            vkCmdPipelineBarrier(
+            transitionImage(
                     commandBuffer,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                    0,
-                    0, nullptr,
-                    0, nullptr,
-                    1, &presentBarrier
-            );
+                    swapchainObjects.swapchainImages[imageIndex],
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                    VK_ACCESS_TRANSFER_WRITE_BIT, static_cast<VkAccessFlagBits>(0),
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+                    );
 
             vkEndCommandBuffer(commandBuffer);
 
