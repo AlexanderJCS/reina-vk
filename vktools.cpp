@@ -313,6 +313,65 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
+vktools::SbtInfo vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing) {
+    std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * 1 /* shader group size - change this when adding more shader groups */);
+
+    auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkGetRayTracingShaderGroupHandlesKHR"));
+
+    if (vkGetRayTracingShaderGroupHandlesKHR(logicalDevice, rtPipeline, 0, /* shader group count: */ 1, cpuShaderHandleStorage.size(), cpuShaderHandleStorage.data()) != VK_SUCCESS) {
+        throw std::runtime_error("Could not get RT shader group handles");
+    }
+
+    auto sbtSize = static_cast<uint32_t>(sbtSpacing.stride * 1 /* shader group count */);
+    VkBufferCreateInfo sbtBufferCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = sbtSize,
+            .usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE  // exclusive if using one queue family
+    };
+
+    VkBuffer sbtBuffer;
+    if (vkCreateBuffer(logicalDevice, &sbtBufferCreateInfo, nullptr, &sbtBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create shader binding table buffer");
+    }
+
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(logicalDevice, sbtBuffer, &memoryRequirements);
+
+    VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+            .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,  // needed for buffers with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT when VkPhysicalDeviceBufferDeviceAddressFeatures::bufferDeviceAddress is enabled
+            .deviceMask = 0
+    };
+
+    VkMemoryAllocateInfo memoryAllocateInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = &memoryAllocateFlagsInfo,
+            .allocationSize = memoryRequirements.size,
+            .memoryTypeIndex = vktools::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+    };
+
+    VkDeviceMemory sbtBufferMemory;
+    if (vkAllocateMemory(logicalDevice, &memoryAllocateInfo, nullptr, &sbtBufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Could not allocate SBT buffer memory");
+    }
+
+    vkBindBufferMemory(logicalDevice, sbtBuffer, sbtBufferMemory, 0);
+
+    void* sbtMappedMemory;
+    vkMapMemory(logicalDevice, sbtBufferMemory, 0, sbtSize, 0, &sbtMappedMemory);
+
+    auto* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
+    for (uint32_t groupIdx = 0; groupIdx < 1 /* num shader groups */; groupIdx++) {
+        memcpy(&sbtPtr[groupIdx * sbtSpacing.stride], &cpuShaderHandleStorage[groupIdx * sbtSpacing.headerSize], sbtSpacing.headerSize);
+    }
+
+    vkUnmapMemory(logicalDevice, sbtBufferMemory);
+
+    return {sbtBuffer, sbtBufferMemory};
+}
+
 vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, SbtSpacing sbtSpacing, const std::vector<Shader>& shaders) {
     VkPipelineShaderStageCreateInfo raygenStageCreateInfo = shaders[0].pipelineShaderStageCreateInfo();
 
@@ -408,62 +467,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice,
         throw std::runtime_error("Cannot create RT compute pipeline");
     }
 
-    std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * 1 /* shader group size - change this when adding more shader groups */);
-
-    auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkGetRayTracingShaderGroupHandlesKHR"));
-
-    if (vkGetRayTracingShaderGroupHandlesKHR(logicalDevice, rtPipeline, 0, /* shader group count: */ 1, cpuShaderHandleStorage.size(), cpuShaderHandleStorage.data()) != VK_SUCCESS) {
-        throw std::runtime_error("Could not get RT shader group handles");
-    }
-
-    auto sbtSize = static_cast<uint32_t>(sbtSpacing.stride * 1 /* shader group count */);
-    VkBufferCreateInfo sbtBufferCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = sbtSize,
-        .usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE  // exclusive if using one queue family
-    };
-
-    VkBuffer sbtBuffer;
-    if (vkCreateBuffer(logicalDevice, &sbtBufferCreateInfo, nullptr, &sbtBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create shader binding table buffer");
-    }
-
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(logicalDevice, sbtBuffer, &memoryRequirements);
-
-    VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-        .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,  // needed for buffers with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT when VkPhysicalDeviceBufferDeviceAddressFeatures::bufferDeviceAddress is enabled
-        .deviceMask = 0
-    };
-
-    VkMemoryAllocateInfo memoryAllocateInfo{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext = &memoryAllocateFlagsInfo,
-        .allocationSize = memoryRequirements.size,
-        .memoryTypeIndex = vktools::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-    };
-
-    VkDeviceMemory sbtBufferMemory;
-    if (vkAllocateMemory(logicalDevice, &memoryAllocateInfo, nullptr, &sbtBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Could not allocate SBT buffer memory");
-    }
-
-    vkBindBufferMemory(logicalDevice, sbtBuffer, sbtBufferMemory, 0);
-
-    void* sbtMappedMemory;
-    vkMapMemory(logicalDevice, sbtBufferMemory, 0, sbtSize, 0, &sbtMappedMemory);
-
-    auto* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
-    for (uint32_t groupIdx = 0; groupIdx < 1 /* num shader groups */; groupIdx++) {
-        memcpy(&sbtPtr[groupIdx * sbtSpacing.stride], &cpuShaderHandleStorage[groupIdx * sbtSpacing.headerSize], sbtSpacing.headerSize);
-    }
-
-    vkUnmapMemory(logicalDevice, sbtBufferMemory);
-
-    return {rtPipeline, pipelineLayout, descriptorSetLayout, descriptorPool, descriptorSet, sbtBuffer, sbtBufferMemory};
+    return {rtPipeline, pipelineLayout, descriptorSetLayout, descriptorPool, descriptorSet};
 }
 
 VkImageView vktools::createRtImageView(VkDevice logicalDevice, VkImage rtImage) {

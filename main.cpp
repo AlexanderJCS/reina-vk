@@ -122,6 +122,7 @@ int main() {
                 Shader(logicalDevice, "../shaders/raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
         };
         vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(physicalDevice, logicalDevice, sbtSpacing, shaders);
+        vktools::SbtInfo sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
 
         for (Shader& shader : shaders) {
             shader.destroy();
@@ -226,7 +227,7 @@ int main() {
             // todo: push the push constants
 
             VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
-            VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, rtPipelineInfo.sbtBuffer);
+            VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtInfo.buffer);
 
             sbtRayGenRegion.deviceAddress = sbtStartAddress;
             sbtRayGenRegion.stride = sbtSpacing.stride;
@@ -405,8 +406,8 @@ int main() {
         vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
         vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
         vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
-        vkDestroyBuffer(logicalDevice, rtPipelineInfo.sbtBuffer, nullptr);
-        vkFreeMemory(logicalDevice, rtPipelineInfo.sbtBufferMemory, nullptr);
+        vkDestroyBuffer(logicalDevice, sbtInfo.buffer, nullptr);
+        vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
         vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
         vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
         vkDestroyDescriptorPool(logicalDevice, rtPipelineInfo.descriptorPool, nullptr);

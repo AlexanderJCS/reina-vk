@@ -50,8 +50,11 @@ namespace vktools {
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorPool descriptorPool;
         VkDescriptorSet descriptorSet;
-        VkBuffer sbtBuffer;
-        VkDeviceMemory sbtBufferMemory;
+    };
+
+    struct SbtInfo {
+        VkBuffer buffer;
+        VkDeviceMemory deviceMemory;
     };
 
     struct SyncObjects {
@@ -82,7 +85,7 @@ namespace vktools {
 
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
-    // todo: make SBT creation its own function
+    SbtInfo createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing);
     PipelineInfo createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, SbtSpacing sbtSpacing, const std::vector<Shader>& shaders);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
