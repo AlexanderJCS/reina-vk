@@ -6,6 +6,7 @@
 #include <vector>
 
 
+// todo: VkDevice should not be stored in the class; instead ask for it in the arguments for destroy()
 class Shader {
 private:
     VkDevice logicalDevice = VK_NULL_HANDLE;
