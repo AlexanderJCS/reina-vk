@@ -372,7 +372,7 @@ vktools::SbtInfo vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
     return {sbtBuffer, sbtBufferMemory};
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, SbtSpacing sbtSpacing, const std::vector<Shader>& shaders) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const std::vector<Shader>& shaders) {
     VkPipelineShaderStageCreateInfo raygenStageCreateInfo = shaders[0].pipelineShaderStageCreateInfo();
 
     VkDescriptorSetLayoutBinding layoutBinding{

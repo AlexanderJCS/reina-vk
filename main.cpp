@@ -158,7 +158,7 @@ int main() {
         std::vector<Shader> shaders = {
                 Shader(logicalDevice, "../shaders/raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
         };
-        vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(physicalDevice, logicalDevice, sbtSpacing, shaders);
+        vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, shaders);
         vktools::SbtInfo sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
 
         for (Shader& shader : shaders) {
