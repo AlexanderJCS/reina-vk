@@ -11,10 +11,9 @@ struct Binding {
     uint32_t descriptorCount;
     VkShaderStageFlagBits stageFlags;
 
-    VkDescriptorSetLayoutBinding toLayoutBinding();
+    [[nodiscard]] VkDescriptorSetLayoutBinding toLayoutBinding() const;
 };
 
-// todo: have DescriptorSet take in a std::vector of Binding, then init inside the constructor
 class DescriptorSet {
 private:
     static int idxCounter;
@@ -22,16 +21,18 @@ private:
     std::vector<Binding> bindings;
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
     VkDescriptorPool pool = VK_NULL_HANDLE;
+    VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+
+    [[nodiscard]] static bool hasDuplicateBindingPoints(const std::vector<Binding>& bindings);
 
 public:
-    DescriptorSet();
-
-    void addBinding(Binding binding);
-    void removeBinding(uint32_t point);
-
-    void init(VkDevice logicalDevice);
+    DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings);
 
     void destroy(VkDevice device);
+
+    [[nodiscard]] VkDescriptorSetLayout getLayout() const;
+    [[nodiscard]] VkDescriptorPool getPool() const;
+    [[nodiscard]] VkDescriptorSet getDescriptorSet() const;
 };
 
 #endif //RAYGUN_VK_DESCRIPTORSET_H

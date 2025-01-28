@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "Shader.h"
+#include "DescriptorSet.h"
 
 namespace vktools {
     struct QueueFamilyIndices {
@@ -47,9 +48,6 @@ namespace vktools {
     struct PipelineInfo {
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
-        VkDescriptorSetLayout descriptorSetLayout;
-        VkDescriptorPool descriptorPool;
-        VkDescriptorSet descriptorSet;
     };
 
     struct SbtInfo {
@@ -86,7 +84,7 @@ namespace vktools {
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     SbtInfo createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing);
-    PipelineInfo createRtPipeline(VkDevice logicalDevice, const std::vector<Shader>& shaders);
+    PipelineInfo createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 

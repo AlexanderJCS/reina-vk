@@ -6,7 +6,6 @@
 
 Shader::Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage) {
     this->shaderStage = shaderStage;
-    this->logicalDevice = logicalDevice;
     shaderModule = createShaderModule(logicalDevice, readFile(path));
 }
 
@@ -55,12 +54,11 @@ VkShaderModule Shader::createShaderModule(VkDevice logicalDevice, const std::vec
     return shaderModule;
 }
 
-void Shader::destroy() {
+void Shader::destroy(VkDevice logicalDevice) {
     if (shaderModule == VK_NULL_HANDLE) {
         return;
     }
 
     vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
     shaderModule = VK_NULL_HANDLE;
-    logicalDevice = VK_NULL_HANDLE;  // probably not needed but good practice
 }

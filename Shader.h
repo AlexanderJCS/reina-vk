@@ -6,10 +6,8 @@
 #include <vector>
 
 
-// todo: VkDevice should not be stored in the class; instead ask for it in the arguments for destroy()
 class Shader {
 private:
-    VkDevice logicalDevice = VK_NULL_HANDLE;
     VkShaderModule shaderModule = VK_NULL_HANDLE;
     VkShaderStageFlagBits shaderStage;
 
@@ -19,7 +17,7 @@ private:
 public:
     Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage);
 
-    void destroy();
+    void destroy(VkDevice logicalDevice);
 
     [[nodiscard]] VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(const std::string& entryPoint = "main") const;
 };

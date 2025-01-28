@@ -12,6 +12,7 @@
 #include <GLFW/glfw3.h>
 
 #include "consts.h"
+#include "DescriptorSet.h"
 
 bool vktools::QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
@@ -372,56 +373,8 @@ vktools::SbtInfo vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
     return {sbtBuffer, sbtBufferMemory};
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const std::vector<Shader>& shaders) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders) {
     VkPipelineShaderStageCreateInfo raygenStageCreateInfo = shaders[0].pipelineShaderStageCreateInfo();
-
-    VkDescriptorSetLayoutBinding layoutBinding{
-        .binding = 0,
-        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-        .pImmutableSamplers = nullptr
-    };
-
-    VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = 1,
-        .pBindings = &layoutBinding
-    };
-
-    VkDescriptorSetLayout descriptorSetLayout;
-    if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("Cannot create descriptor set layout");
-    }
-
-    VkDescriptorPoolSize poolSize{
-        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = 1
-    };
-
-    VkDescriptorPoolCreateInfo poolCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = 1,
-        .poolSizeCount = 1,
-        .pPoolSizes = &poolSize
-    };
-
-    VkDescriptorPool descriptorPool;
-    if (vkCreateDescriptorPool(logicalDevice, &poolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create descriptor pool");
-    }
-
-    VkDescriptorSetAllocateInfo allocInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool = descriptorPool,
-        .descriptorSetCount = 1,
-        .pSetLayouts = &descriptorSetLayout
-    };
-
-    VkDescriptorSet descriptorSet;
-    if (vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate descriptor set");
-    }
 
     VkRayTracingShaderGroupCreateInfoKHR raygenGroup{
         .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
@@ -432,10 +385,13 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const st
         .intersectionShader = VK_SHADER_UNUSED_KHR
     };
 
+    // I have to store this in a variable first, then do .pSetLayouts = &thatVariable, instead of just
+    //  &descriptorSet.getLayout(). I hate C++
+    VkDescriptorSetLayout descriptorLayout = descriptorSet.getLayout();
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
-        .pSetLayouts = &descriptorSetLayout,
+        .pSetLayouts = &descriptorLayout,
         .pushConstantRangeCount = 0,  // todo: add push constants
         .pPushConstantRanges = nullptr
     };
@@ -467,7 +423,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const st
         throw std::runtime_error("Cannot create RT compute pipeline");
     }
 
-    return {rtPipeline, pipelineLayout, descriptorSetLayout, descriptorPool, descriptorSet};
+    return {rtPipeline, pipelineLayout};
 }
 
 VkImageView vktools::createRtImageView(VkDevice logicalDevice, VkImage rtImage) {

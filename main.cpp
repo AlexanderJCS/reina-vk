@@ -159,11 +159,14 @@ int main() {
         std::vector<Shader> shaders = {
                 Shader(logicalDevice, "../shaders/raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
         };
-        vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, shaders);
+
+        DescriptorSet descriptorSet{logicalDevice, {Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR}}};
+
+        vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders);
         vktools::SbtInfo sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
 
         for (Shader& shader : shaders) {
-            shader.destroy();
+            shader.destroy(logicalDevice);
         }
 
         vktools::SyncObjects syncObjects = vktools::createSyncObjects(logicalDevice);
@@ -172,8 +175,6 @@ int main() {
 
         VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
         VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
-
-        DescriptorSet ds{};
 
         // render
         while (!renderWindow.shouldClose()) {
@@ -223,27 +224,28 @@ int main() {
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
 
+            VkDescriptorSet descriptorSetHandle = descriptorSet.getDescriptorSet();
             vkCmdBindDescriptorSets(
                     commandBuffer,
                     VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
                     rtPipelineInfo.pipelineLayout,
                     0,  // First set
-                    1, &rtPipelineInfo.descriptorSet,
+                    1, &descriptorSetHandle,
                     0, nullptr
             );
 
             VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageView = rtImageView;          // The VkImageView for your ray-traced output
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;         // Layout must match what the shader expects
+            imageInfo.imageView = rtImageView;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
             VkWriteDescriptorSet descriptorWrite{};
             descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = rtPipelineInfo.descriptorSet;   // The descriptor set to update
-            descriptorWrite.dstBinding = 0;                         // Binding index in the shader
-            descriptorWrite.dstArrayElement = 0;                    // First array element to update
-            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;  // Match descriptor type in the shader
-            descriptorWrite.descriptorCount = 1;                    // Number of descriptors to update
-            descriptorWrite.pImageInfo = &imageInfo;                // Point to the VkDescriptorImageInfo
+            descriptorWrite.dstSet = descriptorSetHandle;
+            descriptorWrite.dstBinding = 0;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pImageInfo = &imageInfo;
 
             vkUpdateDescriptorSets(logicalDevice, 1, &descriptorWrite, 0, nullptr);
 
@@ -378,11 +380,14 @@ int main() {
             vkQueuePresentKHR(presentQueue, &presentInfo);
 
             glfwPollEvents();
+
+            break;
         }
 
         vkDeviceWaitIdle(logicalDevice);
 
         // clean up
+        descriptorSet.destroy(logicalDevice);
         vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
         vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
         vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
@@ -390,8 +395,6 @@ int main() {
         vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
         vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
         vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
-        vkDestroyDescriptorPool(logicalDevice, rtPipelineInfo.descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(logicalDevice, rtPipelineInfo.descriptorSetLayout, nullptr);
         vkDestroyImageView(logicalDevice, rtImageView, nullptr);
         vkDestroyImage(logicalDevice, rtImageObjects.image, nullptr);
         vkFreeMemory(logicalDevice, rtImageObjects.imageMemory, nullptr);
