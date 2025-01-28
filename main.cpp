@@ -12,6 +12,7 @@
 #include "vktools.h"
 #include "consts.h"
 #include "Window.h"
+#include "DescriptorSet.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -171,6 +172,8 @@ int main() {
 
         VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
         VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
+
+        DescriptorSet ds{};
 
         // render
         while (!renderWindow.shouldClose()) {

@@ -13,7 +13,9 @@ add_executable(raygun_vk main.cpp
         Window.cpp
         Window.h
         Shader.cpp
-        Shader.h)
+        Shader.h
+        DescriptorSet.cpp
+        DescriptorSet.h)
 
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 
