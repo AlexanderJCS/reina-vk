@@ -4,12 +4,16 @@
 #include <vulkan/vulkan.h>
 
 #include <vector>
+#include <optional>
 
 struct Binding {
     uint32_t bindingPoint;
     VkDescriptorType type;
     uint32_t descriptorCount;
     VkShaderStageFlagBits stageFlags;
+    std::optional<VkDescriptorImageInfo> imageInfo;
+    std::optional<VkDescriptorBufferInfo> bufferInfo;
+    std::optional<VkBufferView> bufferView;
 
     [[nodiscard]] VkDescriptorSetLayoutBinding toLayoutBinding() const;
 };
@@ -18,7 +22,7 @@ class DescriptorSet {
 private:
     static int idxCounter;
     int setIdx;
-    const std::vector<Binding>& bindings;
+    std::vector<Binding> bindings;
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
     VkDescriptorPool pool = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
@@ -29,6 +33,7 @@ public:
     DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings);
 
     void bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout);
+    void writeBindings(VkDevice logicalDevice);
 
     void destroy(VkDevice device);
 

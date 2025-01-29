@@ -160,7 +160,18 @@ int main() {
                 Shader(logicalDevice, "../shaders/raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
         };
 
-        DescriptorSet descriptorSet{logicalDevice, {Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR}}};
+        DescriptorSet descriptorSet{
+            logicalDevice,
+            {
+                Binding{
+                    0,
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                    1,
+                    VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                    VkDescriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL}
+                }
+            }
+        };
 
         vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders);
         vktools::SbtInfo sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
@@ -224,23 +235,8 @@ int main() {
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
 
-            VkDescriptorSet descriptorSetHandle = descriptorSet.getDescriptorSet();
             descriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageView = rtImageView;
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-            VkWriteDescriptorSet descriptorWrite{};
-            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = descriptorSetHandle;
-            descriptorWrite.dstBinding = 0;
-            descriptorWrite.dstArrayElement = 0;
-            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(logicalDevice, 1, &descriptorWrite, 0, nullptr);
+            descriptorSet.writeBindings(logicalDevice);
 
             // todo: push the push constants
 
