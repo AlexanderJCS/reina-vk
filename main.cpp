@@ -225,14 +225,7 @@ int main() {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
 
             VkDescriptorSet descriptorSetHandle = descriptorSet.getDescriptorSet();
-            vkCmdBindDescriptorSets(
-                    commandBuffer,
-                    VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
-                    rtPipelineInfo.pipelineLayout,
-                    0,  // First set
-                    1, &descriptorSetHandle,
-                    0, nullptr
-            );
+            descriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageView = rtImageView;
@@ -380,8 +373,6 @@ int main() {
             vkQueuePresentKHR(presentQueue, &presentInfo);
 
             glfwPollEvents();
-
-            break;
         }
 
         vkDeviceWaitIdle(logicalDevice);

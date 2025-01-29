@@ -18,7 +18,7 @@ class DescriptorSet {
 private:
     static int idxCounter;
     int setIdx;
-    std::vector<Binding> bindings;
+    const std::vector<Binding>& bindings;
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
     VkDescriptorPool pool = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
@@ -27,6 +27,8 @@ private:
 
 public:
     DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings);
+
+    void bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout);
 
     void destroy(VkDevice device);
 

@@ -14,7 +14,7 @@ VkDescriptorSetLayoutBinding Binding::toLayoutBinding() const {
     };
 }
 
-DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings) : setIdx(idxCounter++) {
+DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings) : setIdx(idxCounter++), bindings(bindings) {
     if (hasDuplicateBindingPoints(bindings)) {
         throw std::runtime_error("Cannot initialize descriptor set: duplicate binding points found");
     }
@@ -95,4 +95,15 @@ VkDescriptorPool DescriptorSet::getPool() const {
 
 VkDescriptorSet DescriptorSet::getDescriptorSet() const {
     return descriptorSet;
+}
+
+void DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout) {
+    vkCmdBindDescriptorSets(
+            cmdBuffer,
+            VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+            pipelineLayout,
+            0,
+            bindings.size(), &descriptorSet,
+            0, nullptr
+    );
 }
