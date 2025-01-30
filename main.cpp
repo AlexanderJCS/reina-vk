@@ -83,16 +83,16 @@ void run() {
     VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
     DescriptorSet descriptorSet{
-            logicalDevice,
+        logicalDevice,
             {
-                    Binding{
-                            0,
-                            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                            1,
-                            VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-                            VkDescriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL}
-                    }
-            }
+                Binding{
+                    0,
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                    1,
+                    VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                    VkDescriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL}
+                }
+        }
     };
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
