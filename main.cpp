@@ -30,20 +30,24 @@ void transitionImage(
         VkPipelineStageFlagBits srcStageMask,
         VkPipelineStageFlagBits dstStageMask
 ) {
-    VkImageMemoryBarrier rayTracingToGeneralBarrier{};
-    rayTracingToGeneralBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    rayTracingToGeneralBarrier.oldLayout = oldLayout;
-    rayTracingToGeneralBarrier.newLayout = newLayout;
-    rayTracingToGeneralBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    rayTracingToGeneralBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    rayTracingToGeneralBarrier.image = image;
-    rayTracingToGeneralBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    rayTracingToGeneralBarrier.subresourceRange.baseMipLevel = 0;
-    rayTracingToGeneralBarrier.subresourceRange.levelCount = 1;
-    rayTracingToGeneralBarrier.subresourceRange.baseArrayLayer = 0;
-    rayTracingToGeneralBarrier.subresourceRange.layerCount = 1;
-    rayTracingToGeneralBarrier.srcAccessMask = srcAccessMask;
-    rayTracingToGeneralBarrier.dstAccessMask = dstAccessMask;
+    VkImageMemoryBarrier rayTracingToGeneralBarrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask = srcAccessMask,
+        .dstAccessMask = dstAccessMask,
+        .oldLayout = oldLayout,
+        .newLayout = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        }
+    };
+
 
     vkCmdPipelineBarrier(
             cmdBuffer,
