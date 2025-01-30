@@ -184,7 +184,6 @@ void run() {
             VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-                // I don't feel like coding swapchain recreation
                 throw std::runtime_error("Swapchain is either out of date or suboptimal");
             } else if (result != VK_SUCCESS) {
                 throw std::runtime_error("Failed to acquire swapchain image");
