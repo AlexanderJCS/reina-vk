@@ -20,82 +20,6 @@ VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
     return vkGetBufferDeviceAddress(device, &addressInfo);
 }
 
-uint32_t makeAccessMaskPipelineStageFlags(uint32_t accessMask)
-{
-    VkPipelineStageFlags supportedShaderBits = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT
-                                               | VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT
-                                               | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-                                               | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    static const uint32_t accessPipes[] = {
-            VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
-            VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-            VK_ACCESS_INDEX_READ_BIT,
-            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-            VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-            VK_ACCESS_UNIFORM_READ_BIT,
-            supportedShaderBits,
-            VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_SHADER_READ_BIT,
-            supportedShaderBits,
-            VK_ACCESS_SHADER_WRITE_BIT,
-            supportedShaderBits,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-            VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_ACCESS_HOST_READ_BIT,
-            VK_PIPELINE_STAGE_HOST_BIT,
-            VK_ACCESS_HOST_WRITE_BIT,
-            VK_PIPELINE_STAGE_HOST_BIT,
-            VK_ACCESS_MEMORY_READ_BIT,
-            0,
-            VK_ACCESS_MEMORY_WRITE_BIT,
-            0,
-#if VK_NV_device_generated_commands
-            VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,
-            VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
-            VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,
-            VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
-#endif
-#if VK_NV_ray_tracing
-            VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV,
-            VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV | supportedShaderBits | VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,
-            VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV,
-            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,
-#endif
-    };
-    if(!accessMask)
-    {
-        return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    }
-
-    uint32_t pipes = 0;
-
-    for(uint32_t i = 0; i < sizeof(accessPipes) / sizeof(accessPipes[0]); i += 2)
-    {
-        if(accessPipes[i] & accessMask)
-        {
-            pipes |= accessPipes[i + 1];
-        }
-    }
-    assert(pipes != 0);
-
-    return pipes;
-}
-
 void transitionImage(
         VkCommandBuffer cmdBuffer,
         VkImage image,
@@ -285,12 +209,6 @@ int main() {
                     );
 
             // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-            VkAccessFlags srcAccesses = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-            VkAccessFlags dstAccesses = VK_ACCESS_TRANSFER_READ_BIT;
-
-            VkPipelineStageFlags srcStages = makeAccessMaskPipelineStageFlags(srcAccesses);
-            VkPipelineStageFlags dstStages = makeAccessMaskPipelineStageFlags(dstAccesses);
-
             transitionImage(
                     commandBuffer,
                     swapchainObjects.swapchainImages[imageIndex],
