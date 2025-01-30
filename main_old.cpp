@@ -29,7 +29,7 @@ void transitionImage(
         VkAccessFlagBits dstAccessMask,
         VkPipelineStageFlagBits srcStageMask,
         VkPipelineStageFlagBits dstStageMask
-) {
+        ) {
     VkImageMemoryBarrier rayTracingToGeneralBarrier{};
     rayTracingToGeneralBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     rayTracingToGeneralBarrier.oldLayout = oldLayout;
@@ -80,16 +80,16 @@ int main() {
         VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
         DescriptorSet descriptorSet{
-                logicalDevice,
-                {
-                        Binding{
-                                0,
-                                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                                1,
-                                VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-                                VkDescriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL}
-                        }
+            logicalDevice,
+            {
+                Binding{
+                    0,
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                    1,
+                    VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                    VkDescriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL}
                 }
+            }
         };
 
         vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
@@ -113,14 +113,15 @@ int main() {
 
         // render
         while (!renderWindow.shouldClose()) {
-            vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX);
-            vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence);
-
+            if (!renderWindow.isMinimized()) {
+                vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX);
+                vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence);
+            }
 
             VkCommandBufferBeginInfo beginInfo{
-                    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                    .flags = 0,  // optional
-                    .pInheritanceInfo = nullptr  // optional
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .flags = 0,  // optional
+                .pInheritanceInfo = nullptr  // optional
             };
 
             vkBeginCommandBuffer(commandBuffer, &beginInfo);
@@ -174,28 +175,31 @@ int main() {
                     1
             );
 
-            // everything below here is swapchain stuff
+            // -- all code in the main loop below this point is for blitting the image and rendering it --
+            if (renderWindow.isMinimized()) {
+                vkEndCommandBuffer(commandBuffer);
+                glfwPollEvents();
+                continue; // Skip rendering when minimized
+            }
 
-            uint32_t imageIndex = -1;
-            if (!renderWindow.isMinimized()) {
-                VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+            uint32_t imageIndex;
+            VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-                if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-                    // This swapchain recreation code might be incorrect. Not sure
-                    vkDeviceWaitIdle(logicalDevice);
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+                // This swapchain recreation code might be incorrect. Not sure
+                vkDeviceWaitIdle(logicalDevice);
 
-                    for (VkImageView imageView : swapchainImageViews) {
-                        vkDestroyImageView(logicalDevice, imageView, nullptr);
-                    }
-
-                    vkDestroySwapchainKHR(logicalDevice, swapchainObjects.swapchain, nullptr);
-
-                    swapchainObjects = vktools::createSwapchain(surface, physicalDevice, logicalDevice, renderWindow.getWidth(), renderWindow.getHeight());
-
-                    std::cout << "Recreated swapchain" << std::endl;
-                } else if (result != VK_SUCCESS) {
-                    throw std::runtime_error("Failed to acquire swapchain image");
+                for (VkImageView imageView : swapchainImageViews) {
+                    vkDestroyImageView(logicalDevice, imageView, nullptr);
                 }
+
+                vkDestroySwapchainKHR(logicalDevice, swapchainObjects.swapchain, nullptr);
+
+                swapchainObjects = vktools::createSwapchain(surface, physicalDevice, logicalDevice, renderWindow.getWidth(), renderWindow.getHeight());
+
+                std::cout << "Recreated swapchain" << std::endl;
+            } else if (result != VK_SUCCESS) {
+                throw std::runtime_error("Failed to acquire swapchain image");
             }
 
             // Transition rayTracingImage to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
@@ -206,57 +210,52 @@ int main() {
                     VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
                     VK_PIPELINE_STAGE_TRANSFER_BIT
-            );
+                    );
 
             // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-            if (!renderWindow.isMinimized()) {
-
-                transitionImage(
-                        commandBuffer,
-                        swapchainObjects.swapchainImages[imageIndex],
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        static_cast<VkAccessFlagBits>(0),
-                        VK_ACCESS_TRANSFER_WRITE_BIT,
-                        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT
-                );
-            }
+            transitionImage(
+                    commandBuffer,
+                    swapchainObjects.swapchainImages[imageIndex],
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    static_cast<VkAccessFlagBits>(0),
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT
+                    );
 
             // Define the blit region
-            if (!renderWindow.isMinimized()) {
-                VkImageBlit blitRegion{};
-                blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                blitRegion.srcSubresource.mipLevel = 0;
-                blitRegion.srcSubresource.baseArrayLayer = 0;
-                blitRegion.srcSubresource.layerCount = 1;
-                blitRegion.srcOffsets[0] = {0, 0, 0}; // Start at the top-left
-                blitRegion.srcOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the source image dimensions
+            VkImageBlit blitRegion{};
+            blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitRegion.srcSubresource.mipLevel = 0;
+            blitRegion.srcSubresource.baseArrayLayer = 0;
+            blitRegion.srcSubresource.layerCount = 1;
+            blitRegion.srcOffsets[0] = {0, 0, 0}; // Start at the top-left
+            blitRegion.srcOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the source image dimensions
 
-                blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                blitRegion.dstSubresource.mipLevel = 0;
-                blitRegion.dstSubresource.baseArrayLayer = 0;
-                blitRegion.dstSubresource.layerCount = 1;
-                blitRegion.dstOffsets[0] = {0, 0, 0}; // Start at the top-left
-                blitRegion.dstOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the destination image dimensions
+            blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitRegion.dstSubresource.mipLevel = 0;
+            blitRegion.dstSubresource.baseArrayLayer = 0;
+            blitRegion.dstSubresource.layerCount = 1;
+            blitRegion.dstOffsets[0] = {0, 0, 0}; // Start at the top-left
+            blitRegion.dstOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the destination image dimensions
 
-                vkCmdBlitImage(
-                        commandBuffer,
-                        rtImageObjects.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                        swapchainObjects.swapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        1, &blitRegion,
-                        VK_FILTER_LINEAR // Use linear filtering for HDR downsampling
-                );
+            vkCmdBlitImage(
+                    commandBuffer,
+                    rtImageObjects.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    swapchainObjects.swapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1, &blitRegion,
+                    VK_FILTER_LINEAR // Use linear filtering for HDR downsampling
+                    );
 
-                // Transition the destination image back to its original layout (e.g., for presentation)
-                transitionImage(
-                        commandBuffer,
-                        swapchainObjects.swapchainImages[imageIndex],
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                        VK_ACCESS_TRANSFER_WRITE_BIT, static_cast<VkAccessFlagBits>(0),
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
-                );
-            }
+            // Transition the destination image back to its original layout (e.g., for presentation)
+            transitionImage(
+                    commandBuffer,
+                    swapchainObjects.swapchainImages[imageIndex],
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                    VK_ACCESS_TRANSFER_WRITE_BIT, static_cast<VkAccessFlagBits>(0),
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+                    );
 
             vkEndCommandBuffer(commandBuffer);
 
@@ -265,33 +264,31 @@ int main() {
 
             VkSemaphore waitSemaphores[] = {syncObjects.imageAvailableSemaphore};
             VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-            submitInfo.waitSemaphoreCount = renderWindow.isMinimized() ? 0 : 1;
-            submitInfo.pWaitSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : waitSemaphores;
+            submitInfo.waitSemaphoreCount = 1;
+            submitInfo.pWaitSemaphores = waitSemaphores;
             submitInfo.pWaitDstStageMask = waitStages;
 
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &commandBuffer;
 
             VkSemaphore signalSemaphores[] = {syncObjects.renderFinishedSemaphore};
-            submitInfo.signalSemaphoreCount = renderWindow.isMinimized() ? 0 : 1;
-            submitInfo.pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : signalSemaphores;
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = signalSemaphores;
 
             vkQueueSubmit(graphicsQueue, 1, &submitInfo, syncObjects.inFlightFence);
 
             // Present the swapchain image
-            if (!renderWindow.isMinimized()) {
-                VkPresentInfoKHR presentInfo{};
-                presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+            VkPresentInfoKHR presentInfo{};
+            presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-                presentInfo.waitSemaphoreCount = 1;
-                presentInfo.pWaitSemaphores = signalSemaphores;
+            presentInfo.waitSemaphoreCount = 1;
+            presentInfo.pWaitSemaphores = signalSemaphores;
 
-                presentInfo.swapchainCount = 1;
-                presentInfo.pSwapchains = &swapchainObjects.swapchain;
-                presentInfo.pImageIndices = &imageIndex;
+            presentInfo.swapchainCount = 1;
+            presentInfo.pSwapchains = &swapchainObjects.swapchain;
+            presentInfo.pImageIndices = &imageIndex;
 
-                vkQueuePresentKHR(presentQueue, &presentInfo);
-            }
+            vkQueuePresentKHR(presentQueue, &presentInfo);
 
             glfwPollEvents();
         }
