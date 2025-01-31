@@ -20,3 +20,4 @@ add_executable(raygun_vk main.cpp
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 
 target_include_directories(raygun_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
+target_include_directories(raygun_vk PUBLIC ${CMAKE_SOURCE_DIR}/lib/tiny_obj_loader)

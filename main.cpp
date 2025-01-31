@@ -6,6 +6,9 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 #include <iostream>
 #include <vulkan/vulkan.h>
 
