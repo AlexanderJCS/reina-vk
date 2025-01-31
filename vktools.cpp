@@ -374,15 +374,39 @@ vktools::SbtInfo vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
 }
 
 vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders) {
-    VkPipelineShaderStageCreateInfo raygenStageCreateInfo = shaders[0].pipelineShaderStageCreateInfo();
+    if (shaders.size() != 3) {
+        throw std::runtime_error("Must have 3 shaders in the order: raygen, miss, closest hit");
+    }
 
-    VkRayTracingShaderGroupCreateInfoKHR raygenGroup{
-        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-        .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-        .generalShader = 0,
-        .closestHitShader = VK_SHADER_UNUSED_KHR,
-        .anyHitShader = VK_SHADER_UNUSED_KHR,
-        .intersectionShader = VK_SHADER_UNUSED_KHR
+    std::array<VkPipelineShaderStageCreateInfo, 3> stages{};
+    for (int i = 0; i < shaders.size(); i++) {
+        stages[i] = shaders[i].pipelineShaderStageCreateInfo("main");
+    }
+
+    std::array<VkRayTracingShaderGroupCreateInfoKHR, 3> groups{};
+    groups[0] = {
+            .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+            .generalShader = 0,  // index of ray gen, miss, or callable in stages
+            .closestHitShader = VK_SHADER_UNUSED_KHR,
+            .anyHitShader = VK_SHADER_UNUSED_KHR,
+            .intersectionShader = VK_SHADER_UNUSED_KHR
+    };
+    groups[1] = {
+            .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+            .generalShader = 1,  // index of ray gen, miss, or callable in stages
+            .closestHitShader = VK_SHADER_UNUSED_KHR,
+            .anyHitShader = VK_SHADER_UNUSED_KHR,
+            .intersectionShader = VK_SHADER_UNUSED_KHR
+    };
+    groups[2] = {
+            .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+            .generalShader = VK_SHADER_UNUSED_KHR,
+            .closestHitShader = VK_SHADER_UNUSED_KHR,
+            .anyHitShader = VK_SHADER_UNUSED_KHR,
+            .intersectionShader = VK_SHADER_UNUSED_KHR
     };
 
     // I have to store this in a variable first, then do .pSetLayouts = &thatVariable, instead of just
@@ -403,10 +427,10 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const De
 
     VkRayTracingPipelineCreateInfoKHR rtPipelineCreateInfo {
         .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
-        .stageCount = 1, // edit as I add more shader stages
-        .pStages = &raygenStageCreateInfo,
-        .groupCount = 1,  // one shader group
-        .pGroups = &raygenGroup,
+        .stageCount = stages.size(),
+        .pStages = stages.data(),
+        .groupCount = groups.size(),
+        .pGroups = groups.data(),
         .maxPipelineRayRecursionDepth = 1,
         .layout = pipelineLayout
     };

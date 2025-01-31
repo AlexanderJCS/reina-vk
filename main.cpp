@@ -97,7 +97,9 @@ void run() {
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<Shader> shaders = {
-            Shader(logicalDevice, "../shaders/raygen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+            Shader(logicalDevice, "../shaders/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
+            Shader(logicalDevice, "../shaders/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
+            Shader(logicalDevice, "../shaders/raytrace.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
     };
 
     vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders);
