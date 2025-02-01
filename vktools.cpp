@@ -314,7 +314,7 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
-vktools::SbtInfo vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing) {
+vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing) {
     std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * 1 /* shader group size - change this when adding more shader groups */);
 
     auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(

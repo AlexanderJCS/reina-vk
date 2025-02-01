@@ -51,7 +51,6 @@ void transitionImage(
         }
     };
 
-
     vkCmdPipelineBarrier(
             cmdBuffer,
             srcStageMask,
@@ -85,6 +84,34 @@ void run() {
     vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height);
     VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+    std::vector<float> vertices{
+            0.5, 0.5, -1,
+            1, 0.5, -1,
+            0.5, 1, -1
+    };
+    std::vector<int> triangleIndices{
+            0, 1, 2
+    };
+
+    vktools::BufferObjects vertexBuffer = vktools::createBuffer(
+            logicalDevice,
+            physicalDevice,
+            vertices,
+            usage,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            );
+    vktools::BufferObjects indicesBuffer = vktools::createBuffer(
+            logicalDevice,
+            physicalDevice,
+            triangleIndices,
+            usage,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    );
+
+
     DescriptorSet descriptorSet{
         logicalDevice,
             {
@@ -106,7 +133,7 @@ void run() {
     };
 
     vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders);
-    vktools::SbtInfo sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
+    vktools::BufferObjects sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
 
     for (Shader& shader : shaders) {
         shader.destroy(logicalDevice);
@@ -207,7 +234,6 @@ void run() {
 
         // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
         if (!renderWindow.isMinimized()) {
-
             transitionImage(
                     commandBuffer,
                     swapchainObjects.swapchainImages[imageIndex],
@@ -301,6 +327,10 @@ void run() {
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
+    vkDestroyBuffer(logicalDevice, vertexBuffer.buffer, nullptr);
+    vkFreeMemory(logicalDevice, vertexBuffer.deviceMemory, nullptr);
+    vkDestroyBuffer(logicalDevice, indicesBuffer.buffer, nullptr);
+    vkFreeMemory(logicalDevice, indicesBuffer.deviceMemory, nullptr);
     vkDestroyBuffer(logicalDevice, sbtInfo.buffer, nullptr);
     vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
