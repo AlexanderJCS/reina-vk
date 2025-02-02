@@ -18,6 +18,15 @@ bool vktools::QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
+VkDeviceAddress vktools::getBufferDeviceAddress(VkDevice logicalDevice, VkBuffer buffer) {
+    VkBufferDeviceAddressInfo addressInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+        .buffer = buffer
+    };
+
+    return vkGetBufferDeviceAddress(logicalDevice, &addressInfo);
+}
+
 bool vktools::hasValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -260,6 +269,185 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, int wi
     actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
     return actualExtent;
+}
+
+vktools::BufferObjects vktools::createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize,
+                      VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
+    VkBufferCreateInfo createInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = dataSize,
+            .usage = usage,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE
+    };
+
+    VkBuffer buffer;
+    if (vkCreateBuffer(logicalDevice, &createInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create buffer");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(logicalDevice, buffer, &memRequirements);
+
+    VkMemoryAllocateFlagsInfo allocFlagsInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+            .flags = allocFlags
+    };
+
+    VkMemoryAllocateInfo allocInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = &allocFlagsInfo,
+            .allocationSize = memRequirements.size,
+            .memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, memFlags)
+    };
+
+    VkDeviceMemory deviceMemory;
+    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &deviceMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate buffer memory");
+    }
+
+    vkBindBufferMemory(logicalDevice, buffer, deviceMemory, 0);
+
+    return {buffer, deviceMemory};
+}
+
+vktools::BlasInfo vktools::createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen) {
+    VkAccelerationStructureGeometryTrianglesDataKHR triangles{
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
+        .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
+        .vertexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, verticesBuffer)},
+        .vertexStride = 3 * sizeof(float),  // I think this is correct
+        .maxVertex = static_cast<uint32_t>(verticesLen) - 1,
+        .indexType = VK_INDEX_TYPE_UINT32,
+        .indexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, indicesBuffer)},
+        // todo: add transform with .transformData
+    };
+
+    VkAccelerationStructureGeometryKHR geometry{
+            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+            .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
+            .geometry = {.triangles = triangles},
+            .flags = VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR  // todo: do i need this flag?
+    };
+
+    VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{
+        .primitiveCount = static_cast<uint32_t>(indicesLen) / 3,
+        .primitiveOffset = 0,
+        .firstVertex = 0,
+        .transformOffset = 0
+    };
+
+    VkAccelerationStructureBuildGeometryInfoKHR buildSizesQueryBuildInfo{
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+        .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+        .geometryCount = 1,
+        .pGeometries = &geometry
+    };
+
+    VkAccelerationStructureBuildSizesInfoKHR buildSizes{
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
+    };
+
+    auto vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
+
+    vkGetAccelerationStructureBuildSizesKHR(
+            logicalDevice,
+            VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+            &buildSizesQueryBuildInfo,
+            &buildRangeInfo.primitiveCount,
+            &buildSizes
+    );
+
+    BufferObjects blasBufferObjects = createBuffer(
+            logicalDevice, physicalDevice, buildSizes.accelerationStructureSize,
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                 );
+
+    VkAccelerationStructureCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    createInfo.buffer = blasBufferObjects.buffer;
+    createInfo.size = buildSizes.accelerationStructureSize;
+    createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+
+    auto vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
+
+    VkAccelerationStructureKHR blas;
+    vkCreateAccelerationStructureKHR(logicalDevice, &createInfo, nullptr, &blas);
+
+    BufferObjects scratchBufferObjects = createBuffer(
+            logicalDevice, physicalDevice, buildSizes.buildScratchSize,
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkAccelerationStructureBuildGeometryInfoKHR buildInfo{
+            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+            .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+            .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+            .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+            .dstAccelerationStructure = blas,
+            .geometryCount = 1,
+            .pGeometries = &geometry,
+            .scratchData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBufferObjects.buffer)}
+    };
+
+    // Build range
+    const VkAccelerationStructureBuildRangeInfoKHR* rangeInfos[] = { &buildRangeInfo };
+
+    // Submit the build command
+    VkCommandBufferBeginInfo beginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+    };
+
+    VkCommandBuffer cmdBuffer = createCommandBuffer(logicalDevice, cmdPool);
+    if (vkBeginCommandBuffer(cmdBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Could not begin one-time command buffer for BLAS creation");
+    }
+
+    auto vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
+    vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &buildInfo, rangeInfos);
+
+    if (vkEndCommandBuffer(cmdBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end command buffer for BLAS creation");
+    }
+
+    // Submit the command buffer
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmdBuffer;
+
+    // Create a fence to synchronize
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence;
+    if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create fence for BLAS creation");
+    }
+
+    // Submit the command buffer and wait for it to complete
+    if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit command buffer for BLAS creation");
+    }
+
+    if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to wait for fence for BLAS creation");
+    }
+
+    // Clean up temporary resources
+    vkDestroyFence(logicalDevice, fence, nullptr);
+    vkFreeCommandBuffers(logicalDevice, cmdPool, 1, &cmdBuffer);
+    vkDestroyBuffer(logicalDevice, scratchBufferObjects.buffer, nullptr);
+    vkFreeMemory(logicalDevice, scratchBufferObjects.deviceMemory, nullptr);
+
+    // Return the BLAS buffer and memory
+    return {blas, blasBufferObjects};
 }
 
 vktools::SyncObjects vktools::createSyncObjects(VkDevice logicalDevice) {

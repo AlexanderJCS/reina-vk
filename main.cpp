@@ -94,7 +94,7 @@ void run() {
             0, 1, 2
     };
 
-    vktools::BufferObjects vertexBuffer = vktools::createBuffer(
+    vktools::BufferObjects verticesBuffer = vktools::createBuffer(
             logicalDevice,
             physicalDevice,
             vertices,
@@ -145,6 +145,12 @@ void run() {
 
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
+
+    vktools::BlasInfo blas = vktools::createBlas(
+            logicalDevice, physicalDevice, commandPool, graphicsQueue,
+            verticesBuffer.buffer, indicesBuffer.buffer, vertices.size(),
+            triangleIndices.size()
+            );
 
     // render
     while (!renderWindow.shouldClose()) {
@@ -322,15 +328,21 @@ void run() {
     vkDeviceWaitIdle(logicalDevice);
 
     // clean up
+    auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
+
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
+    vkDestroyAccelerationStructureKHR(logicalDevice, blas.accelerationStructure, nullptr);
     descriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
-    vkDestroyBuffer(logicalDevice, vertexBuffer.buffer, nullptr);
-    vkFreeMemory(logicalDevice, vertexBuffer.deviceMemory, nullptr);
+    vkDestroyBuffer(logicalDevice, verticesBuffer.buffer, nullptr);
+    vkFreeMemory(logicalDevice, verticesBuffer.deviceMemory, nullptr);
     vkDestroyBuffer(logicalDevice, indicesBuffer.buffer, nullptr);
     vkFreeMemory(logicalDevice, indicesBuffer.deviceMemory, nullptr);
+    vkDestroyBuffer(logicalDevice, blas.buffer.buffer, nullptr);
+    vkFreeMemory(logicalDevice, blas.buffer.deviceMemory, nullptr);
     vkDestroyBuffer(logicalDevice, sbtInfo.buffer, nullptr);
     vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);

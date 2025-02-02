@@ -2,12 +2,13 @@
 #define RAYGUN_VK_VKTOOLS_H
 
 #include <optional>
+#include <utility>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-#include <memory>
 
 #include "Shader.h"
 #include "DescriptorSet.h"
@@ -61,6 +62,12 @@ namespace vktools {
         VkFence inFlightFence;
     };
 
+    struct BlasInfo {
+        VkAccelerationStructureKHR accelerationStructure;
+        BufferObjects buffer;
+    };
+
+    VkDeviceAddress getBufferDeviceAddress(VkDevice logicalDevice, VkBuffer buffer);
     std::vector<char> readFile(const std::string& filename);
     bool hasValidationLayerSupport();
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -81,51 +88,21 @@ namespace vktools {
     uint64_t getDeviceLocalMemory(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
 
+    vktools::BufferObjects createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags);
+
     template<typename T>
     vktools::BufferObjects createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<T>& data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
-        // todo: call a non-templated function instead that does the bulk of the work
+        BufferObjects bufferObjects = createBuffer(logicalDevice, physicalDevice, data.empty() ? 0 : sizeof(data[0]) * data.size(), usage, allocFlags, memFlags);
 
-        VkBufferCreateInfo createInfo{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                .size = data.empty() ? 0 : sizeof(data[0]) * data.size(),
-                .usage = usage,
-                .sharingMode = VK_SHARING_MODE_EXCLUSIVE
-        };
-
-        VkBuffer buffer;
-        if (vkCreateBuffer(logicalDevice, &createInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create buffer");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(logicalDevice, buffer, &memRequirements);
-
-        VkMemoryAllocateFlagsInfo allocFlagsInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-            .flags = allocFlags
-        };
-
-        VkMemoryAllocateInfo allocInfo{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                .pNext = &allocFlagsInfo,
-                .allocationSize = memRequirements.size,
-                .memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, memFlags)
-        };
-
-        VkDeviceMemory bufferMemory;
-        if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate buffer memory");
-        }
-
-        vkBindBufferMemory(logicalDevice, buffer, bufferMemory, 0);
         void* bufferData;
-        vkMapMemory(logicalDevice, bufferMemory, 0, data.size(), 0, &bufferData);
+        vkMapMemory(logicalDevice, bufferObjects.deviceMemory, 0, data.size(), 0, &bufferData);
         memcpy(bufferData, data.data(), data.size());
-        vkUnmapMemory(logicalDevice, bufferMemory);
+        vkUnmapMemory(logicalDevice, bufferObjects.deviceMemory);
 
-        return {buffer, bufferMemory};
+        return bufferObjects;
     }
 
+    vktools::BlasInfo createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     BufferObjects createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing);
