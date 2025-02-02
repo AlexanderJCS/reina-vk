@@ -120,8 +120,10 @@ void DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoin
             VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
             pipelineLayout,
             0,
-            bindings.size(), &descriptorSet,
-            0, nullptr
+            1,
+            &descriptorSet,
+            0,
+            nullptr
     );
 }
 
