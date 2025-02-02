@@ -11,9 +11,6 @@ struct Binding {
     VkDescriptorType type;
     uint32_t descriptorCount;
     VkShaderStageFlagBits stageFlags;
-    std::optional<VkDescriptorImageInfo> imageInfo;
-    std::optional<VkDescriptorBufferInfo> bufferInfo;
-    std::optional<VkBufferView> bufferView;
 
     [[nodiscard]] VkDescriptorSetLayoutBinding toLayoutBinding() const;
 };
@@ -33,7 +30,8 @@ public:
     DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings);
 
     void bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout);
-    void writeBindings(VkDevice logicalDevice);
+    void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo* imageInfo,
+                      VkDescriptorBufferInfo* bufferInfo, VkBufferView* bufferView, void* next);
 
     void destroy(VkDevice device);
 

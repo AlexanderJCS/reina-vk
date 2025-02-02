@@ -111,7 +111,6 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     );
 
-
     DescriptorSet descriptorSet{
         logicalDevice,
             {
@@ -119,8 +118,13 @@ void run() {
                     0,
                     VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
                     1,
-                    VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-                    VkDescriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL}
+                    VK_SHADER_STAGE_RAYGEN_BIT_KHR
+                },
+                Binding{
+                    1,
+                    VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+                    1,
+                    VK_SHADER_STAGE_RAYGEN_BIT_KHR
                 }
         }
     };
@@ -182,7 +186,16 @@ void run() {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
 
         descriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
-        descriptorSet.writeBindings(logicalDevice);
+
+        VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+        descriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
+
+        VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            .accelerationStructureCount = 1,
+            .pAccelerationStructures = &tlas.accelerationStructure
+        };
+        descriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
 
         // todo: push the push constants
 
