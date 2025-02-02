@@ -62,7 +62,7 @@ namespace vktools {
         VkFence inFlightFence;
     };
 
-    struct BlasInfo {
+    struct AccStructureInfo {
         VkAccelerationStructureKHR accelerationStructure;
         BufferObjects buffer;
     };
@@ -102,7 +102,8 @@ namespace vktools {
         return bufferObjects;
     }
 
-    vktools::BlasInfo createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen);
+    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<VkAccelerationStructureKHR>& blases, VkDeviceSize sbtStride);
+    vktools::AccStructureInfo createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     BufferObjects createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing);

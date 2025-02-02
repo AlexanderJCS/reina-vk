@@ -146,10 +146,15 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    vktools::BlasInfo blas = vktools::createBlas(
+    vktools::AccStructureInfo blas = vktools::createBlas(
             logicalDevice, physicalDevice, commandPool, graphicsQueue,
             verticesBuffer.buffer, indicesBuffer.buffer, vertices.size(),
             triangleIndices.size()
+            );
+
+    vktools::AccStructureInfo tlas = vktools::createTlas(
+            logicalDevice, physicalDevice, commandPool, graphicsQueue,
+            {blas.accelerationStructure}, sbtSpacing.stride
             );
 
     // render
@@ -333,6 +338,7 @@ void run() {
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyAccelerationStructureKHR(logicalDevice, blas.accelerationStructure, nullptr);
+    vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
     descriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
@@ -343,6 +349,8 @@ void run() {
     vkFreeMemory(logicalDevice, indicesBuffer.deviceMemory, nullptr);
     vkDestroyBuffer(logicalDevice, blas.buffer.buffer, nullptr);
     vkFreeMemory(logicalDevice, blas.buffer.deviceMemory, nullptr);
+    vkDestroyBuffer(logicalDevice, tlas.buffer.buffer, nullptr);
+    vkFreeMemory(logicalDevice, tlas.buffer.deviceMemory, nullptr);
     vkDestroyBuffer(logicalDevice, sbtInfo.buffer, nullptr);
     vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
