@@ -9,5 +9,5 @@ layout(location = 0) rayPayloadInEXT vec3 pld;
 void main() {
 //    float dir = normalize(gl_WorldRayDirectionEXT.y) / 2 + 0.5;
 //    pld = mix(vec3(0.1, 0.1, 0.1), vec3(0.5, 0.5, 0.9), dir);
-    pld = vec3(0.1, 0.1, 0.1);
+    pld = vec3(0.1, 0.1, 0.6);
 }

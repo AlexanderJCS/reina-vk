@@ -163,8 +163,13 @@ void run() {
 
     // render
     while (!renderWindow.shouldClose()) {
-        vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence);
+        if (vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+            throw std::runtime_error("Could not wait for fences");
+        }
+
+        if (vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence) != VK_SUCCESS) {
+            throw std::runtime_error("Could not reset fences");
+        }
 
 
         VkCommandBufferBeginInfo beginInfo{
@@ -173,7 +178,9 @@ void run() {
                 .pInheritanceInfo = nullptr  // optional
         };
 
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Could not begin command buffer");
+        }
 
         transitionImage(
                 commandBuffer,
@@ -305,7 +312,9 @@ void run() {
             );
         }
 
-        vkEndCommandBuffer(commandBuffer);
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Could not end command buffer");
+        }
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -323,7 +332,9 @@ void run() {
         submitInfo.signalSemaphoreCount = renderWindow.isMinimized() ? 0 : 1;
         submitInfo.pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : signalSemaphores;
 
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, syncObjects.inFlightFence);
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, syncObjects.inFlightFence) != VK_SUCCESS) {
+            throw std::runtime_error("Could not submit graphics queue");
+        }
 
         // Present the swapchain image
         if (!renderWindow.isMinimized()) {
