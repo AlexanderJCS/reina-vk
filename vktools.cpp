@@ -670,24 +670,29 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
 
     VkDeviceSize sbtStride = sbtBaseAlignment * ((sbtHeaderSize + sbtBaseAlignment - 1) / sbtBaseAlignment);
 
+    // Validate
     if (sbtStride > rtPipelineProperties.maxShaderGroupStride) {
-        throw std::runtime_error("Calculated SBT stride is greater than the max shader group stride");
+        throw std::runtime_error("Stride exceeds device limit");
+    }
+
+    if (sbtStride % rtPipelineProperties.shaderGroupBaseAlignment != 0) {
+        throw std::runtime_error("SBT stride % shader group base alignment != 0");
     }
 
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
-vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing) {
-    std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * 1 /* shader group size - change this when adding more shader groups */);
+vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, int shaderGroups) {
+    std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * shaderGroups);
 
     auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkGetRayTracingShaderGroupHandlesKHR"));
 
-    if (vkGetRayTracingShaderGroupHandlesKHR(logicalDevice, rtPipeline, 0, /* shader group count: */ 1, cpuShaderHandleStorage.size(), cpuShaderHandleStorage.data()) != VK_SUCCESS) {
+    if (vkGetRayTracingShaderGroupHandlesKHR(logicalDevice, rtPipeline, 0, shaderGroups, cpuShaderHandleStorage.size(), cpuShaderHandleStorage.data()) != VK_SUCCESS) {
         throw std::runtime_error("Could not get RT shader group handles");
     }
 
-    auto sbtSize = static_cast<uint32_t>(sbtSpacing.stride * 1 /* shader group count */);
+    auto sbtSize = static_cast<uint32_t>(sbtSpacing.stride * shaderGroups);
     VkBufferCreateInfo sbtBufferCreateInfo{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = sbtSize,
@@ -713,7 +718,7 @@ vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevi
             .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .pNext = &memoryAllocateFlagsInfo,
             .allocationSize = memoryRequirements.size,
-            .memoryTypeIndex = vktools::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+            .memoryTypeIndex = vktools::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
     };
 
     VkDeviceMemory sbtBufferMemory;
@@ -727,7 +732,7 @@ vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevi
     vkMapMemory(logicalDevice, sbtBufferMemory, 0, sbtSize, 0, &sbtMappedMemory);
 
     auto* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
-    for (uint32_t groupIdx = 0; groupIdx < 1 /* num shader groups */; groupIdx++) {
+    for (uint32_t groupIdx = 0; groupIdx < shaderGroups; groupIdx++) {
         memcpy(&sbtPtr[groupIdx * sbtSpacing.stride], &cpuShaderHandleStorage[groupIdx * sbtSpacing.headerSize], sbtSpacing.headerSize);
     }
 
@@ -750,7 +755,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const De
     groups[0] = {
             .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
             .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-            .generalShader = 0,  // index of ray gen, miss, or callable in stages
+            .generalShader = 0,  // index of ray gen
             .closestHitShader = VK_SHADER_UNUSED_KHR,
             .anyHitShader = VK_SHADER_UNUSED_KHR,
             .intersectionShader = VK_SHADER_UNUSED_KHR
@@ -758,16 +763,16 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const De
     groups[1] = {
             .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
             .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-            .generalShader = 1,  // index of ray gen, miss, or callable in stages
+            .generalShader = 1,  // index of ray miss
             .closestHitShader = VK_SHADER_UNUSED_KHR,
             .anyHitShader = VK_SHADER_UNUSED_KHR,
             .intersectionShader = VK_SHADER_UNUSED_KHR
     };
     groups[2] = {
             .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
             .generalShader = VK_SHADER_UNUSED_KHR,
-            .closestHitShader = VK_SHADER_UNUSED_KHR,
+            .closestHitShader = 2,
             .anyHitShader = VK_SHADER_UNUSED_KHR,
             .intersectionShader = VK_SHADER_UNUSED_KHR
     };
@@ -794,7 +799,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const De
         .pStages = stages.data(),
         .groupCount = groups.size(),
         .pGroups = groups.data(),
-        .maxPipelineRayRecursionDepth = 1,
+        .maxPipelineRayRecursionDepth = 31,  // todo: query hardware limitations
         .layout = pipelineLayout
     };
 

@@ -137,7 +137,7 @@ void run() {
     };
 
     vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders);
-    vktools::BufferObjects sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing);
+    vktools::BufferObjects sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, 3);
 
     for (Shader& shader : shaders) {
         shader.destroy(logicalDevice);
