@@ -649,33 +649,33 @@ vktools::SyncObjects vktools::createSyncObjects(VkDevice logicalDevice) {
 }
 
 vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice) {
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtPipelineProperties{
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR
     };
 
     VkPhysicalDeviceProperties2 physicalDeviceProperties{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-        .pNext = &rtPipelineProperties
+        .pNext = &rtProps
     };
 
     vkGetPhysicalDeviceProperties2(physicalDevice, &physicalDeviceProperties);
 
-    VkDeviceSize sbtHeaderSize = rtPipelineProperties.shaderGroupHandleSize;
-    VkDeviceSize sbtBaseAlignment = rtPipelineProperties.shaderGroupBaseAlignment;
-    VkDeviceSize sbtHandleAlignment = rtPipelineProperties.shaderGroupHandleAlignment;
+    VkDeviceSize sbtHeaderSize = rtProps.shaderGroupHandleSize;
+    VkDeviceSize sbtBaseAlignment = rtProps.shaderGroupBaseAlignment;
+    VkDeviceSize sbtHandleAlignment = rtProps.shaderGroupHandleAlignment;
 
     if (sbtBaseAlignment % sbtHandleAlignment != 0) {
         throw std::runtime_error("SBT base alignment is not a multiple of SBT handle alignment");
     }
 
-    VkDeviceSize sbtStride = sbtBaseAlignment * ((sbtHeaderSize + sbtBaseAlignment - 1) / sbtBaseAlignment);
+    VkDeviceSize sbtStride = (rtProps.shaderGroupHandleSize + rtProps.shaderGroupBaseAlignment - 1) & ~(rtProps.shaderGroupBaseAlignment - 1);
 
     // Validate
-    if (sbtStride > rtPipelineProperties.maxShaderGroupStride) {
+    if (sbtStride > rtProps.maxShaderGroupStride) {
         throw std::runtime_error("Stride exceeds device limit");
     }
 
-    if (sbtStride % rtPipelineProperties.shaderGroupBaseAlignment != 0) {
+    if (sbtStride % rtProps.shaderGroupBaseAlignment != 0) {
         throw std::runtime_error("SBT stride % shader group base alignment != 0");
     }
 
