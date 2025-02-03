@@ -214,10 +214,12 @@ void run() {
         sbtRayGenRegion.size = sbtSpacing.stride;
 
         sbtMissRegion = sbtRayGenRegion;
-        sbtMissRegion.size = 0;  // empty
+        sbtMissRegion.deviceAddress = sbtStartAddress + sbtSpacing.stride;
+        sbtMissRegion.size = sbtSpacing.stride;  // empty
 
         sbtHitRegion = sbtRayGenRegion;
-        sbtHitRegion.size = 0;
+        sbtHitRegion.deviceAddress = sbtStartAddress + 2 * sbtSpacing.stride;
+        sbtHitRegion.size = sbtSpacing.stride * 1 /* todo: since there's only one hit shader */;
 
         sbtCallableRegion = sbtRayGenRegion;
         sbtCallableRegion.size = 0;
