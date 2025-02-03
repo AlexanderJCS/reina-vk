@@ -86,10 +86,11 @@ void run() {
 
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
     std::vector<float> vertices{
-            0.5, 0.5, -1,
-            1, 0.5, -1,
-            0.5, 1, -1
+            -0.5, -0.5, -1,
+            0.5, -0.5, -1,
+            0.0,  0.5, -1
     };
+
     std::vector<int> triangleIndices{
             0, 1, 2
     };

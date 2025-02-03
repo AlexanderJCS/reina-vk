@@ -24,7 +24,7 @@ void main() {
     }
 
     const vec3 cameraOrigin = vec3(0, 0, 0);
-    const float fovVerticalSlope = 1.0 / 5.0;
+    const float fovVerticalSlope = 1.0;
     vec3 rayDirection = normalize(vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0));
     vec3 rayOrigin = vec3(0);
 
