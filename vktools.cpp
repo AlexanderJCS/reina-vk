@@ -345,10 +345,10 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     // Create the instance buffer
     BufferObjects instanceBufferObjects = createBuffer(
             logicalDevice, physicalDevice,
-            instances.size() * sizeof(VkAccelerationStructureInstanceKHR),
+            instances,
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
     );
 
     VkAccelerationStructureGeometryInstancesDataKHR instancesData{
@@ -515,6 +515,7 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
         .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
         .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+        .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
         .geometryCount = 1,
         .pGeometries = &geometry
     };

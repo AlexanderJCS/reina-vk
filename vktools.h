@@ -96,7 +96,7 @@ namespace vktools {
 
         void* bufferData;
         vkMapMemory(logicalDevice, bufferObjects.deviceMemory, 0, data.size(), 0, &bufferData);
-        memcpy(bufferData, data.data(), data.size());
+        memcpy(bufferData, data.data(), data.size() * sizeof(T));
         vkUnmapMemory(logicalDevice, bufferObjects.deviceMemory);
 
         return bufferObjects;
