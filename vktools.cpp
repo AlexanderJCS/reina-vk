@@ -335,7 +335,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
                 .transform = identity, // VkTransformMatrixKHR
                 .instanceCustomIndex = 0,  // material id
                 .mask = 0xFF,
-                .instanceShaderBindingTableRecordOffset = static_cast<uint32_t>(sbtStride),
+                .instanceShaderBindingTableRecordOffset = 0,
                 .flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR,
                 .accelerationStructureReference = blasAddress
         };
@@ -361,7 +361,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
             .geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR,
             .geometry = {.instances = instancesData},
-            .flags = VK_GEOMETRY_OPAQUE_BIT_KHR // Assume instances are opaque
+            .flags = VK_GEOMETRY_OPAQUE_BIT_KHR
     };
 
     // Query build sizes
@@ -490,7 +490,7 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
         .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
         .vertexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, verticesBuffer)},
-        .vertexStride = 3 * sizeof(float),  // I think this is correct
+        .vertexStride = 3 * sizeof(float),
         .maxVertex = static_cast<uint32_t>(verticesLen) - 1,
         .indexType = VK_INDEX_TYPE_UINT32,
         .indexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, indicesBuffer)},
@@ -498,10 +498,10 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
     };
 
     VkAccelerationStructureGeometryKHR geometry{
-            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
-            .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
-            .geometry = {.triangles = triangles},
-            .flags = VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR  // todo: do i need this flag?
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+        .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
+        .geometry = {.triangles = triangles},
+        .flags = VK_GEOMETRY_OPAQUE_BIT_KHR
     };
 
     VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{
