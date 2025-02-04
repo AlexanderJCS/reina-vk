@@ -12,11 +12,9 @@ void main() {
     const ivec2 resolution = imageSize(image);
     const ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
 
-    const vec2 randomPixelCenter = vec2(pixel) + vec2(0.5);  // todo: add random gaussian noise
-
     const vec2 screenUV = vec2(
-        (2.0 * randomPixelCenter.x - resolution.x) / resolution.y,
-        -(2.0 * randomPixelCenter.y - resolution.y) / resolution.y  // Flip y-axis
+        2.0 * (float(pixel.x) + 0.5 - 0.5 * resolution.x) / resolution.y,
+        -(2.0 * (float(pixel.y) + 0.5 - 0.5 * resolution.y) / resolution.y)
     );
 
     if (pixel.x > resolution.x || pixel.y > resolution.y) {
