@@ -2,11 +2,12 @@
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_debug_printf : require
 
 layout(binding = 0, set = 0, rgba32f) uniform image2D image;
 layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;
 
-layout(location = 0) rayPayloadEXT vec3 pld;
+layout(location = 0) rayPayloadEXT vec4 pld;
 
 void main() {
     const ivec2 resolution = imageSize(image);
@@ -26,6 +27,8 @@ void main() {
     vec3 rayDirection = normalize(vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0));
     vec3 rayOrigin = vec3(0);
 
+    pld = vec4(0);
+
     traceRayEXT(
         tlas,                  // Top-level acceleration structure
         gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
@@ -40,5 +43,5 @@ void main() {
         0                      // Location of payload
     );
 
-    imageStore(image, pixel, vec4(pld, 1));
+    imageStore(image, pixel, pld);
 }

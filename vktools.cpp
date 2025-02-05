@@ -486,12 +486,13 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 }
 
 vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen) {
+    uint32_t vertexCount = static_cast<uint32_t>(verticesLen) / 3;
     VkAccelerationStructureGeometryTrianglesDataKHR triangles{
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
         .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
         .vertexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, verticesBuffer)},
         .vertexStride = 3 * sizeof(float),
-        .maxVertex = static_cast<uint32_t>(verticesLen) - 1,
+        .maxVertex = vertexCount - 1,
         .indexType = VK_INDEX_TYPE_UINT32,
         .indexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, indicesBuffer)},
         // todo: add transform with .transformData
@@ -712,7 +713,7 @@ vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevi
     VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{
             .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
             .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,  // needed for buffers with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT when VkPhysicalDeviceBufferDeviceAddressFeatures::bufferDeviceAddress is enabled
-            .deviceMask = 0
+            .deviceMask = 1
     };
 
     VkMemoryAllocateInfo memoryAllocateInfo{
