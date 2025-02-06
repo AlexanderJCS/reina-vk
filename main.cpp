@@ -128,6 +128,18 @@ void run() {
                     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
                     1,
                     VK_SHADER_STAGE_RAYGEN_BIT_KHR
+                },
+                Binding{
+                    2,
+                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    1,
+                    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+                },
+                Binding{
+                    3,
+                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    1,
+                    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
                 }
         }
     };
@@ -206,6 +218,22 @@ void run() {
             .pAccelerationStructures = &tlas.accelerationStructure
         };
         descriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
+
+        VkDescriptorBufferInfo verticesInfo{
+            .buffer = verticesBuffer.buffer,
+            .offset = 0,
+            .range = VK_WHOLE_SIZE
+        };
+
+        descriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
+
+        VkDescriptorBufferInfo indicesInfo{
+                .buffer = indicesBuffer.buffer,
+                .offset = 0,
+                .range = VK_WHOLE_SIZE
+        };
+
+        descriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
         // todo: push the push constants
 

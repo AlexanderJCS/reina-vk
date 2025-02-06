@@ -10,7 +10,7 @@ VkDescriptorSetLayoutBinding Binding::toLayoutBinding() const {
         .binding = bindingPoint,
         .descriptorType = type,
         .descriptorCount = descriptorCount,
-        .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+        .stageFlags = stageFlags,
         .pImmutableSamplers = nullptr
     };
 }

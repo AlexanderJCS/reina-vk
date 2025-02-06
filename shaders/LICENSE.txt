@@ -1,0 +1,8 @@
+Some code in this directory is modified from vk_mini_path_tracer: https://nvpro-samples.github.io/vk_mini_path_tracer/extras.html#raytracingpipelines/onematerial.
+If there is a comment in the beginning of the file saying (c) NVIDIA Corporation, then the file is modified from vk_mini_path_tracer.
+Modifications include:
+* Changing the number of ray bounces
+* Changing the number of ray samples
+* Removing common.h polyglot file
+* Changing the vertices in shaderHitCommon.h.glsl to a vec4
+* Renaming files
