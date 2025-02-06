@@ -53,15 +53,15 @@ void main()
     // This scene uses a right-handed coordinate system like the OBJ file format, where the
     // +x axis points right, the +y axis points up, and the -z axis points into the screen.
     // The camera is located at (-0.001, 0, 53).
-    const vec3 cameraOrigin = vec3(-0.001, 0.0, 53.0);
+    const vec3 cameraOrigin = vec3(0);
     // Define the field of view by the vertical slope of the topmost rays:
-    const float fovVerticalSlope = 1.0 / 5.0;
+    const float fovVerticalSlope = 1.0 / 1;
 
     // The sum of the colors of all of the samples.
     vec3 summedPixelColor = vec3(0.0);
 
     // Limit the kernel to trace at most 64 samples.
-    const int NUM_SAMPLES = 1;
+    const int NUM_SAMPLES = 64;
     for(int sampleIdx = 0; sampleIdx < NUM_SAMPLES; sampleIdx++)
     {
         // Rays always originate at the camera for now. In the future, they'll
@@ -113,7 +113,22 @@ void main()
             // an accumulated color of (0, 0, 0)).
             summedPixelColor += accumulatedRayColor;
 
-            break;
+            if(pld.rayHitSky)
+            {
+                // Done tracing this ray.
+                // Sum this with the pixel's other samples.
+                // (Note that we treat a ray that didn't find a light source as if it had
+                // an accumulated color of (0, 0, 0)).
+                summedPixelColor += accumulatedRayColor;
+
+                break;
+            }
+            else
+            {
+                // Start a new segment
+                rayOrigin    = pld.rayOrigin;
+                rayDirection = pld.rayDirection;
+            }
         }
     }
 
