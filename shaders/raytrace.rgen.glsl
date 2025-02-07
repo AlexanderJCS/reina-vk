@@ -42,8 +42,8 @@ void main() {
     // State of the random number generator with an initial seed
     pld.rngState = uint((pushConstants.sampleBatch * resolution.y + pixel.y) * resolution.x + pixel.x);
 
-    const vec3 cameraOrigin = vec3(0);
-    const float fovVerticalSlope = 1.0 / 1;
+    const vec3 cameraOrigin = vec3(0, 1, 10);
+    const float fovVerticalSlope = 1.0 / 5;
 
     vec3 summedPixelColor = vec3(0.0);
 

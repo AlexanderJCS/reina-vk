@@ -88,20 +88,28 @@ void run() {
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    std::vector<float> vertices{
-            -0.5, -0.5, -1,
-            0.5, -0.5, -1,
-            0.0,  0.5, -1
-    };
 
-    std::vector<int> triangleIndices{
-            0, 1, 2
-    };
+    tinyobj::ObjReader reader;
+    reader.ParseFromFile("../models/cornell_box.obj");
+
+    if (!reader.Valid()) {
+        throw std::runtime_error("Error reading OBJ:\n" + reader.Error());
+    }
+
+    std::vector<tinyobj::real_t> objVertices = reader.GetAttrib().GetVertices();
+    const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
+    if (shapes.size() != 1) {
+        throw std::runtime_error("Several shapes to parse; need only one");
+    }
+    std::vector<uint32_t> objIndices(shapes[0].mesh.indices.size());
+    for (const tinyobj::index_t& index : shapes[0].mesh.indices) {
+        objIndices.push_back(index.vertex_index);
+    }
 
     vktools::BufferObjects verticesBuffer = vktools::createBuffer(
             logicalDevice,
             physicalDevice,
-            vertices,
+            objVertices,
             usage,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -109,7 +117,7 @@ void run() {
     vktools::BufferObjects indicesBuffer = vktools::createBuffer(
             logicalDevice,
             physicalDevice,
-            triangleIndices,
+            objIndices,
             usage,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -168,8 +176,8 @@ void run() {
 
     vktools::AccStructureInfo blas = vktools::createBlas(
             logicalDevice, physicalDevice, commandPool, graphicsQueue,
-            verticesBuffer.buffer, indicesBuffer.buffer, vertices.size(),
-            triangleIndices.size()
+            verticesBuffer.buffer, indicesBuffer.buffer, objVertices.size(),
+            objIndices.size()
             );
 
     vktools::AccStructureInfo tlas = vktools::createTlas(
