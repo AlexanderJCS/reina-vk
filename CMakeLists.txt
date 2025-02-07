@@ -15,7 +15,10 @@ add_executable(raygun_vk main.cpp
         Shader.cpp
         Shader.h
         DescriptorSet.cpp
-        DescriptorSet.h)
+        DescriptorSet.h
+        polyglot/common.h
+        PushConstants.cpp
+        PushConstants.h)
 
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 

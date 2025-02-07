@@ -743,7 +743,7 @@ vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevi
     return {sbtBuffer, sbtBufferMemory};
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders, const PushConstants& pushConstants) {
     if (shaders.size() != 3) {
         throw std::runtime_error("Must have 3 shaders in the order: raygen, miss, closest hit");
     }
@@ -786,8 +786,8 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const De
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
         .pSetLayouts = &descriptorLayout,
-        .pushConstantRangeCount = 0,  // todo: add push constants
-        .pPushConstantRanges = nullptr
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &pushConstants.getRange()
     };
 
     VkPipelineLayout pipelineLayout;
@@ -801,7 +801,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const De
         .pStages = stages.data(),
         .groupCount = groups.size(),
         .pGroups = groups.data(),
-        .maxPipelineRayRecursionDepth = 31,  // todo: query hardware limitations
+        .maxPipelineRayRecursionDepth = 1,
         .layout = pipelineLayout
     };
 

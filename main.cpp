@@ -16,6 +16,7 @@
 #include "consts.h"
 #include "Window.h"
 #include "DescriptorSet.h"
+#include "PushConstants.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -144,6 +145,8 @@ void run() {
         }
     };
 
+    PushConstants pushConstants{PushConstantsStruct{0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<Shader> shaders = {
             Shader(logicalDevice, "../shaders/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
@@ -151,7 +154,7 @@ void run() {
             Shader(logicalDevice, "../shaders/raytrace.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
     };
 
-    vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders);
+    vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders, pushConstants);
     vktools::BufferObjects sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, 3);
 
     for (Shader& shader : shaders) {
@@ -159,8 +162,6 @@ void run() {
     }
 
     vktools::SyncObjects syncObjects = vktools::createSyncObjects(logicalDevice);
-
-    // future: create render pass, frame buffer, and (maybe?) graphics pipeline for imgui stuff
 
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
@@ -235,7 +236,8 @@ void run() {
 
         descriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
-        // todo: push the push constants
+        pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
+        pushConstants.getPushConstants().sampleBatch++;
 
         VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
         VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtInfo.buffer);

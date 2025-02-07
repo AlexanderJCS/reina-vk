@@ -5,6 +5,7 @@
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_GOOGLE_include_directive : require
 #include "shaderCommon.h.glsl"
+#include "../polyglot/common.h"
 
 // Binding BINDING_IMAGEDATA in set 0 is a storage image with four 32-bit floating-point channels,
 // defined using a uniform image2D variable.
@@ -14,10 +15,13 @@ layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;
 // Ray payloads are used to send information between shaders.
 layout(location = 0) rayPayloadEXT PassableInfo pld;
 
+layout (push_constant) uniform PushConsts {
+    PushConstantsStruct pushConstants;
+};
+
 // Uses the Box-Muller transform to return a normally distributed (centered
 // at 0, standard deviation 1) 2D point.
-vec2 randomGaussian(inout uint rngState)
-{
+vec2 randomGaussian(inout uint rngState) {
     // Almost uniform in (0, 1] - make sure the value is never 0:
     const float u1    = max(1e-38, stepAndOutputRNGFloat(rngState));
     const float u2    = stepAndOutputRNGFloat(rngState);  // In [0, 1]
@@ -26,71 +30,41 @@ vec2 randomGaussian(inout uint rngState)
     return r * vec2(cos(theta), sin(theta));
 }
 
-void main()
-{
-    // The resolution of the image, which is the same as the launch size:
+void main() {
     const ivec2 resolution = imageSize(storageImage);
-
-    // Get the coordinates of the pixel for this invocation:
-    //
-    // .-------.-> x
-    // |       |
-    // |       |
-    // '-------'
-    // v
-    // y
     const ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
 
-    // If the pixel is outside of the image, don't do anything:
-    if((pixel.x >= resolution.x) || (pixel.y >= resolution.y))
-    {
+    // todo: check if this is needed
+    if ((pixel.x >= resolution.x) || (pixel.y >= resolution.y)) {
         return;
     }
 
-    // State of the random number generator with an initial seed.
-    pld.rngState = uint((1 * resolution.y + pixel.y) * resolution.x + pixel.x);
+    // State of the random number generator with an initial seed
+    pld.rngState = uint((pushConstants.sampleBatch * resolution.y + pixel.y) * resolution.x + pixel.x);
 
-    // This scene uses a right-handed coordinate system like the OBJ file format, where the
-    // +x axis points right, the +y axis points up, and the -z axis points into the screen.
-    // The camera is located at (-0.001, 0, 53).
     const vec3 cameraOrigin = vec3(0);
-    // Define the field of view by the vertical slope of the topmost rays:
     const float fovVerticalSlope = 1.0 / 1;
 
-    // The sum of the colors of all of the samples.
     vec3 summedPixelColor = vec3(0.0);
 
-    // Limit the kernel to trace at most 64 samples.
     const int NUM_SAMPLES = 64;
-    for(int sampleIdx = 0; sampleIdx < NUM_SAMPLES; sampleIdx++)
-    {
-        // Rays always originate at the camera for now. In the future, they'll
-        // bounce around the scene.
+    for (int sampleIdx = 0; sampleIdx < NUM_SAMPLES; sampleIdx++) {
         vec3 rayOrigin = cameraOrigin;
-        // Compute the direction of the ray for this pixel. To do this, we first
-        // transform the screen coordinates to look like this, where a is the
-        // aspect ratio (width/height) of the screen:
-        //           1
-        //    .------+------.
-        //    |      |      |
-        // -a + ---- 0 ---- + a
-        //    |      |      |
-        //    '------+------'
-        //          -1
-        // Use a Gaussian with standard deviation 0.375 centered at the center of
-        // the pixel:
+
         const vec2 randomPixelCenter = vec2(pixel) + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
-        const vec2 screenUV          = vec2((2.0 * randomPixelCenter.x - resolution.x) / resolution.y,    //
-        -(2.0 * randomPixelCenter.y - resolution.y) / resolution.y);  // Flip the y axis
+        const vec2 screenUV = vec2(
+            (2.0 * randomPixelCenter.x - resolution.x) / resolution.y,
+            (2.0 * randomPixelCenter.y - resolution.y) / resolution.y * -1
+        );
+
         // Create a ray direction:
         vec3 rayDirection = vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0);
-        rayDirection      = normalize(rayDirection);
+        rayDirection = normalize(rayDirection);
 
         vec3 accumulatedRayColor = vec3(1.0);  // The amount of light that made it to the end of the current ray.
 
         // Limit the kernel to trace at most 32 segments.
-        for(int tracedSegments = 0; tracedSegments < 32; tracedSegments++)
-        {
+        for(int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
             // Trace the ray into the scene and get data back!
             traceRayEXT(tlas,                  // Top-level acceleration structure
                         gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
@@ -104,36 +78,25 @@ void main()
                         10000.0,               // Maximum t-value
                         0);                    // Location of payload
 
-            // Compute the amount of light that returns to this sample from the ray
             accumulatedRayColor *= pld.color;
-
-            // Done tracing this ray.
-            // Sum this with the pixel's other samples.
-            // (Note that we treat a ray that didn't find a light source as if it had
-            // an accumulated color of (0, 0, 0)).
             summedPixelColor += accumulatedRayColor;
 
-            if(pld.rayHitSky)
-            {
-                // Done tracing this ray.
-                // Sum this with the pixel's other samples.
-                // (Note that we treat a ray that didn't find a light source as if it had
-                // an accumulated color of (0, 0, 0)).
+            if(pld.rayHitSky) {
                 summedPixelColor += accumulatedRayColor;
-
                 break;
             }
-            else
-            {
-                // Start a new segment
-                rayOrigin    = pld.rayOrigin;
-                rayDirection = pld.rayDirection;
-            }
+
+            rayOrigin = pld.rayOrigin;
+            rayDirection = pld.rayDirection;
         }
     }
 
-    // Blend with the averaged image in the buffer:
-    vec3 averagePixelColor = summedPixelColor / float(NUM_SAMPLES);
-    // Set the color of the pixel `pixel` in the storage image to `averagePixelColor`:
-    imageStore(storageImage, pixel, vec4(averagePixelColor, 0.0));
+    vec3 finalColor = summedPixelColor / float(NUM_SAMPLES);
+
+    if (pushConstants.sampleBatch > 0) {
+        vec3 prevColor = imageLoad(storageImage, pixel).rgb;
+        finalColor = mix(prevColor, finalColor, 1.0 / float(pushConstants.sampleBatch + 1));
+    }
+
+    imageStore(storageImage, pixel, vec4(finalColor, 0.0));
 }
