@@ -204,7 +204,6 @@ void run() {
             throw std::runtime_error("Could not begin command buffer");
         }
 
-        // todo: do i need this transition?
         transitionImage(
                 commandBuffer,
                 rtImageObjects.image,
@@ -283,6 +282,15 @@ void run() {
         );
 
         // everything below here is swapchain stuff
+
+        // transition to the same and synchronize
+        transitionImage(
+                commandBuffer,
+                rtImageObjects.image,
+                VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+                VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+        );
 
         uint32_t imageIndex = -1;
         if (!renderWindow.isMinimized()) {

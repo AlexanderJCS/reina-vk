@@ -98,5 +98,5 @@ void main() {
         finalColor = mix(prevColor, finalColor, 1.0 / float(pushConstants.sampleBatch + 1));
     }
 
-    imageStore(storageImage, pixel, vec4(finalColor, 0.0));
+    imageStore(storageImage, pixel, vec4(finalColor, 1));
 }
