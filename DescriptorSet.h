@@ -17,8 +17,6 @@ struct Binding {
 
 class DescriptorSet {
 private:
-    static int idxCounter;
-    int setIdx;
     std::vector<Binding> bindings;
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
     VkDescriptorPool pool = VK_NULL_HANDLE;

@@ -3,8 +3,6 @@
 #include <stdexcept>
 #include <iostream>
 
-int DescriptorSet::idxCounter = 0;
-
 VkDescriptorSetLayoutBinding Binding::toLayoutBinding() const {
     return VkDescriptorSetLayoutBinding{
         .binding = bindingPoint,
@@ -16,7 +14,7 @@ VkDescriptorSetLayoutBinding Binding::toLayoutBinding() const {
 }
 
 DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings)
-        : setIdx(idxCounter++), bindings(bindings) {
+        : bindings(bindings) {
     if (hasDuplicateBindingPoints(bindings)) {
         throw std::runtime_error("Cannot initialize descriptor set: duplicate binding points found");
     }
