@@ -115,7 +115,7 @@ VkDescriptorSet DescriptorSet::getDescriptorSet() const {
 void DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout) {
     vkCmdBindDescriptorSets(
             cmdBuffer,
-            VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+            bindPoint,
             pipelineLayout,
             0,
             1,

@@ -204,6 +204,7 @@ void run() {
             throw std::runtime_error("Could not begin command buffer");
         }
 
+        // todo: do i need this transition?
         transitionImage(
                 commandBuffer,
                 rtImageObjects.image,
@@ -294,16 +295,6 @@ void run() {
             }
         }
 
-        // Transition rayTracingImage to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-        transitionImage(
-                commandBuffer,
-                rtImageObjects.image,
-                VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-                VK_PIPELINE_STAGE_TRANSFER_BIT
-        );
-
         if (!renderWindow.isMinimized()) {
             VkClearValue clearColor = {{0, 0, 0, 1}};
 
@@ -320,6 +311,11 @@ void run() {
             };
 
             vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            VkDescriptorImageInfo readImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+
+            rasterizationDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipelineLayout);
+            rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &readImageInfo, nullptr, nullptr, nullptr);
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipeline);
 
@@ -339,7 +335,7 @@ void run() {
             };
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+            vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffer);
         }

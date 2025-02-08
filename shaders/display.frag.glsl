@@ -2,6 +2,8 @@
 
 layout(location = 0) out vec4 fragColor;
 
+layout(binding = 0, set = 0, rgba32f) uniform image2D hdrImage;
+
 void main() {
-    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    fragColor = imageLoad(hdrImage, ivec2(0, 0));
 }
