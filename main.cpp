@@ -123,33 +123,13 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     );
 
-    DescriptorSet descriptorSet{
+    DescriptorSet rtDescriptorSet{
         logicalDevice,
             {
-                Binding{
-                    0,
-                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                    1,
-                    VK_SHADER_STAGE_RAYGEN_BIT_KHR
-                },
-                Binding{
-                    1,
-                    VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
-                    1,
-                    VK_SHADER_STAGE_RAYGEN_BIT_KHR
-                },
-                Binding{
-                    2,
-                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    1,
-                    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
-                },
-                Binding{
-                    3,
-                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    1,
-                    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
-                }
+                Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+                Binding{1,VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,1,VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+                Binding{2,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,1,VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                Binding{3,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,1,VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
         }
     };
 
@@ -162,12 +142,28 @@ void run() {
             Shader(logicalDevice, "../shaders/raytrace.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
     };
 
-    vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, descriptorSet, shaders, pushConstants);
+    vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
     vktools::BufferObjects sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, 3);
 
     for (Shader& shader : shaders) {
         shader.destroy(logicalDevice);
     }
+
+    DescriptorSet rasterizationDescriptorSet{
+        logicalDevice,
+        {
+            Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT}
+        }
+    };
+
+    Shader vertexShader = Shader(logicalDevice, "../shaders/display.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    Shader fragmentShader = Shader(logicalDevice, "../shaders/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    VkRenderPass renderPass = vktools::createRenderPass(logicalDevice, swapchainObjects.swapchainImageFormat);
+    vktools::PipelineInfo rasterizationPipelineInfo = vktools::createRasterizationPipeline(logicalDevice, rasterizationDescriptorSet, renderPass, vertexShader, fragmentShader);
+
+    vertexShader.destroy(logicalDevice);
+    fragmentShader.destroy(logicalDevice);
 
     vktools::SyncObjects syncObjects = vktools::createSyncObjects(logicalDevice);
 
@@ -216,17 +212,17 @@ void run() {
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
 
-        descriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
+        rtDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
 
         VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-        descriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
+        rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
 
         VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
             .accelerationStructureCount = 1,
             .pAccelerationStructures = &tlas.accelerationStructure
         };
-        descriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
+        rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
 
         VkDescriptorBufferInfo verticesInfo{
             .buffer = verticesBuffer.buffer,
@@ -234,15 +230,15 @@ void run() {
             .range = VK_WHOLE_SIZE
         };
 
-        descriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
+        rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
 
         VkDescriptorBufferInfo indicesInfo{
-                .buffer = indicesBuffer.buffer,
-                .offset = 0,
-                .range = VK_WHOLE_SIZE
+            .buffer = indicesBuffer.buffer,
+            .offset = 0,
+            .range = VK_WHOLE_SIZE
         };
 
-        descriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
+        rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
         pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
@@ -404,9 +400,11 @@ void run() {
             vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
+    vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, blas.accelerationStructure, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
-    descriptorSet.destroy(logicalDevice);
+    rtDescriptorSet.destroy(logicalDevice);
+    rasterizationDescriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
@@ -421,7 +419,9 @@ void run() {
     vkDestroyBuffer(logicalDevice, sbtInfo.buffer, nullptr);
     vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, rasterizationPipelineInfo.pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, rasterizationPipelineInfo.pipelineLayout, nullptr);
     vkDestroyImageView(logicalDevice, rtImageView, nullptr);
     vkDestroyImage(logicalDevice, rtImageObjects.image, nullptr);
     vkFreeMemory(logicalDevice, rtImageObjects.imageMemory, nullptr);

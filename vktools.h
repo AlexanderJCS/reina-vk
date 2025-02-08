@@ -103,6 +103,10 @@ namespace vktools {
         return bufferObjects;
     }
 
+    std::vector<VkFramebuffer> createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews);
+    PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, VkRenderPass renderPass, const Shader& vertexShader, const Shader& fragmentShader);
+    VkRenderPass createRenderPass(VkDevice logicalDevice, VkFormat swapchainImageFormat);
+
     vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<VkAccelerationStructureKHR>& blases, VkDeviceSize sbtStride);
     vktools::AccStructureInfo createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
