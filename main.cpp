@@ -162,6 +162,8 @@ void run() {
     VkRenderPass renderPass = vktools::createRenderPass(logicalDevice, swapchainObjects.swapchainImageFormat);
     vktools::PipelineInfo rasterizationPipelineInfo = vktools::createRasterizationPipeline(logicalDevice, rasterizationDescriptorSet, renderPass, vertexShader, fragmentShader);
 
+    std::vector<VkFramebuffer> framebuffers = vktools::createSwapchainFramebuffers(logicalDevice, renderPass, swapchainObjects.swapchainExtent, swapchainImageViews);
+
     vertexShader.destroy(logicalDevice);
     fragmentShader.destroy(logicalDevice);
 
@@ -302,53 +304,44 @@ void run() {
                 VK_PIPELINE_STAGE_TRANSFER_BIT
         );
 
-        // Transition swapchain image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
         if (!renderWindow.isMinimized()) {
-            transitionImage(
-                    commandBuffer,
-                    swapchainObjects.swapchainImages[imageIndex],
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    static_cast<VkAccessFlagBits>(0),
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT
-            );
-        }
+            VkClearValue clearColor = {{0, 0, 0, 1}};
 
-        // Define the blit region
-        if (!renderWindow.isMinimized()) {
-            VkImageBlit blitRegion{};
-            blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            blitRegion.srcSubresource.mipLevel = 0;
-            blitRegion.srcSubresource.baseArrayLayer = 0;
-            blitRegion.srcSubresource.layerCount = 1;
-            blitRegion.srcOffsets[0] = {0, 0, 0}; // Start at the top-left
-            blitRegion.srcOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the source image dimensions
+            VkRenderPassBeginInfo renderPassBeginInfo{
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .renderPass = renderPass,
+                .framebuffer = framebuffers[imageIndex],
+                .renderArea = {
+                        .offset = {0, 0},
+                        .extent = swapchainObjects.swapchainExtent
+                },
+                .clearValueCount = 1,
+                .pClearValues = &clearColor
+            };
 
-            blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            blitRegion.dstSubresource.mipLevel = 0;
-            blitRegion.dstSubresource.baseArrayLayer = 0;
-            blitRegion.dstSubresource.layerCount = 1;
-            blitRegion.dstOffsets[0] = {0, 0, 0}; // Start at the top-left
-            blitRegion.dstOffsets[1] = {static_cast<int32_t>(swapchainObjects.swapchainExtent.width), static_cast<int32_t>(swapchainObjects.swapchainExtent.height), 1}; // Match the destination image dimensions
+            vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBlitImage(
-                    commandBuffer,
-                    rtImageObjects.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    swapchainObjects.swapchainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    1, &blitRegion,
-                    VK_FILTER_LINEAR // Use linear filtering for HDR downsampling
-            );
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipeline);
 
-            // Transition the destination image back to its original layout (e.g., for presentation)
-            transitionImage(
-                    commandBuffer,
-                    swapchainObjects.swapchainImages[imageIndex],
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                    VK_ACCESS_TRANSFER_WRITE_BIT, static_cast<VkAccessFlagBits>(0),
-                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
-            );
+            VkViewport viewport{
+                .x = 0,
+                .y = 0,
+                .width = static_cast<float>(swapchainObjects.swapchainExtent.width),
+                .height = static_cast<float>(swapchainObjects.swapchainExtent.height),
+                .minDepth = 0,
+                .maxDepth = 1
+            };
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+            VkRect2D scissor{
+                .offset = {0, 0},
+                .extent = swapchainObjects.swapchainExtent
+            };
+            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+            vkCmdEndRenderPass(commandBuffer);
         }
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -398,6 +391,10 @@ void run() {
     // clean up
     auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
+
+    for (VkFramebuffer framebuffer : framebuffers) {
+        vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+    }
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);

@@ -311,7 +311,7 @@ vktools::BufferObjects vktools::createBuffer(VkDevice logicalDevice, VkPhysicalD
 }
 
 std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews) {
-    std::vector<VkFramebuffer> swapchainFramebuffers;
+    std::vector<VkFramebuffer> swapchainFramebuffers(swapchainImageViews.size());
 
     for (size_t i = 0; i < swapchainImageViews.size(); i++) {
         // todo: do i need to create the attachments array
