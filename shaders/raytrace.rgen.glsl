@@ -1,5 +1,3 @@
-// Copyright 2020 NVIDIA Corporation
-// SPDX-License-Identifier: Apache-2.0
 #version 460
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_scalar_block_layout : require

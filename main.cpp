@@ -193,6 +193,8 @@ void run() {
             {blas.accelerationStructure}, sbtSpacing.stride
             );
 
+    bool firstFrame = true;
+
     // render
     while (!renderWindow.shouldClose()) {
         if (vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
@@ -217,9 +219,12 @@ void run() {
         transitionImage(
                 commandBuffer,
                 rtImageObjects.image,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-                static_cast<VkAccessFlagBits>(0), VK_ACCESS_SHADER_WRITE_BIT,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
+                firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_GENERAL,
+                VK_IMAGE_LAYOUT_GENERAL,
+                firstFrame ? static_cast<VkAccessFlagBits>(0) : VK_ACCESS_SHADER_READ_BIT,
+                VK_ACCESS_SHADER_WRITE_BIT,
+                firstFrame ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
         );
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
@@ -398,6 +403,7 @@ void run() {
         }
 
         glfwPollEvents();
+        firstFrame = false;
     }
 
     vkDeviceWaitIdle(logicalDevice);
