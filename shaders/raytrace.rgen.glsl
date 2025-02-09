@@ -34,7 +34,6 @@ void main() {
     const ivec2 resolution = imageSize(storageImage);
     const ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
 
-    // todo: check if this is needed
     if ((pixel.x >= resolution.x) || (pixel.y >= resolution.y)) {
         return;
     }
@@ -79,9 +78,8 @@ void main() {
                         0);                    // Location of payload
 
             accumulatedRayColor *= pld.color;
-            summedPixelColor += accumulatedRayColor;
 
-            if(pld.rayHitSky) {
+            if (pld.rayHitSky) {
                 summedPixelColor += accumulatedRayColor;
                 break;
             }

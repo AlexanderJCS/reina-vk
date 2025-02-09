@@ -660,7 +660,7 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
         .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
         .vertexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, verticesBuffer)},
-        .vertexStride = 3 * sizeof(float),
+        .vertexStride = 4 * sizeof(float),
         .maxVertex = vertexCount - 1,
         .indexType = VK_INDEX_TYPE_UINT32,
         .indexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, indicesBuffer)},

@@ -96,7 +96,17 @@ void run() {
         throw std::runtime_error("Error reading OBJ:\n" + reader.Error());
     }
 
-    std::vector<tinyobj::real_t> objVertices = reader.GetAttrib().GetVertices();
+    std::vector<tinyobj::real_t> tinyobjVertices = reader.GetAttrib().GetVertices();
+    // convert from 3 floats per vertex to 4 floats per vertex. std::round removes any potential floating-point inaccuracies
+    std::vector<float> objVertices(static_cast<int>(std::round(static_cast<double>(tinyobjVertices.size()) * 4.0/3)));
+
+    for (int vertex = 0; vertex < tinyobjVertices.size() / 3; vertex++) {
+        objVertices[vertex * 4] = tinyobjVertices[vertex * 3];
+        objVertices[vertex * 4 + 1] = tinyobjVertices[vertex * 3 + 1];
+        objVertices[vertex * 4 + 2] = tinyobjVertices[vertex * 3 + 2];
+        objVertices[vertex * 4 + 3] = 0;
+    }
+
     const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
     if (shapes.size() != 1) {
         throw std::runtime_error("Several shapes to parse; need only one");
