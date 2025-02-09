@@ -15,8 +15,9 @@ vec3 tonemapACES(vec3 color) {
 }
 
 void main() {
-    vec4 originalColor = imageLoad(hdrImage, ivec2(gl_FragCoord.xy));
-    vec4 tonemapped = vec4(tonemapACES(originalColor.xyz), originalColor.w);
+    vec4 color = imageLoad(hdrImage, ivec2(gl_FragCoord.xy));
+    vec3 tonemapped = tonemapFilmic(color.rgb);
 
-    fragColor = tonemapped;
+    // todo: there's no sRGB conversion, but from my experience that gives poor contrast. so no sRGB for now
+    fragColor = vec4(tonemapped, color.w);
 }
