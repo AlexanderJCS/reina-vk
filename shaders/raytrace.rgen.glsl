@@ -21,11 +21,60 @@ layout (push_constant) uniform PushConsts {
 // at 0, standard deviation 1) 2D point.
 vec2 randomGaussian(inout uint rngState) {
     // Almost uniform in (0, 1] - make sure the value is never 0:
-    const float u1    = max(1e-5, stepAndOutputRNGFloat(rngState));
-    const float u2    = stepAndOutputRNGFloat(rngState);  // In [0, 1]
-    const float r     = sqrt(-2.0 * log(u1));
+    const float u1 = max(1e-5, stepAndOutputRNGFloat(rngState));
+    const float u2 = stepAndOutputRNGFloat(rngState);  // In [0, 1]
+    const float r = sqrt(-2.0 * log(u1));
     const float theta = 2 * k_pi * u2;  // Random in [0, 2pi]
     return r * vec2(cos(theta), sin(theta));
+}
+
+vec3 traceSegments(vec3 origin, vec3 direction) {
+    vec3 accumulatedRayColor = vec3(1.0);  // The amount of light that made it to the end of the current ray.
+
+    // Limit the kernel to trace at most 32 segments.
+    for(int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
+        // Trace the ray into the scene and get data back!
+        traceRayEXT(
+            tlas,                  // Top-level acceleration structure
+            gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
+            0xFF,                  // 8-bit instance mask, here saying "trace against all instances"
+            0,                     // SBT record offset
+            0,                     // SBT record stride for offset
+            0,                     // Miss index
+            origin,                // Ray origin
+            0.0,                   // Minimum t-value
+            direction,             // Ray direction
+            10000.0,               // Maximum t-value
+            0                      // Location of payload
+        );
+
+        accumulatedRayColor *= pld.color;
+
+        if (pld.rayHitSky) {
+            return accumulatedRayColor;
+        }
+
+        origin = pld.rayOrigin;
+        direction = pld.rayDirection;
+    }
+
+    return vec3(0.0);
+}
+
+vec3 computeSample(vec2 pixel, vec2 resolution, vec3 cameraOrigin, float fovVerticalSlope) {
+    vec3 rayOrigin = cameraOrigin;
+
+    const vec2 randomPixelCenter = vec2(pixel) + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
+    const vec2 screenUV = vec2(
+        (2.0 * randomPixelCenter.x - resolution.x) / resolution.y,
+        (2.0 * randomPixelCenter.y - resolution.y) / resolution.y * -1
+    );
+
+    // Create a ray direction:
+    vec3 rayDirection = vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0);
+    rayDirection = normalize(rayDirection);
+
+    return traceSegments(rayOrigin, rayDirection);
 }
 
 void main() {
@@ -42,63 +91,26 @@ void main() {
     const vec3 cameraOrigin = vec3(0, 1, 10);
     const float fovVerticalSlope = 1.0 / 5;
 
-    vec3 summedPixelColor = vec3(0.0);
-
     const int NUM_SAMPLES = 64;
     int actualSamples = 0;
+    vec3 summedPixelColor = vec3(0.0);
+
     for (int sampleIdx = 0; sampleIdx < NUM_SAMPLES; sampleIdx++) {
-        vec3 rayOrigin = cameraOrigin;
+        vec3 color = computeSample(pixel, resolution, cameraOrigin, fovVerticalSlope);
 
-        const vec2 randomPixelCenter = vec2(pixel) + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
-        const vec2 screenUV = vec2(
-            (2.0 * randomPixelCenter.x - resolution.x) / resolution.y,
-            (2.0 * randomPixelCenter.y - resolution.y) / resolution.y * -1
-        );
-
-        // Create a ray direction:
-        vec3 rayDirection = vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0);
-        rayDirection = normalize(rayDirection);
-
-        vec3 accumulatedRayColor = vec3(1.0);  // The amount of light that made it to the end of the current ray.
-
-        // Limit the kernel to trace at most 32 segments.
-        for(int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
-            // Trace the ray into the scene and get data back!
-            traceRayEXT(tlas,                  // Top-level acceleration structure
-                        gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
-                        0xFF,                  // 8-bit instance mask, here saying "trace against all instances"
-                        0,                     // SBT record offset
-                        0,                     // SBT record stride for offset
-                        0,                     // Miss index
-                        rayOrigin,             // Ray origin
-                        0.0,                   // Minimum t-value
-                        rayDirection,          // Ray direction
-                        10000.0,               // Maximum t-value
-                        0);                    // Location of payload
-
-            accumulatedRayColor *= pld.color;
-
-            if (pld.rayHitSky) {
-                // todo: this is a hack. I have no idea why accumuluatedRayColor is NaN sometimes, but it stems from
-                //  gl_WorldRayDirectionEXT being NaN in the ray miss shader. This is an incredibly dumb workaround but it works
-                if (!any(isnan(accumulatedRayColor))) {
-                    summedPixelColor += accumulatedRayColor;
-                    actualSamples++;
-                }
-
-                break;
-            }
-
-            rayOrigin = pld.rayOrigin;
-            rayDirection = pld.rayDirection;
+        if (any(isnan(color))) {
+            continue;
         }
+
+        actualSamples++;
+        summedPixelColor += color;
     }
 
     vec3 finalColor = summedPixelColor / float(actualSamples);
 
     if (pushConstants.sampleBatch > 0) {
         vec3 prevColor = imageLoad(storageImage, pixel).rgb;
-        finalColor = mix(prevColor, finalColor, 1.0 / float(pushConstants.sampleBatch + 1));
+        finalColor = (prevColor * pushConstants.sampleBatch + finalColor) / float(pushConstants.sampleBatch + 1);
     }
 
     imageStore(storageImage, pixel, vec4(finalColor, 1));
