@@ -21,7 +21,7 @@ layout (push_constant) uniform PushConsts {
 // at 0, standard deviation 1) 2D point.
 vec2 randomGaussian(inout uint rngState) {
     // Almost uniform in (0, 1] - make sure the value is never 0:
-    const float u1    = max(1e-38, stepAndOutputRNGFloat(rngState));
+    const float u1    = max(1e-5, stepAndOutputRNGFloat(rngState));
     const float u2    = stepAndOutputRNGFloat(rngState);  // In [0, 1]
     const float r     = sqrt(-2.0 * log(u1));
     const float theta = 2 * k_pi * u2;  // Random in [0, 2pi]
@@ -45,6 +45,7 @@ void main() {
     vec3 summedPixelColor = vec3(0.0);
 
     const int NUM_SAMPLES = 64;
+    int actualSamples = 0;
     for (int sampleIdx = 0; sampleIdx < NUM_SAMPLES; sampleIdx++) {
         vec3 rayOrigin = cameraOrigin;
 
@@ -78,7 +79,13 @@ void main() {
             accumulatedRayColor *= pld.color;
 
             if (pld.rayHitSky) {
-                summedPixelColor += accumulatedRayColor;
+                // todo: this is a hack. I have no idea why accumuluatedRayColor is NaN sometimes, but it stems from
+                //  gl_WorldRayDirectionEXT being NaN in the ray miss shader. This is an incredibly dumb workaround but it works
+                if (!any(isnan(accumulatedRayColor))) {
+                    summedPixelColor += accumulatedRayColor;
+                    actualSamples++;
+                }
+
                 break;
             }
 
@@ -87,7 +94,7 @@ void main() {
         }
     }
 
-    vec3 finalColor = summedPixelColor / float(NUM_SAMPLES);
+    vec3 finalColor = summedPixelColor / float(actualSamples);
 
     if (pushConstants.sampleBatch > 0) {
         vec3 prevColor = imageLoad(storageImage, pixel).rgb;

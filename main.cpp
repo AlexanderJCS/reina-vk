@@ -112,8 +112,8 @@ void run() {
         throw std::runtime_error("Several shapes to parse; need only one");
     }
     std::vector<uint32_t> objIndices(shapes[0].mesh.indices.size());
-    for (const tinyobj::index_t& index : shapes[0].mesh.indices) {
-        objIndices.push_back(index.vertex_index);
+    for (int i = 0; i < shapes[0].mesh.indices.size(); i++) {
+        objIndices[i] = shapes[0].mesh.indices[i].vertex_index;
     }
 
     vktools::BufferObjects verticesBuffer = vktools::createBuffer(
@@ -193,9 +193,9 @@ void run() {
             {blas.accelerationStructure}, sbtSpacing.stride
             );
 
-    bool firstFrame = true;
 
     // render
+    bool firstFrame = true;
     while (!renderWindow.shouldClose()) {
         if (vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
             throw std::runtime_error("Could not wait for fences");
@@ -205,13 +205,7 @@ void run() {
             throw std::runtime_error("Could not reset fences");
         }
 
-
-        VkCommandBufferBeginInfo beginInfo{
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                .flags = 0,  // optional
-                .pInheritanceInfo = nullptr  // optional
-        };
-
+        VkCommandBufferBeginInfo beginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("Could not begin command buffer");
         }
