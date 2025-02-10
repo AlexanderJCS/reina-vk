@@ -1197,8 +1197,13 @@ VkDevice vktools::createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice phy
     }
 
     // Query ray tracing pipeline features
+//    VkPhysicalDeviceRayTracingValidationFeaturesNV validationFeatures = {
+//        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV
+//    };
+
     VkPhysicalDeviceBufferDeviceAddressFeatures addressFeatures{
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+//        .pNext = &validationFeatures
     };
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures{
@@ -1226,6 +1231,10 @@ VkDevice vktools::createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice phy
     if (!asFeatures.accelerationStructure) {
         throw std::runtime_error("Acceleration structure feature is not supported by the physical device.");
     }
+
+//    if (!validationFeatures.rayTracingValidation) {
+//        throw std::runtime_error("Ray tracing validation not supported");
+//    }
 
     VkDeviceCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,

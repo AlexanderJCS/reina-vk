@@ -8,6 +8,7 @@ namespace consts {
         "VK_LAYER_KHRONOS_validation"
     };
 
+    // array size + 1 with RT validation enabled
     const std::array<const char*, 9> DEVICE_EXTENSIONS{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
@@ -17,7 +18,8 @@ namespace consts {
         VK_KHR_SPIRV_1_4_EXTENSION_NAME,
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-        VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME  // for debug printf
+        VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,  // for debug printf
+//        "VK_NV_ray_tracing_validation"
     };
 
 #ifdef NDEBUG
