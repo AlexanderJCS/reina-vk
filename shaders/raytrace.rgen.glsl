@@ -32,7 +32,7 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
     vec3 accumulatedRayColor = vec3(1.0);  // The amount of light that made it to the end of the current ray.
 
     // Limit the kernel to trace at most 32 segments.
-    for(int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
+    for (int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
         // Trace the ray into the scene and get data back!
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
