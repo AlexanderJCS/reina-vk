@@ -18,7 +18,9 @@ add_executable(raygun_vk main.cpp
         DescriptorSet.h
         polyglot/common.h
         PushConstants.cpp
-        PushConstants.h)
+        PushConstants.h
+        Model.cpp
+        Model.h)
 
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 

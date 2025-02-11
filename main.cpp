@@ -6,9 +6,6 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-
 #include <iostream>
 #include <vulkan/vulkan.h>
 
@@ -17,6 +14,7 @@
 #include "Window.h"
 #include "DescriptorSet.h"
 #include "PushConstants.h"
+#include "Model.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -85,54 +83,6 @@ void run() {
     vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height);
     VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
-    VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
-                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-    tinyobj::ObjReader reader;
-    reader.ParseFromFile("../models/cornell_box.obj");
-
-    if (!reader.Valid()) {
-        throw std::runtime_error("Error reading OBJ:\n" + reader.Error());
-    }
-
-    std::vector<tinyobj::real_t> tinyobjVertices = reader.GetAttrib().GetVertices();
-    // convert from 3 floats per vertex to 4 floats per vertex. std::round removes any potential floating-point inaccuracies
-    std::vector<float> objVertices(static_cast<int>(std::round(static_cast<double>(tinyobjVertices.size()) * 4.0/3)));
-
-    for (int vertex = 0; vertex < tinyobjVertices.size() / 3; vertex++) {
-        objVertices[vertex * 4] = tinyobjVertices[vertex * 3];
-        objVertices[vertex * 4 + 1] = tinyobjVertices[vertex * 3 + 1];
-        objVertices[vertex * 4 + 2] = tinyobjVertices[vertex * 3 + 2];
-        objVertices[vertex * 4 + 3] = 0;
-    }
-
-    const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
-    if (shapes.size() != 1) {
-        throw std::runtime_error("Several shapes to parse; need only one");
-    }
-    std::vector<uint32_t> objIndices(shapes[0].mesh.indices.size());
-    for (int i = 0; i < shapes[0].mesh.indices.size(); i++) {
-        objIndices[i] = shapes[0].mesh.indices[i].vertex_index;
-    }
-
-    vktools::BufferObjects verticesBuffer = vktools::createBuffer(
-            logicalDevice,
-            physicalDevice,
-            objVertices,
-            usage,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            );
-    vktools::BufferObjects indicesBuffer = vktools::createBuffer(
-            logicalDevice,
-            physicalDevice,
-            objIndices,
-            usage,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    );
-
     DescriptorSet rtDescriptorSet{
         logicalDevice,
             {
@@ -182,10 +132,12 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
+    Model model{logicalDevice, physicalDevice, "../models/cornell_box.obj"};
+
     vktools::AccStructureInfo blas = vktools::createBlas(
             logicalDevice, physicalDevice, commandPool, graphicsQueue,
-            verticesBuffer.buffer, indicesBuffer.buffer, objVertices.size(),
-            objIndices.size()
+            model.getVerticesBuffer(), model.getIndicesBuffer(),
+            model.getVerticesBufferSize(), model.getIndicesBufferSize()
             );
 
     vktools::AccStructureInfo tlas = vktools::createTlas(
@@ -235,20 +187,10 @@ void run() {
         };
         rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
 
-        VkDescriptorBufferInfo verticesInfo{
-            .buffer = verticesBuffer.buffer,
-            .offset = 0,
-            .range = VK_WHOLE_SIZE
-        };
-
+        VkDescriptorBufferInfo verticesInfo{.buffer = model.getVerticesBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
 
-        VkDescriptorBufferInfo indicesInfo{
-            .buffer = indicesBuffer.buffer,
-            .offset = 0,
-            .range = VK_WHOLE_SIZE
-        };
-
+        VkDescriptorBufferInfo indicesInfo{.buffer = model.getIndicesBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
         pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
@@ -419,10 +361,7 @@ void run() {
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
-    vkDestroyBuffer(logicalDevice, verticesBuffer.buffer, nullptr);
-    vkFreeMemory(logicalDevice, verticesBuffer.deviceMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, indicesBuffer.buffer, nullptr);
-    vkFreeMemory(logicalDevice, indicesBuffer.deviceMemory, nullptr);
+    model.destroy(logicalDevice);
     vkDestroyBuffer(logicalDevice, blas.buffer.buffer, nullptr);
     vkFreeMemory(logicalDevice, blas.buffer.deviceMemory, nullptr);
     vkDestroyBuffer(logicalDevice, tlas.buffer.buffer, nullptr);
