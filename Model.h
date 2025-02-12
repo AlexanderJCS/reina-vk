@@ -19,8 +19,8 @@ public:
     void destroy(VkDevice logicalDevice);
 
 private:
-    std::optional<Buffer> verticesBuffer;
-    std::optional<Buffer> indicesBuffer;
+    std::optional<rt::core::Buffer> verticesBuffer;
+    std::optional<rt::core::Buffer> indicesBuffer;
 
     size_t verticesBufferSize;
     size_t indicesBufferSize;

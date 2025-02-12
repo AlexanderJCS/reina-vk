@@ -296,7 +296,7 @@ std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logical
     return swapchainFramebuffers;
 }
 
-vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const DescriptorSet &descriptorSet, VkRenderPass renderPass, const Shader &vertexShader, const Shader &fragmentShader) {
+vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const DescriptorSet &descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader &vertexShader, const rt::graphics::Shader &fragmentShader) {
     VkPipelineShaderStageCreateInfo shaderStages[] = {
             vertexShader.pipelineShaderStageCreateInfo("main"),
             fragmentShader.pipelineShaderStageCreateInfo("main")
@@ -473,7 +473,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     }
 
     // Create the instance buffer
-    Buffer instanceBuffer{
+    rt::core::Buffer instanceBuffer{
         logicalDevice, physicalDevice,
         instances,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
@@ -522,7 +522,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     );
 
     // Create TLAS buffer
-    Buffer tlasBuffer{
+    rt::core::Buffer tlasBuffer{
             logicalDevice, physicalDevice,
             buildSizes.accelerationStructureSize,
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -554,7 +554,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     const VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfo = &buildRangeInfo;
 
     // Allocate scratch buffer (similar to BLAS)
-    Buffer scratchBuffer{
+    rt::core::Buffer scratchBuffer{
         logicalDevice, physicalDevice, buildSizes.buildScratchSize,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -667,7 +667,7 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
             &buildSizes
     );
 
-    Buffer blasBuffer = Buffer{
+    rt::core::Buffer blasBuffer{
         logicalDevice, physicalDevice, buildSizes.accelerationStructureSize,
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -686,7 +686,7 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
     VkAccelerationStructureKHR blas;
     vkCreateAccelerationStructureKHR(logicalDevice, &createInfo, nullptr, &blas);
 
-    Buffer scratchBufferObjects = Buffer{
+    rt::core::Buffer scratchBufferObjects{
         logicalDevice, physicalDevice, buildSizes.buildScratchSize,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -816,7 +816,7 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
-Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, int shaderGroups) {
+rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, int shaderGroups) {
     std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * shaderGroups);
 
     auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
@@ -828,7 +828,7 @@ Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevic
 
     auto sbtSize = static_cast<VkDeviceSize>(sbtSpacing.stride * shaderGroups);
 
-    Buffer sbtBuffer{
+    rt::core::Buffer sbtBuffer{
             logicalDevice, physicalDevice, sbtSize,
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -848,7 +848,7 @@ Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevic
     return sbtBuffer;
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders, const PushConstants& pushConstants) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const PushConstants& pushConstants) {
     if (shaders.size() != 3) {
         throw std::runtime_error("Must have 3 shaders in the order: raygen, miss, closest hit");
     }

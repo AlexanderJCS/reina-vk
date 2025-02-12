@@ -3,7 +3,7 @@
 
 #include "vktools.h"
 
-Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage,
+rt::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage,
                VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
 
     VkBufferCreateInfo createInfo{
@@ -39,15 +39,15 @@ Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDevice
     vkBindBufferMemory(logicalDevice, buffer, deviceMemory, 0);
 }
 
-VkBuffer Buffer::getBuffer() const {
+VkBuffer rt::core::Buffer::getBuffer() const {
     return buffer;
 }
 
-VkDeviceMemory Buffer::getDeviceMemory() const {
+VkDeviceMemory rt::core::Buffer::getDeviceMemory() const {
     return deviceMemory;
 }
 
-void Buffer::destroy(VkDevice logicalDevice) {
+void rt::core::Buffer::destroy(VkDevice logicalDevice) {
     vkDestroyBuffer(logicalDevice, buffer, nullptr);
     vkFreeMemory(logicalDevice, deviceMemory, nullptr);
 }

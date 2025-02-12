@@ -37,7 +37,7 @@ Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std:
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
     verticesBufferSize = objVertices.size();
-    verticesBuffer = Buffer{
+    verticesBuffer = rt::core::Buffer{
         logicalDevice,
         physicalDevice,
         objVertices,
@@ -47,7 +47,7 @@ Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std:
     };
 
     indicesBufferSize = objIndices.size();
-    indicesBuffer = Buffer{
+    indicesBuffer = rt::core::Buffer{
             logicalDevice,
             physicalDevice,
             objIndices,

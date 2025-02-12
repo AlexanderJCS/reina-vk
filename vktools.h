@@ -61,7 +61,7 @@ namespace vktools {
 
     struct AccStructureInfo {
         VkAccelerationStructureKHR accelerationStructure;
-        Buffer buffer;
+        rt::core::Buffer buffer;
     };
 
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -85,15 +85,15 @@ namespace vktools {
     bool isDeviceSuitable(VkPhysicalDevice device);
 
     std::vector<VkFramebuffer> createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews);
-    PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, VkRenderPass renderPass, const Shader& vertexShader, const Shader& fragmentShader);
+    PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader& vertexShader, const rt::graphics::Shader& fragmentShader);
     VkRenderPass createRenderPass(VkDevice logicalDevice, VkFormat swapchainImageFormat);
 
     vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<VkAccelerationStructureKHR>& blases, VkDeviceSize sbtStride);
     vktools::AccStructureInfo createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
-    Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, int shaderGroups);
-    PipelineInfo createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders, const PushConstants& pushConstants);
+    rt::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, int shaderGroups);
+    PipelineInfo createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const PushConstants& pushConstants);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 
