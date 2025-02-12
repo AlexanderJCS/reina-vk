@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 
-VkDescriptorSetLayoutBinding Binding::toLayoutBinding() const {
+VkDescriptorSetLayoutBinding rt::core::Binding::toLayoutBinding() const {
     return VkDescriptorSetLayoutBinding{
         .binding = bindingPoint,
         .descriptorType = type,
@@ -13,7 +13,7 @@ VkDescriptorSetLayoutBinding Binding::toLayoutBinding() const {
     };
 }
 
-DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings)
+rt::core::DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings)
         : bindings(bindings) {
     if (hasDuplicateBindingPoints(bindings)) {
         throw std::runtime_error("Cannot initialize descriptor set: duplicate binding points found");
@@ -78,7 +78,7 @@ DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>&
     }
 }
 
-void DescriptorSet::destroy(VkDevice logicalDevice) {
+void rt::core::DescriptorSet::destroy(VkDevice logicalDevice) {
     if (layout != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(logicalDevice, layout, nullptr);
     }
@@ -88,7 +88,7 @@ void DescriptorSet::destroy(VkDevice logicalDevice) {
     }
 }
 
-bool DescriptorSet::hasDuplicateBindingPoints(const std::vector<Binding>& bindings) {
+bool rt::core::DescriptorSet::hasDuplicateBindingPoints(const std::vector<Binding>& bindings) {
     for (int i = 0; i < bindings.size(); i++) {
         for (int j = i + 1; j < bindings.size(); j++) {
             if (bindings[i].bindingPoint == bindings[j].bindingPoint) {
@@ -100,19 +100,19 @@ bool DescriptorSet::hasDuplicateBindingPoints(const std::vector<Binding>& bindin
     return false;
 }
 
-VkDescriptorSetLayout DescriptorSet::getLayout() const {
+VkDescriptorSetLayout rt::core::DescriptorSet::getLayout() const {
     return layout;
 }
 
-VkDescriptorPool DescriptorSet::getPool() const {
+VkDescriptorPool rt::core::DescriptorSet::getPool() const {
     return pool;
 }
 
-VkDescriptorSet DescriptorSet::getDescriptorSet() const {
+VkDescriptorSet rt::core::DescriptorSet::getDescriptorSet() const {
     return descriptorSet;
 }
 
-void DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout) {
+void rt::core::DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout) {
     vkCmdBindDescriptorSets(
             cmdBuffer,
             bindPoint,
@@ -125,7 +125,7 @@ void DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoin
     );
 }
 
-void DescriptorSet::writeBinding(
+void rt::core::DescriptorSet::writeBinding(
         VkDevice logicalDevice, int bindingPoint,
         VkDescriptorImageInfo* imageInfo,
         VkDescriptorBufferInfo* bufferInfo,

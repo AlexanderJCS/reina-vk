@@ -296,7 +296,7 @@ std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logical
     return swapchainFramebuffers;
 }
 
-vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const DescriptorSet &descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader &vertexShader, const rt::graphics::Shader &fragmentShader) {
+vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet &descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader &vertexShader, const rt::graphics::Shader &fragmentShader) {
     VkPipelineShaderStageCreateInfo shaderStages[] = {
             vertexShader.pipelineShaderStageCreateInfo("main"),
             fragmentShader.pipelineShaderStageCreateInfo("main")
@@ -848,7 +848,7 @@ rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
     return sbtBuffer;
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const PushConstants& pushConstants) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const PushConstants& pushConstants) {
     if (shaders.size() != 3) {
         throw std::runtime_error("Must have 3 shaders in the order: raygen, miss, closest hit");
     }
