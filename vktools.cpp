@@ -156,19 +156,6 @@ vktools::SwapChainSupportDetails vktools::querySwapChainSupport(VkSurfaceKHR sur
     return details;
 }
 
-uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("Failed to find suitable memory type");
-}
-
 uint64_t vktools::getDeviceLocalMemory(VkPhysicalDevice device) {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(device, &memoryProperties);
@@ -269,45 +256,6 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, int wi
     actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
     return actualExtent;
-}
-
-vktools::BufferObjects vktools::createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize,
-                      VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
-    VkBufferCreateInfo createInfo{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = dataSize,
-            .usage = usage,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE
-    };
-
-    VkBuffer buffer;
-    if (vkCreateBuffer(logicalDevice, &createInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create buffer");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(logicalDevice, buffer, &memRequirements);
-
-    VkMemoryAllocateFlagsInfo allocFlagsInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-            .flags = allocFlags
-    };
-
-    VkMemoryAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext = &allocFlagsInfo,
-            .allocationSize = memRequirements.size,
-            .memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, memFlags)
-    };
-
-    VkDeviceMemory deviceMemory;
-    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &deviceMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate buffer memory");
-    }
-
-    vkBindBufferMemory(logicalDevice, buffer, deviceMemory, 0);
-
-    return {buffer, deviceMemory};
 }
 
 std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews) {
@@ -512,18 +460,19 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     }
 
     // Create the instance buffer
-    BufferObjects instanceBufferObjects = createBuffer(
-            logicalDevice, physicalDevice,
-            instances,
-            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-    );
+    Buffer instanceBuffer{
+        logicalDevice, physicalDevice,
+        instances,
+        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+    };
 
     VkAccelerationStructureGeometryInstancesDataKHR instancesData{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR,
             .arrayOfPointers = VK_FALSE, // Contiguous array (not pointers)
-            .data = {.deviceAddress = getBufferDeviceAddress(logicalDevice, instanceBufferObjects.buffer)}
+            .data = {.deviceAddress = getBufferDeviceAddress(logicalDevice, instanceBuffer.getBuffer())}
     };
 
     VkAccelerationStructureGeometryKHR geometry{
@@ -560,18 +509,18 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     );
 
     // Create TLAS buffer
-    BufferObjects tlasBufferObjects = createBuffer(
+    Buffer tlasBuffer{
             logicalDevice, physicalDevice,
             buildSizes.accelerationStructureSize,
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-    );
+    };
 
     // Create acceleration structure
     VkAccelerationStructureCreateInfoKHR createInfo{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
-            .buffer = tlasBufferObjects.buffer,
+            .buffer = tlasBuffer.getBuffer(),
             .size = buildSizes.accelerationStructureSize,
             .type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR
     };
@@ -592,14 +541,15 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     const VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfo = &buildRangeInfo;
 
     // Allocate scratch buffer (similar to BLAS)
-    BufferObjects scratchBufferObjects = createBuffer(
-            logicalDevice, physicalDevice, buildSizes.buildScratchSize,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    Buffer scratchBuffer{
+        logicalDevice, physicalDevice, buildSizes.buildScratchSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
 
     buildInfo.dstAccelerationStructure = tlas;
-    buildInfo.scratchData.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBufferObjects.buffer);
+    buildInfo.scratchData.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBuffer.getBuffer());
 
     // Submit the build command
     VkCommandBufferBeginInfo beginInfo{
@@ -646,12 +596,11 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     // Clean up temporary resources
     vkDestroyFence(logicalDevice, fence, nullptr);
     vkFreeCommandBuffers(logicalDevice, cmdPool, 1, &cmdBuffer);
-    vkDestroyBuffer(logicalDevice, scratchBufferObjects.buffer, nullptr);
-    vkFreeMemory(logicalDevice, scratchBufferObjects.deviceMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, instanceBufferObjects.buffer, nullptr);
-    vkFreeMemory(logicalDevice, instanceBufferObjects.deviceMemory, nullptr);
 
-    return {tlas, tlasBufferObjects};
+    scratchBuffer.destroy(logicalDevice);
+    instanceBuffer.destroy(logicalDevice);
+
+    return {tlas, tlasBuffer};
 }
 
 vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen) {
@@ -705,16 +654,16 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
             &buildSizes
     );
 
-    BufferObjects blasBufferObjects = createBuffer(
-            logicalDevice, physicalDevice, buildSizes.accelerationStructureSize,
-            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-                 );
+    Buffer blasBuffer = Buffer{
+        logicalDevice, physicalDevice, buildSizes.accelerationStructureSize,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
 
     VkAccelerationStructureCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    createInfo.buffer = blasBufferObjects.buffer;
+    createInfo.buffer = blasBuffer.getBuffer();
     createInfo.size = buildSizes.accelerationStructureSize;
     createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 
@@ -724,11 +673,12 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
     VkAccelerationStructureKHR blas;
     vkCreateAccelerationStructureKHR(logicalDevice, &createInfo, nullptr, &blas);
 
-    BufferObjects scratchBufferObjects = createBuffer(
-            logicalDevice, physicalDevice, buildSizes.buildScratchSize,
-                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    Buffer scratchBufferObjects = Buffer{
+        logicalDevice, physicalDevice, buildSizes.buildScratchSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
 
     VkAccelerationStructureBuildGeometryInfoKHR buildInfo{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
@@ -738,7 +688,7 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
             .dstAccelerationStructure = blas,
             .geometryCount = 1,
             .pGeometries = &geometry,
-            .scratchData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBufferObjects.buffer)}
+            .scratchData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBufferObjects.getBuffer())}
     };
 
     // Build range
@@ -789,11 +739,11 @@ vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysical
     // Clean up temporary resources
     vkDestroyFence(logicalDevice, fence, nullptr);
     vkFreeCommandBuffers(logicalDevice, cmdPool, 1, &cmdBuffer);
-    vkDestroyBuffer(logicalDevice, scratchBufferObjects.buffer, nullptr);
-    vkFreeMemory(logicalDevice, scratchBufferObjects.deviceMemory, nullptr);
+
+    scratchBufferObjects.destroy(logicalDevice);
 
     // Return the BLAS buffer and memory
-    return {blas, blasBufferObjects};
+    return {blas, blasBuffer};
 }
 
 vktools::SyncObjects vktools::createSyncObjects(VkDevice logicalDevice) {
@@ -853,7 +803,7 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
-vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, int shaderGroups) {
+Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, int shaderGroups) {
     std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * shaderGroups);
 
     auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
@@ -863,53 +813,28 @@ vktools::BufferObjects vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevi
         throw std::runtime_error("Could not get RT shader group handles");
     }
 
-    auto sbtSize = static_cast<uint32_t>(sbtSpacing.stride * shaderGroups);
-    VkBufferCreateInfo sbtBufferCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = sbtSize,
-            .usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE  // exclusive if using one queue family
+    auto sbtSize = static_cast<VkDeviceSize>(sbtSpacing.stride * shaderGroups);
+
+    Buffer sbtBuffer{
+            logicalDevice, physicalDevice, sbtSize,
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
 
-    VkBuffer sbtBuffer;
-    if (vkCreateBuffer(logicalDevice, &sbtBufferCreateInfo, nullptr, &sbtBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create shader binding table buffer");
-    }
-
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(logicalDevice, sbtBuffer, &memoryRequirements);
-
-    VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-            .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,  // needed for buffers with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT when VkPhysicalDeviceBufferDeviceAddressFeatures::bufferDeviceAddress is enabled
-            .deviceMask = 1
-    };
-
-    VkMemoryAllocateInfo memoryAllocateInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext = &memoryAllocateFlagsInfo,
-            .allocationSize = memoryRequirements.size,
-            .memoryTypeIndex = vktools::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-    };
-
-    VkDeviceMemory sbtBufferMemory;
-    if (vkAllocateMemory(logicalDevice, &memoryAllocateInfo, nullptr, &sbtBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Could not allocate SBT buffer memory");
-    }
-
-    vkBindBufferMemory(logicalDevice, sbtBuffer, sbtBufferMemory, 0);
+    vkBindBufferMemory(logicalDevice, sbtBuffer.getBuffer(), sbtBuffer.getDeviceMemory(), 0);
 
     void* sbtMappedMemory;
-    vkMapMemory(logicalDevice, sbtBufferMemory, 0, sbtSize, 0, &sbtMappedMemory);
+    vkMapMemory(logicalDevice, sbtBuffer.getDeviceMemory(), 0, sbtSize, 0, &sbtMappedMemory);
 
     auto* sbtPtr = static_cast<uint8_t*>(sbtMappedMemory);
     for (uint32_t groupIdx = 0; groupIdx < shaderGroups; groupIdx++) {
         memcpy(&sbtPtr[groupIdx * sbtSpacing.stride], &cpuShaderHandleStorage[groupIdx * sbtSpacing.headerSize], sbtSpacing.headerSize);
     }
 
-    vkUnmapMemory(logicalDevice, sbtBufferMemory);
+    vkUnmapMemory(logicalDevice, sbtBuffer.getDeviceMemory());
 
-    return {sbtBuffer, sbtBufferMemory};
+    return sbtBuffer;
 }
 
 vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const DescriptorSet& descriptorSet, const std::vector<Shader>& shaders, const PushConstants& pushConstants) {

@@ -9,7 +9,9 @@ public:
     Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags);
 
     template<typename T>
-    Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<T>& data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
+    Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<T>& data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags)
+            : Buffer(logicalDevice, physicalDevice, data.empty() ? 0 : sizeof(data[0]) * data.size(), usage, allocFlags, memFlags)
+    {
         this(logicalDevice, physicalDevice, data.empty() ? 0 : sizeof(data[0]) * data.size(), usage, allocFlags, memFlags);
 
         void* bufferData;
@@ -19,6 +21,7 @@ public:
     }
 
     [[nodiscard]] VkBuffer getBuffer() const;
+    [[nodiscard]] VkDeviceMemory getDeviceMemory() const;
 
     void destroy(VkDevice logicalDevice);
 
