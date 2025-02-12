@@ -4,12 +4,12 @@
 #include <fstream>
 #include <iostream>
 
-Shader::Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage) {
+rt::graphics::Shader::Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage) {
     this->shaderStage = shaderStage;
     shaderModule = createShaderModule(logicalDevice, readFile(path));
 }
 
-VkPipelineShaderStageCreateInfo Shader::pipelineShaderStageCreateInfo(const std::string& entryPoint) const {
+VkPipelineShaderStageCreateInfo rt::graphics::Shader::pipelineShaderStageCreateInfo(const std::string& entryPoint) const {
     return VkPipelineShaderStageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage = shaderStage,
@@ -18,7 +18,7 @@ VkPipelineShaderStageCreateInfo Shader::pipelineShaderStageCreateInfo(const std:
     };
 }
 
-std::vector<char> Shader::readFile(const std::string &filepath) {
+std::vector<char> rt::graphics::Shader::readFile(const std::string &filepath) {
     // std::ios::ate - start at the end of the file
     std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
@@ -39,7 +39,7 @@ std::vector<char> Shader::readFile(const std::string &filepath) {
     return buffer;
 }
 
-VkShaderModule Shader::createShaderModule(VkDevice logicalDevice, const std::vector<char>& code) {
+VkShaderModule rt::graphics::Shader::createShaderModule(VkDevice logicalDevice, const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = code.size(),
@@ -54,7 +54,7 @@ VkShaderModule Shader::createShaderModule(VkDevice logicalDevice, const std::vec
     return shaderModule;
 }
 
-void Shader::destroy(VkDevice logicalDevice) {
+void rt::graphics::Shader::destroy(VkDevice logicalDevice) {
     if (shaderModule == VK_NULL_HANDLE) {
         return;
     }
