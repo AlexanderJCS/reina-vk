@@ -93,7 +93,7 @@ namespace vktools {
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     rt::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, int shaderGroups);
-    PipelineInfo createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const PushConstants& pushConstants);
+    PipelineInfo createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const rt::core::PushConstants& pushConstants);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 

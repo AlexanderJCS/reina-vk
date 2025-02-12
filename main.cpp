@@ -64,7 +64,7 @@ void transitionImage(
 
 void run() {
     // init
-    window::Window renderWindow{800, 600};
+    rt::window::Window renderWindow{800, 600};
     VkInstance instance = vktools::createInstance();
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
     VkSurfaceKHR surface = vktools::createSurface(instance, renderWindow.getGlfwWindow());
@@ -93,7 +93,7 @@ void run() {
         }
     };
 
-    PushConstants pushConstants{PushConstantsStruct{0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+    rt::core::PushConstants pushConstants{PushConstantsStruct{0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<rt::graphics::Shader> shaders = {

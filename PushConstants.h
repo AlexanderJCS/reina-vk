@@ -5,20 +5,22 @@
 
 #include <vulkan/vulkan.h>
 
-class PushConstants {
-public:
-    PushConstants(const PushConstantsStruct& defaultValues, VkShaderStageFlags stageFlags);
+namespace rt::core {
+    class PushConstants {
+    public:
+        PushConstants(const PushConstantsStruct& defaultValues, VkShaderStageFlags stageFlags);
 
-    [[nodiscard]] PushConstantsStruct& getPushConstants();
-    [[nodiscard]] const VkPushConstantRange& getRange() const;
+        [[nodiscard]] PushConstantsStruct& getPushConstants();
+        [[nodiscard]] const VkPushConstantRange& getRange() const;
 
-    void push(VkCommandBuffer cmdBuffer, VkPipelineLayout pipeLayout);
+        void push(VkCommandBuffer cmdBuffer, VkPipelineLayout pipeLayout);
 
-private:
-    PushConstantsStruct data;
-    VkPushConstantRange pushConstantRange;
-    VkShaderStageFlags stageFlags;
-};
+    private:
+        PushConstantsStruct data;
+        VkPushConstantRange pushConstantRange;
+        VkShaderStageFlags stageFlags;
+    };
+}
 
 
 #endif //RAYGUN_VK_PUSHCONSTANTS_H

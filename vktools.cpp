@@ -848,7 +848,7 @@ rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
     return sbtBuffer;
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const PushConstants& pushConstants) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const rt::core::PushConstants& pushConstants) {
     if (shaders.size() != 3) {
         throw std::runtime_error("Must have 3 shaders in the order: raygen, miss, closest hit");
     }

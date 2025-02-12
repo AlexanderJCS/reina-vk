@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 
-window::Window::Window(int width, int height) {
+rt::window::Window::Window(int width, int height) {
     if (glfwInit() != GLFW_TRUE) {  // todo: should glfw init for every object or just once?
         throw std::runtime_error("Cannot init GLFW");
     }
@@ -16,28 +16,28 @@ window::Window::Window(int width, int height) {
     glfwGetWindowSize(glfwWindow, &this->width, &this->height);
 }
 
-int window::Window::getWidth() const {
+int rt::window::Window::getWidth() const {
     return width;
 }
 
-int window::Window::getHeight() const {
+int rt::window::Window::getHeight() const {
     return height;
 }
 
-void window::Window::destroy() {
+void rt::window::Window::destroy() {
     glfwDestroyWindow(glfwWindow);
     glfwTerminate();  // todo: verify if this is best practice.
 }
 
-GLFWwindow *window::Window::getGlfwWindow() const {
+GLFWwindow* rt::window::Window::getGlfwWindow() const {
     return glfwWindow;
 }
 
-bool window::Window::shouldClose() {
+bool rt::window::Window::shouldClose() {
     return glfwWindowShouldClose(glfwWindow);
 }
 
-bool window::Window::isMinimized() const {
+bool rt::window::Window::isMinimized() const {
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(glfwWindow, &fbWidth, &fbHeight);
     return fbWidth == 0 || fbHeight == 0;
