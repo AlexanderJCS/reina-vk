@@ -20,7 +20,9 @@ add_executable(raygun_vk main.cpp
         PushConstants.cpp
         PushConstants.h
         Model.cpp
-        Model.h)
+        Model.h
+        Buffer.cpp
+        Buffer.h)
 
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 
