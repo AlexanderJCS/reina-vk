@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include "Buffer.h"
 
-#include "vktools.h"
+#include "../tools/vktools.h"
 
 rt::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage,
                VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {

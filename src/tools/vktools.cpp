@@ -9,10 +9,10 @@
 #include <limits>
 #include <fstream>
 
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 
 #include "consts.h"
-#include "DescriptorSet.h"
+#include "../core/DescriptorSet.h"
 
 uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;

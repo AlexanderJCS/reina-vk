@@ -1,5 +1,5 @@
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -9,12 +9,12 @@
 #include <iostream>
 #include <vulkan/vulkan.h>
 
-#include "vktools.h"
-#include "consts.h"
-#include "Window.h"
-#include "DescriptorSet.h"
-#include "PushConstants.h"
-#include "Model.h"
+#include "tools/vktools.h"
+#include "tools/consts.h"
+#include "window/Window.h"
+#include "core/DescriptorSet.h"
+#include "core/PushConstants.h"
+#include "graphics/Model.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {

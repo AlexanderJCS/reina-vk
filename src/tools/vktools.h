@@ -8,12 +8,12 @@
 #include <memory>
 
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 
-#include "Shader.h"
-#include "DescriptorSet.h"
-#include "PushConstants.h"
-#include "Buffer.h"
+#include "../graphics/Shader.h"
+#include "../core/DescriptorSet.h"
+#include "../core/PushConstants.h"
+#include "../core/Buffer.h"
 
 namespace vktools {
     struct QueueFamilyIndices {

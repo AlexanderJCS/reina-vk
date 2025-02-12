@@ -1,7 +1,7 @@
 #ifndef RAYGUN_VK_WINDOW_H
 #define RAYGUN_VK_WINDOW_H
 
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 
 namespace rt::window {
     class Window {

@@ -4,8 +4,8 @@
 #include <vulkan/vulkan.h>
 #include <optional>
 
-#include "vktools.h"
-#include "Buffer.h"
+#include "../tools/vktools.h"
+#include "../core/Buffer.h"
 
 namespace rt::graphics {
     class Model {
