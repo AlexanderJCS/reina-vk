@@ -37,32 +37,34 @@ Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std:
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
     verticesBufferSize = objVertices.size();
-    verticesBufferObjects = vktools::createBuffer(
-            logicalDevice,
-            physicalDevice,
-            objVertices,
-            usage,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    );
+    verticesBuffer = Buffer{
+        logicalDevice,
+        physicalDevice,
+        objVertices,
+        usage,
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    };
 
     indicesBufferSize = objIndices.size();
-    indicesBufferObjects = vktools::createBuffer(
+    indicesBuffer = Buffer{
             logicalDevice,
             physicalDevice,
             objIndices,
             usage,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    );
+    };
 }
 
 VkBuffer Model::getVerticesBuffer() const {
-    return verticesBufferObjects.buffer;
+    assert(verticesBuffer.has_value());
+    return verticesBuffer.value().getBuffer();
 }
 
 VkBuffer Model::getIndicesBuffer() const {
-    return indicesBufferObjects.buffer;
+    assert(indicesBuffer.has_value());
+    return indicesBuffer.value().getBuffer();
 }
 
 size_t Model::getVerticesBufferSize() const {
@@ -74,9 +76,9 @@ size_t Model::getIndicesBufferSize() const {
 }
 
 void Model::destroy(VkDevice logicalDevice) {
-    vkDestroyBuffer(logicalDevice, verticesBufferObjects.buffer, nullptr);
-    vkFreeMemory(logicalDevice, verticesBufferObjects.deviceMemory, nullptr);
-
-    vkDestroyBuffer(logicalDevice, indicesBufferObjects.buffer, nullptr);
-    vkFreeMemory(logicalDevice, indicesBufferObjects.deviceMemory, nullptr);
+    if (verticesBuffer.has_value()) {
+        verticesBuffer.value().destroy(logicalDevice);
+    } if (indicesBuffer.has_value()) {
+        indicesBuffer.value().destroy(logicalDevice);
+    }
 }

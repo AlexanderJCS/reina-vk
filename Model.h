@@ -2,7 +2,10 @@
 #define RAYGUN_VK_MODEL_H
 
 #include <vulkan/vulkan.h>
+#include <optional>
+
 #include "vktools.h"
+#include "Buffer.h"
 
 class Model {
 public:
@@ -16,8 +19,8 @@ public:
     void destroy(VkDevice logicalDevice);
 
 private:
-    vktools::BufferObjects verticesBufferObjects;
-    vktools::BufferObjects indicesBufferObjects;
+    std::optional<Buffer> verticesBuffer;
+    std::optional<Buffer> indicesBuffer;
 
     size_t verticesBufferSize;
     size_t indicesBufferSize;

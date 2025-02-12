@@ -14,6 +14,19 @@
 #include "consts.h"
 #include "DescriptorSet.h"
 
+uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type");
+}
+
 bool vktools::QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
@@ -821,8 +834,6 @@ Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevic
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
-
-    vkBindBufferMemory(logicalDevice, sbtBuffer.getBuffer(), sbtBuffer.getDeviceMemory(), 0);
 
     void* sbtMappedMemory;
     vkMapMemory(logicalDevice, sbtBuffer.getDeviceMemory(), 0, sbtSize, 0, &sbtMappedMemory);

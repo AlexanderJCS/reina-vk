@@ -64,6 +64,7 @@ namespace vktools {
         Buffer buffer;
     };
 
+    uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
     VkDeviceAddress getBufferDeviceAddress(VkDevice logicalDevice, VkBuffer buffer);
     bool hasValidationLayerSupport();
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);

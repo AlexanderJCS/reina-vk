@@ -103,7 +103,7 @@ void run() {
     };
 
     vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
-    vktools::BufferObjects sbtInfo = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, 3);
+    Buffer sbtBuffer = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, 3);
 
     for (Shader& shader : shaders) {
         shader.destroy(logicalDevice);
@@ -197,7 +197,7 @@ void run() {
         pushConstants.getPushConstants().sampleBatch++;
 
         VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
-        VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtInfo.buffer);
+        VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtBuffer.getBuffer());
 
         sbtRayGenRegion.deviceAddress = sbtStartAddress;
         sbtRayGenRegion.stride = sbtSpacing.stride;
@@ -352,6 +352,10 @@ void run() {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
     }
 
+    blas.buffer.destroy(logicalDevice);
+    tlas.buffer.destroy(logicalDevice);
+    sbtBuffer.destroy(logicalDevice);
+
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, blas.accelerationStructure, nullptr);
@@ -362,12 +366,6 @@ void run() {
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
     model.destroy(logicalDevice);
-    vkDestroyBuffer(logicalDevice, blas.buffer.buffer, nullptr);
-    vkFreeMemory(logicalDevice, blas.buffer.deviceMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, tlas.buffer.buffer, nullptr);
-    vkFreeMemory(logicalDevice, tlas.buffer.deviceMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, sbtInfo.buffer, nullptr);
-    vkFreeMemory(logicalDevice, sbtInfo.deviceMemory, nullptr);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, rasterizationPipelineInfo.pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);

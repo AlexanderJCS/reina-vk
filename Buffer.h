@@ -12,8 +12,6 @@ public:
     Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<T>& data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags)
             : Buffer(logicalDevice, physicalDevice, data.empty() ? 0 : sizeof(data[0]) * data.size(), usage, allocFlags, memFlags)
     {
-        this(logicalDevice, physicalDevice, data.empty() ? 0 : sizeof(data[0]) * data.size(), usage, allocFlags, memFlags);
-
         void* bufferData;
         vkMapMemory(logicalDevice, deviceMemory, 0, data.size(), 0, &bufferData);
         memcpy(bufferData, data.data(), data.size() * sizeof(T));
