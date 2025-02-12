@@ -3,7 +3,7 @@
 
 #include "Model.h"
 
-Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::string& objFilepath) {
+rt::graphics::Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::string& objFilepath) {
     tinyobj::ObjReader reader;
     reader.ParseFromFile(objFilepath);
 
@@ -57,25 +57,25 @@ Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std:
     };
 }
 
-VkBuffer Model::getVerticesBuffer() const {
+VkBuffer rt::graphics::Model::getVerticesBuffer() const {
     assert(verticesBuffer.has_value());
     return verticesBuffer.value().getBuffer();
 }
 
-VkBuffer Model::getIndicesBuffer() const {
+VkBuffer rt::graphics::Model::getIndicesBuffer() const {
     assert(indicesBuffer.has_value());
     return indicesBuffer.value().getBuffer();
 }
 
-size_t Model::getVerticesBufferSize() const {
+size_t rt::graphics::Model::getVerticesBufferSize() const {
     return verticesBufferSize;
 }
 
-size_t Model::getIndicesBufferSize() const {
+size_t rt::graphics::Model::getIndicesBufferSize() const {
     return indicesBufferSize;
 }
 
-void Model::destroy(VkDevice logicalDevice) {
+void rt::graphics::Model::destroy(VkDevice logicalDevice) {
     if (verticesBuffer.has_value()) {
         verticesBuffer.value().destroy(logicalDevice);
     } if (indicesBuffer.has_value()) {

@@ -132,7 +132,7 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    Model model{logicalDevice, physicalDevice, "../models/cornell_box.obj"};
+    rt::graphics::Model model{logicalDevice, physicalDevice, "../models/cornell_box.obj"};
 
     vktools::AccStructureInfo blas = vktools::createBlas(
             logicalDevice, physicalDevice, commandPool, graphicsQueue,
