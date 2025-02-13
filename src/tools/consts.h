@@ -1,6 +1,7 @@
 #ifndef RAYGUN_VK_CONSTS_H
 #define RAYGUN_VK_CONSTS_H
 
+#include <vulkan/vulkan.h>
 #include <array>
 
 namespace consts {
