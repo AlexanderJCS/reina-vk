@@ -17,6 +17,15 @@ layout(binding = 3, set = 0, scalar) buffer Indices {
 
 layout(location = 0) rayPayloadInEXT PassableInfo pld;
 
+struct ObjectProperties {
+    vec3 albedo;
+    float padding;
+};
+
+layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
+    ObjectProperties objectProperties[];
+};
+
 struct HitInfo {
     vec3 objectPosition;
     vec3 worldPosition;

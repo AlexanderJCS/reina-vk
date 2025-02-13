@@ -5,7 +5,7 @@
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
 
-    pld.color        = vec3(0.9);
+    pld.color        = objectProperties[gl_InstanceCustomIndexEXT].albedo;
     pld.rayOrigin    = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
     pld.rayDirection = diffuseReflection(hitInfo.worldNormal, pld.rngState);
     pld.rayHitSky    = false;

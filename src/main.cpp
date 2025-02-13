@@ -15,6 +15,7 @@
 #include "core/DescriptorSet.h"
 #include "core/PushConstants.h"
 #include "graphics/Model.h"
+#include "graphics/ObjectProperties.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -87,10 +88,22 @@ void run() {
         logicalDevice,
             {
                 rt::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
-                rt::core::Binding{1,VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,1,VK_SHADER_STAGE_RAYGEN_BIT_KHR},
-                rt::core::Binding{2,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,1,VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
-                rt::core::Binding{3,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,1,VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
+                rt::core::Binding{1,VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+                rt::core::Binding{2,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                rt::core::Binding{3,VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                rt::core::Binding{4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
         }
+    };
+
+    std::vector<rt::graphics::ObjectProperties> objectProperties{
+            {glm::vec3{0.9, 0.5, 0.5}},
+            {glm::vec3{0.3, 0.4, 0.9}}
+    };
+    rt::core::Buffer objectPropertiesBuffer{
+        logicalDevice, physicalDevice, objectProperties,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        static_cast<VkMemoryAllocateFlags>(0),
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 
     rt::core::PushConstants pushConstants{PushConstantsStruct{0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
@@ -192,6 +205,9 @@ void run() {
 
         VkDescriptorBufferInfo indicesInfo{.buffer = model.getIndicesBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
+
+        VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
+        rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
 
         pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
@@ -355,6 +371,7 @@ void run() {
     blas.buffer.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
+    objectPropertiesBuffer.destroy(logicalDevice);
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);

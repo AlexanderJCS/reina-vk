@@ -462,8 +462,8 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
         VkDeviceAddress blasAddress = vkGetAccelerationStructureDeviceAddressKHR(logicalDevice, &addressInfo);
 
         VkAccelerationStructureInstanceKHR instance{
-                .transform = identity, // VkTransformMatrixKHR
-                .instanceCustomIndex = 0,  // material id
+                .transform = identity,
+                .instanceCustomIndex = 0,
                 .mask = 0xFF,
                 .instanceShaderBindingTableRecordOffset = 0,
                 .flags = 0,
