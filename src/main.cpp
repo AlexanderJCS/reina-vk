@@ -16,6 +16,7 @@
 #include "core/PushConstants.h"
 #include "graphics/Model.h"
 #include "graphics/ObjectProperties.h"
+#include "graphics/Blas.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -147,15 +148,14 @@ void run() {
 
     rt::graphics::Model model{logicalDevice, physicalDevice, "../models/cornell_box.obj"};
 
-    vktools::AccStructureInfo blas = vktools::createBlas(
-            logicalDevice, physicalDevice, commandPool, graphicsQueue,
-            model.getVerticesBuffer(), model.getIndicesBuffer(),
-            model.getVerticesBufferSize(), model.getIndicesBufferSize()
-            );
+    rt::graphics::Blas blas{
+        logicalDevice, physicalDevice, commandPool, graphicsQueue,
+        model, 0
+    };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(
             logicalDevice, physicalDevice, commandPool, graphicsQueue,
-            {blas.accelerationStructure}, sbtSpacing.stride
+            {blas}, sbtSpacing.stride
             );
 
 
@@ -364,18 +364,21 @@ void run() {
     auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
 
+    if (!vkDestroyAccelerationStructureKHR) {
+        throw std::runtime_error("Destroy acceleration structure function cannot be found");
+    }
+
     for (VkFramebuffer framebuffer : framebuffers) {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
     }
 
-    blas.buffer.destroy(logicalDevice);
+    blas.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-    vkDestroyAccelerationStructureKHR(logicalDevice, blas.accelerationStructure, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);
     rasterizationDescriptorSet.destroy(logicalDevice);

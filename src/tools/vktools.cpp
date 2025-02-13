@@ -13,6 +13,7 @@
 
 #include "consts.h"
 #include "../core/DescriptorSet.h"
+#include "../graphics/Blas.h"
 
 uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
@@ -442,7 +443,7 @@ VkRenderPass vktools::createRenderPass(VkDevice logicalDevice, VkFormat swapchai
 
 vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice,
                                               VkCommandPool cmdPool, VkQueue queue,
-                                              const std::vector<VkAccelerationStructureKHR>& blases,
+                                              const std::vector<rt::graphics::Blas>& blases,
                                               VkDeviceSize sbtStride) {
 
     std::vector<VkAccelerationStructureInstanceKHR> instances;
@@ -454,7 +455,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
         VkAccelerationStructureDeviceAddressInfoKHR addressInfo{
                 .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
-                .accelerationStructure = blas
+                .accelerationStructure = blas.getHandle()
         };
 
         auto vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(
@@ -463,7 +464,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
         VkAccelerationStructureInstanceKHR instance{
                 .transform = identity,
-                .instanceCustomIndex = 0,
+                .instanceCustomIndex = blas.getObjectPropertyID(),
                 .mask = 0xFF,
                 .instanceShaderBindingTableRecordOffset = 0,
                 .flags = 0,
