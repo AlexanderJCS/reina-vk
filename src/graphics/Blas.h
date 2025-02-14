@@ -11,21 +11,17 @@
 namespace rt::graphics {
     class Blas {
     public:
-        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Model& model, int objectPropertyID, glm::mat4x4 transform = glm::mat4x4{1.0f});
+        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Model& model);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
-        [[nodiscard]] rt::core::Buffer getBuffer() const;  // todo: return a const reference
-        [[nodiscard]] int getObjectPropertyID() const;
-        [[nodiscard]] const glm::mat4x4& getTransform() const;
+        [[nodiscard]] const rt::core::Buffer& getBuffer() const;
 
 
         void destroy(VkDevice logicalDevice);
 
     private:
-        int objectPropertyID;
         std::optional<rt::core::Buffer> blasBuffer;
         VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
-        glm::mat4x4 transform;
     };
 }
 

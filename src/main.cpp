@@ -17,6 +17,7 @@
 #include "graphics/Model.h"
 #include "graphics/ObjectProperties.h"
 #include "graphics/Blas.h"
+#include "graphics/Instance.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -147,16 +148,16 @@ void run() {
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
     rt::graphics::Model model{logicalDevice, physicalDevice, "../models/cornell_box.obj"};
+    rt::graphics::Blas blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, model};
 
-    rt::graphics::Blas blas{
-        logicalDevice, physicalDevice, commandPool, graphicsQueue,
-        model, 0, glm::rotate(glm::mat4x4(1), glm::radians(45.0f), glm::vec3(0, 1, 1))
+    glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+
+    std::vector<rt::graphics::Instance> instances{
+            {blas, 0, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
+            {blas, 1, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, -1, -1))}
     };
 
-    vktools::AccStructureInfo tlas = vktools::createTlas(
-            logicalDevice, physicalDevice, commandPool, graphicsQueue,
-            {blas}
-            );
+    vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
 
 
     // render

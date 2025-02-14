@@ -17,6 +17,7 @@
 #include "consts.h"
 #include "../core/DescriptorSet.h"
 #include "../graphics/Blas.h"
+#include "../graphics/Instance.h"
 
 uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
@@ -435,41 +436,40 @@ VkRenderPass vktools::createRenderPass(VkDevice logicalDevice, VkFormat swapchai
     return renderPass;
 }
 
-// todo: be able to pass instances by creating an Instance struct that has a blas and transform associated
 vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice,
                                               VkCommandPool cmdPool, VkQueue queue,
-                                              const std::vector<rt::graphics::Blas>& blases) {
+                                              const std::vector<rt::graphics::Instance>& instances) {
 
-    std::vector<VkAccelerationStructureInstanceKHR> instances;
-    for (const auto& blas : blases) {
-        glm::mat4x4 glmTransform = blas.getTransform();
+    std::vector<VkAccelerationStructureInstanceKHR> vkInstances;
+    for (const auto& instance : instances) {
+        glm::mat4x4 tmp = glm::transpose(instance.transform);
         VkTransformMatrixKHR vkTransform;
-        memcpy(&vkTransform, &glmTransform, sizeof(VkTransformMatrixKHR));
+        memcpy(&vkTransform, &tmp, sizeof(VkTransformMatrixKHR));
 
         VkAccelerationStructureDeviceAddressInfoKHR addressInfo{
                 .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
-                .accelerationStructure = blas.getHandle()
+                .accelerationStructure = instance.blas.getHandle()
         };
 
         auto vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(
                 vkGetDeviceProcAddr(logicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
         VkDeviceAddress blasAddress = vkGetAccelerationStructureDeviceAddressKHR(logicalDevice, &addressInfo);
 
-        VkAccelerationStructureInstanceKHR instance{
+        VkAccelerationStructureInstanceKHR vkInstance{
                 .transform = vkTransform,
-                .instanceCustomIndex = static_cast<uint32_t>(blas.getObjectPropertyID()),
+                .instanceCustomIndex = instance.objectPropertiesID,
                 .mask = 0xFF,
-                .instanceShaderBindingTableRecordOffset = 0,
+                .instanceShaderBindingTableRecordOffset = instance.materialOffset,
                 .flags = 0,
                 .accelerationStructureReference = blasAddress
         };
-        instances.push_back(instance);
+        vkInstances.push_back(vkInstance);
     }
 
     // Create the instance buffer
     rt::core::Buffer instanceBuffer{
         logicalDevice, physicalDevice,
-        instances,
+        vkInstances,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -506,7 +506,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
     auto vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
-    auto instanceCount = static_cast<uint32_t>(instances.size());
+    auto instanceCount = static_cast<uint32_t>(vkInstances.size());
     vkGetAccelerationStructureBuildSizesKHR(
             logicalDevice,
             VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
@@ -597,7 +597,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     }
 
     if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to wait for fence for BLAS creation");
+        throw std::runtime_error("Failed to wait for fence for TLAS creation");
     }
 
     // Clean up temporary resources

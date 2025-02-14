@@ -1,7 +1,7 @@
 #include "Blas.h"
 
 rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
-                         const rt::graphics::Model& model, int objectPropertyID = 0, glm::mat4x4 transform) : objectPropertyID(objectPropertyID), transform(std::move(transform)) {
+                         const rt::graphics::Model& model) {
 
     uint32_t vertexCount = static_cast<uint32_t>(model.getVerticesBufferSize()) / 3;
 
@@ -145,16 +145,8 @@ VkAccelerationStructureKHR rt::graphics::Blas::getHandle() const {
     return blas;
 }
 
-rt::core::Buffer rt::graphics::Blas::getBuffer() const {
+const rt::core::Buffer &rt::graphics::Blas::getBuffer() const {
     return blasBuffer.value();
-}
-
-int rt::graphics::Blas::getObjectPropertyID() const {
-    return objectPropertyID;
-}
-
-const glm::mat4x4& rt::graphics::Blas::getTransform() const {
-    return transform;
 }
 
 void rt::graphics::Blas::destroy(VkDevice logicalDevice) {

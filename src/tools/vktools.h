@@ -17,7 +17,7 @@
 
 // forward declaration
 namespace rt::graphics {
-    class Blas;
+    class Instance;
 }
 
 namespace vktools {
@@ -92,7 +92,7 @@ namespace vktools {
     PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader& vertexShader, const rt::graphics::Shader& fragmentShader);
     VkRenderPass createRenderPass(VkDevice logicalDevice, VkFormat swapchainImageFormat);
 
-    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<rt::graphics::Blas>& blases);
+    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<rt::graphics::Instance>& instances);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     rt::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, int shaderGroups);
