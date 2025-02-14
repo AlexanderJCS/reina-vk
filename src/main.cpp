@@ -98,8 +98,8 @@ void run() {
     };
 
     std::vector<rt::graphics::ObjectProperties> objectProperties{
-            {glm::vec3{0.9, 0.5, 0.5}},
-            {glm::vec3{0.3, 0.4, 0.9}}
+            {glm::vec3{0.9, 0.5, 0.5}, 0, glm::vec4(0.2, 0.8, 0.3, 0)},
+            {glm::vec3{0.3, 0.4, 0.9}, 0, glm::vec4(0.3, 0.4, 0.9, 20)}
     };
     rt::core::Buffer objectPropertiesBuffer{
         logicalDevice, physicalDevice, objectProperties,
@@ -153,7 +153,7 @@ void run() {
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
     std::vector<rt::graphics::Instance> instances{
-            {blas, 0, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
+            {blas, 0, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, -5)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
             {blas, 1, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, -1, -1))}
     };
 

@@ -6,6 +6,7 @@ void main() {
     HitInfo hitInfo = getObjectHitInfo();
 
     pld.color        = objectProperties[gl_InstanceCustomIndexEXT].albedo;
+    pld.emission     = objectProperties[gl_InstanceCustomIndexEXT].emission;
     pld.rayOrigin    = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
     pld.rayDirection = diffuseReflection(hitInfo.worldNormal, pld.rngState);
     pld.rayHitSky    = false;

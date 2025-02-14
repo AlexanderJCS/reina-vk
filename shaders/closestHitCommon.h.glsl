@@ -20,6 +20,7 @@ layout(location = 0) rayPayloadInEXT PassableInfo pld;
 struct ObjectProperties {
     vec3 albedo;
     float padding;
+    vec4 emission;
 };
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {

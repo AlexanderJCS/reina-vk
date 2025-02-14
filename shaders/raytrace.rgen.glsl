@@ -29,11 +29,10 @@ vec2 randomGaussian(inout uint rngState) {
 }
 
 vec3 traceSegments(vec3 origin, vec3 direction) {
-    vec3 accumulatedRayColor = vec3(1.0);  // The amount of light that made it to the end of the current ray.
+    vec3 accumulatedRayColor = vec3(1.0);
+    vec3 incomingLight = vec3(0.0);
 
-    // Limit the kernel to trace at most 32 segments.
     for (int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
-        // Trace the ray into the scene and get data back!
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
             gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
@@ -48,17 +47,19 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
             0                      // Location of payload
         );
 
-        accumulatedRayColor *= pld.color;
-
         if (pld.rayHitSky) {
-            return accumulatedRayColor;
+            incomingLight += pld.color * accumulatedRayColor;
+            break;
         }
+
+        incomingLight += pld.emission.xyz * pld.emission.w * accumulatedRayColor;
+        accumulatedRayColor *= pld.color;
 
         origin = pld.rayOrigin;
         direction = pld.rayDirection;
     }
 
-    return vec3(0.0);
+    return incomingLight;
 }
 
 vec3 computeSample(vec2 pixel, vec2 resolution, vec3 cameraOrigin, float fovVerticalSlope) {

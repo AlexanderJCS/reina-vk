@@ -8,6 +8,7 @@ struct PassableInfo
     vec3 rayDirection;  // The new ray direction in world-space.
     uint rngState;      // State of the random number generator.
     bool rayHitSky;     // True if the ray hit the sky.
+    vec4 emission;      // xyz: emission color, w: emission strength
 };
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.
