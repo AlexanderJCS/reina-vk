@@ -57,14 +57,12 @@ rt::graphics::Model::Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevi
     };
 }
 
-VkBuffer rt::graphics::Model::getVerticesBuffer() const {
-    assert(verticesBuffer.has_value());
-    return verticesBuffer.value().getBuffer();
+rt::core::Buffer rt::graphics::Model::getVerticesBuffer() const {
+    return verticesBuffer.value();
 }
 
-VkBuffer rt::graphics::Model::getIndicesBuffer() const {
-    assert(indicesBuffer.has_value());
-    return indicesBuffer.value().getBuffer();
+rt::core::Buffer rt::graphics::Model::getIndicesBuffer() const {
+    return indicesBuffer.value();
 }
 
 size_t rt::graphics::Model::getVerticesBufferSize() const {

@@ -9,15 +9,16 @@
 namespace rt::graphics {
     class Shader {
     public:
-        Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage);
+        Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage, std::string entryPoint = "main");
 
         void destroy(VkDevice logicalDevice);
 
-        [[nodiscard]] VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(const std::string& entryPoint = "main") const;
+        [[nodiscard]] VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo() const;
 
     private:
         VkShaderModule shaderModule = VK_NULL_HANDLE;
         VkShaderStageFlagBits shaderStage;
+        std::string entryPoint;
 
         static std::vector<char> readFile(const std::string& filepath);
         static VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<char>& code);

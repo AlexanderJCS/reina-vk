@@ -12,8 +12,8 @@ namespace rt::graphics {
     public:
         Model(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::string& objFilepath);
 
-        [[nodiscard]] VkBuffer getVerticesBuffer() const;
-        [[nodiscard]] VkBuffer getIndicesBuffer() const;
+        [[nodiscard]] rt::core::Buffer getVerticesBuffer() const;
+        [[nodiscard]] rt::core::Buffer getIndicesBuffer() const;
         [[nodiscard]] size_t getVerticesBufferSize() const;
         [[nodiscard]] size_t getIndicesBufferSize() const;
 

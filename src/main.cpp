@@ -200,20 +200,20 @@ void run() {
         };
         rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
 
-        VkDescriptorBufferInfo verticesInfo{.buffer = model.getVerticesBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo verticesInfo{.buffer = model.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
 
-        VkDescriptorBufferInfo indicesInfo{.buffer = model.getIndicesBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo indicesInfo{.buffer = model.getIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
-        VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getBuffer(), .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
 
         pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
 
         VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
-        VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtBuffer.getBuffer());
+        VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtBuffer.getHandle());
 
         sbtRayGenRegion.deviceAddress = sbtStartAddress;
         sbtRayGenRegion.stride = sbtSpacing.stride;

@@ -3,13 +3,14 @@
 #include <stdexcept>
 #include <fstream>
 #include <iostream>
+#include <utility>
 
-rt::graphics::Shader::Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage) {
-    this->shaderStage = shaderStage;
+rt::graphics::Shader::Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage, std::string  entryPoint)
+    : shaderStage(shaderStage), entryPoint(std::move(entryPoint)) {
     shaderModule = createShaderModule(logicalDevice, readFile(path));
 }
 
-VkPipelineShaderStageCreateInfo rt::graphics::Shader::pipelineShaderStageCreateInfo(const std::string& entryPoint) const {
+VkPipelineShaderStageCreateInfo rt::graphics::Shader::pipelineShaderStageCreateInfo() const {
     return VkPipelineShaderStageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage = shaderStage,

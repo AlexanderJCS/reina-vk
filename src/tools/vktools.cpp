@@ -32,15 +32,6 @@ bool vktools::QueueFamilyIndices::isComplete() const {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-VkDeviceAddress vktools::getBufferDeviceAddress(VkDevice logicalDevice, VkBuffer buffer) {
-    VkBufferDeviceAddressInfo addressInfo{
-        .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-        .buffer = buffer
-    };
-
-    return vkGetBufferDeviceAddress(logicalDevice, &addressInfo);
-}
-
 bool vktools::hasValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -299,8 +290,8 @@ std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logical
 
 vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet &descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader &vertexShader, const rt::graphics::Shader &fragmentShader) {
     VkPipelineShaderStageCreateInfo shaderStages[] = {
-            vertexShader.pipelineShaderStageCreateInfo("main"),
-            fragmentShader.pipelineShaderStageCreateInfo("main")
+            vertexShader.pipelineShaderStageCreateInfo(),
+            fragmentShader.pipelineShaderStageCreateInfo()
     };
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -464,7 +455,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
         VkAccelerationStructureInstanceKHR instance{
                 .transform = identity,
-                .instanceCustomIndex = blas.getObjectPropertyID(),
+                .instanceCustomIndex = static_cast<uint32_t>(blas.getObjectPropertyID()),
                 .mask = 0xFF,
                 .instanceShaderBindingTableRecordOffset = 0,
                 .flags = 0,
@@ -486,7 +477,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     VkAccelerationStructureGeometryInstancesDataKHR instancesData{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR,
             .arrayOfPointers = VK_FALSE, // Contiguous array (not pointers)
-            .data = {.deviceAddress = getBufferDeviceAddress(logicalDevice, instanceBuffer.getBuffer())}
+            .data = {.deviceAddress = instanceBuffer.getDeviceAddress(logicalDevice)}
     };
 
     VkAccelerationStructureGeometryKHR geometry{
@@ -534,7 +525,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     // Create acceleration structure
     VkAccelerationStructureCreateInfoKHR createInfo{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
-            .buffer = tlasBuffer.getBuffer(),
+            .buffer = tlasBuffer.getHandle(),
             .size = buildSizes.accelerationStructureSize,
             .type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR
     };
@@ -563,7 +554,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     };
 
     buildInfo.dstAccelerationStructure = tlas;
-    buildInfo.scratchData.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBuffer.getBuffer());
+    buildInfo.scratchData.deviceAddress = scratchBuffer.getDeviceAddress(logicalDevice);
 
     // Submit the build command
     VkCommandBufferBeginInfo beginInfo{
@@ -615,149 +606,6 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     instanceBuffer.destroy(logicalDevice);
 
     return {tlas, tlasBuffer};
-}
-
-vktools::AccStructureInfo vktools::createBlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, VkBuffer verticesBuffer, VkBuffer indicesBuffer, size_t verticesLen, size_t indicesLen) {
-    uint32_t vertexCount = static_cast<uint32_t>(verticesLen) / 3;
-    VkAccelerationStructureGeometryTrianglesDataKHR triangles{
-        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
-        .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
-        .vertexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, verticesBuffer)},
-        .vertexStride = 4 * sizeof(float),
-        .maxVertex = vertexCount - 1,
-        .indexType = VK_INDEX_TYPE_UINT32,
-        .indexData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, indicesBuffer)},
-        // todo: add transform with .transformData
-    };
-
-    VkAccelerationStructureGeometryKHR geometry{
-        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
-        .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
-        .geometry = {.triangles = triangles},
-        .flags = VK_GEOMETRY_OPAQUE_BIT_KHR
-    };
-
-    VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{
-        .primitiveCount = static_cast<uint32_t>(indicesLen) / 3,
-        .primitiveOffset = 0,
-        .firstVertex = 0,
-        .transformOffset = 0
-    };
-
-    VkAccelerationStructureBuildGeometryInfoKHR buildSizesQueryBuildInfo{
-        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
-        .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-        .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
-        .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
-        .geometryCount = 1,
-        .pGeometries = &geometry
-    };
-
-    VkAccelerationStructureBuildSizesInfoKHR buildSizes{
-        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
-    };
-
-    auto vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
-
-    vkGetAccelerationStructureBuildSizesKHR(
-            logicalDevice,
-            VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-            &buildSizesQueryBuildInfo,
-            &buildRangeInfo.primitiveCount,
-            &buildSizes
-    );
-
-    rt::core::Buffer blasBuffer{
-        logicalDevice, physicalDevice, buildSizes.accelerationStructureSize,
-        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-    };
-
-    VkAccelerationStructureCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    createInfo.buffer = blasBuffer.getBuffer();
-    createInfo.size = buildSizes.accelerationStructureSize;
-    createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-
-    auto vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
-
-    VkAccelerationStructureKHR blas;
-    vkCreateAccelerationStructureKHR(logicalDevice, &createInfo, nullptr, &blas);
-
-    rt::core::Buffer scratchBufferObjects{
-        logicalDevice, physicalDevice, buildSizes.buildScratchSize,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-    };
-
-    VkAccelerationStructureBuildGeometryInfoKHR buildInfo{
-            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
-            .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-            .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
-            .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
-            .dstAccelerationStructure = blas,
-            .geometryCount = 1,
-            .pGeometries = &geometry,
-            .scratchData = {.deviceAddress = getBufferDeviceAddress(logicalDevice, scratchBufferObjects.getBuffer())}
-    };
-
-    // Build range
-    const VkAccelerationStructureBuildRangeInfoKHR* rangeInfos[] = { &buildRangeInfo };
-
-    // Submit the build command
-    VkCommandBufferBeginInfo beginInfo{
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-    };
-
-    VkCommandBuffer cmdBuffer = createCommandBuffer(logicalDevice, cmdPool);
-    if (vkBeginCommandBuffer(cmdBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("Could not begin one-time command buffer for BLAS creation");
-    }
-
-    auto vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
-    vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &buildInfo, rangeInfos);
-
-    if (vkEndCommandBuffer(cmdBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to end command buffer for BLAS creation");
-    }
-
-    // Submit the command buffer
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cmdBuffer;
-
-    // Create a fence to synchronize
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    VkFence fence;
-    if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create fence for BLAS creation");
-    }
-
-    // Submit the command buffer and wait for it to complete
-    if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit command buffer for BLAS creation");
-    }
-
-    if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to wait for fence for BLAS creation");
-    }
-
-    // Clean up temporary resources
-    vkDestroyFence(logicalDevice, fence, nullptr);
-    vkFreeCommandBuffers(logicalDevice, cmdPool, 1, &cmdBuffer);
-
-    scratchBufferObjects.destroy(logicalDevice);
-
-    // Return the BLAS buffer and memory
-    return {blas, blasBuffer};
 }
 
 vktools::SyncObjects vktools::createSyncObjects(VkDevice logicalDevice) {
@@ -856,7 +704,7 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt
 
     std::array<VkPipelineShaderStageCreateInfo, 3> stages{};
     for (int i = 0; i < shaders.size(); i++) {
-        stages[i] = shaders[i].pipelineShaderStageCreateInfo("main");
+        stages[i] = shaders[i].pipelineShaderStageCreateInfo();
     }
 
     std::array<VkRayTracingShaderGroupCreateInfoKHR, 3> groups{};

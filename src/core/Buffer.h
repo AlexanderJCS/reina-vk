@@ -19,8 +19,9 @@ namespace rt::core {
             vkUnmapMemory(logicalDevice, deviceMemory);
         }
 
-        [[nodiscard]] VkBuffer getBuffer() const;
+        [[nodiscard]] VkBuffer getHandle() const;
         [[nodiscard]] VkDeviceMemory getDeviceMemory() const;
+        [[nodiscard]] VkDeviceAddress getDeviceAddress(VkDevice logicalDevice) const;
 
         void destroy(VkDevice logicalDevice);
 

@@ -39,12 +39,21 @@ rt::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
     vkBindBufferMemory(logicalDevice, buffer, deviceMemory, 0);
 }
 
-VkBuffer rt::core::Buffer::getBuffer() const {
+VkBuffer rt::core::Buffer::getHandle() const {
     return buffer;
 }
 
 VkDeviceMemory rt::core::Buffer::getDeviceMemory() const {
     return deviceMemory;
+}
+
+VkDeviceAddress rt::core::Buffer::getDeviceAddress(VkDevice logicalDevice) const {
+    VkBufferDeviceAddressInfo addressInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+        .buffer = buffer
+    };
+
+    return vkGetBufferDeviceAddress(logicalDevice, &addressInfo);
 }
 
 void rt::core::Buffer::destroy(VkDevice logicalDevice) {

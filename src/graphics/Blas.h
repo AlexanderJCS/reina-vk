@@ -3,6 +3,7 @@
 
 #include <vulkan/vulkan.h>
 #include <optional>
+#include <glm/mat4x4.hpp>
 
 #include "Model.h"
 #include "../core/Buffer.h"
@@ -10,7 +11,7 @@
 namespace rt::graphics {
     class Blas {
     public:
-        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Model& model, int objectPropertyID);
+        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Model& model, int objectPropertyID, const glm::mat4x4& transform = glm::mat4x4{1.0f});
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
         [[nodiscard]] rt::core::Buffer getBuffer() const;
@@ -21,7 +22,7 @@ namespace rt::graphics {
     private:
         int objectPropertyID;
         std::optional<rt::core::Buffer> blasBuffer;
-        VkAccelerationStructureKHR blas;
+        VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
     };
 }
 

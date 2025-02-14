@@ -2,19 +2,42 @@
 
 #include "../tools/vktools.h"
 
+namespace {
+    VkTransformMatrixKHR glmToVkTransform(const glm::mat4x4& glmMatrix) {
+        VkTransformMatrixKHR vkMatrix;
+
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 4; c++) {
+                vkMatrix.matrix[r][c] = glmMatrix[r][c];
+            }
+        }
+
+        return vkMatrix;
+    }
+}
+
 rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
-                         const rt::graphics::Model& model, int objectPropertyID) : objectPropertyID(objectPropertyID) {
+                         const rt::graphics::Model& model, int objectPropertyID = 0, const glm::mat4x4& transform) : objectPropertyID(objectPropertyID) {
 
     uint32_t vertexCount = static_cast<uint32_t>(model.getVerticesBufferSize()) / 3;
+    VkTransformMatrixKHR vkTransform = glmToVkTransform(transform);
+    std::vector<VkTransformMatrixKHR> vkTransformVec = {vkTransform};
+    rt::core::Buffer transformBuffer{
+        logicalDevice, physicalDevice, vkTransformVec,
+        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    };
+
     VkAccelerationStructureGeometryTrianglesDataKHR triangles{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
             .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
-            .vertexData = {.deviceAddress = vktools::getBufferDeviceAddress(logicalDevice, model.getVerticesBuffer())},
+            .vertexData = {.deviceAddress = model.getVerticesBuffer().getDeviceAddress(logicalDevice)},
             .vertexStride = 4 * sizeof(float),
             .maxVertex = vertexCount - 1,
             .indexType = VK_INDEX_TYPE_UINT32,
-            .indexData = {.deviceAddress = vktools::getBufferDeviceAddress(logicalDevice, model.getIndicesBuffer())},
-            // todo: add transform with .transformData
+            .indexData = {.deviceAddress = model.getIndicesBuffer().getDeviceAddress(logicalDevice)},
+            .transformData = {.deviceAddress = transformBuffer.getDeviceAddress(logicalDevice)}
     };
 
     VkAccelerationStructureGeometryKHR geometry{
@@ -64,7 +87,7 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
 
     VkAccelerationStructureCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    createInfo.buffer = blasBuffer.value().getBuffer();
+    createInfo.buffer = blasBuffer.value().getHandle();
     createInfo.size = buildSizes.accelerationStructureSize;
     createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 
@@ -88,7 +111,7 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
             .dstAccelerationStructure = blas,
             .geometryCount = 1,
             .pGeometries = &geometry,
-            .scratchData = {.deviceAddress = vktools::getBufferDeviceAddress(logicalDevice, scratchBufferObjects.getBuffer())}
+            .scratchData = {.deviceAddress = scratchBufferObjects.getDeviceAddress(logicalDevice)}
     };
 
     // Build range
@@ -141,6 +164,7 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
     vkFreeCommandBuffers(logicalDevice, cmdPool, 1, &cmdBuffer);
 
     scratchBufferObjects.destroy(logicalDevice);
+    transformBuffer.destroy(logicalDevice);
 }
 
 VkAccelerationStructureKHR rt::graphics::Blas::getHandle() const {
