@@ -9,6 +9,9 @@
 #include <limits>
 #include <fstream>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "GLFW/glfw3.h"
 
 #include "consts.h"
@@ -432,17 +435,16 @@ VkRenderPass vktools::createRenderPass(VkDevice logicalDevice, VkFormat swapchai
     return renderPass;
 }
 
+// todo: be able to pass instances by creating an Instance struct that has a blas and transform associated
 vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice,
                                               VkCommandPool cmdPool, VkQueue queue,
-                                              const std::vector<rt::graphics::Blas>& blases,
-                                              VkDeviceSize sbtStride) {
+                                              const std::vector<rt::graphics::Blas>& blases) {
 
     std::vector<VkAccelerationStructureInstanceKHR> instances;
     for (const auto& blas : blases) {
-        VkTransformMatrixKHR identity{};
-        identity.matrix[0][0] = 1;
-        identity.matrix[1][1] = 1;
-        identity.matrix[2][2] = 1;
+        glm::mat4x4 glmTransform = blas.getTransform();
+        VkTransformMatrixKHR vkTransform;
+        memcpy(&vkTransform, &glmTransform, sizeof(VkTransformMatrixKHR));
 
         VkAccelerationStructureDeviceAddressInfoKHR addressInfo{
                 .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
@@ -454,7 +456,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
         VkDeviceAddress blasAddress = vkGetAccelerationStructureDeviceAddressKHR(logicalDevice, &addressInfo);
 
         VkAccelerationStructureInstanceKHR instance{
-                .transform = identity,
+                .transform = vkTransform,
                 .instanceCustomIndex = static_cast<uint32_t>(blas.getObjectPropertyID()),
                 .mask = 0xFF,
                 .instanceShaderBindingTableRecordOffset = 0,

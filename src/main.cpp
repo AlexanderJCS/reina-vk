@@ -3,8 +3,8 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
 #include <vulkan/vulkan.h>
@@ -150,12 +150,12 @@ void run() {
 
     rt::graphics::Blas blas{
         logicalDevice, physicalDevice, commandPool, graphicsQueue,
-        model, 0
+        model, 0, glm::rotate(glm::mat4x4(1), glm::radians(45.0f), glm::vec3(0, 1, 1))
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(
             logicalDevice, physicalDevice, commandPool, graphicsQueue,
-            {blas}, sbtSpacing.stride
+            {blas}
             );
 
 
