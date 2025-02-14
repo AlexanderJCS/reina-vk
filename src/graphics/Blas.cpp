@@ -1,18 +1,22 @@
 #include "Blas.h"
 
-rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
-                         const rt::graphics::Model& model) {
+#include <stdexcept>
 
-    uint32_t vertexCount = static_cast<uint32_t>(model.getVerticesBufferSize()) / 3;
+#include "../tools/vktools.h"
+
+rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
+                         const rt::graphics::Models& models, const rt::graphics::ModelRange& modelRange) {
+
+    uint32_t vertexCount = static_cast<uint32_t>(models.getVerticesBufferSize()) / 3;
 
     VkAccelerationStructureGeometryTrianglesDataKHR triangles{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
             .vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
-            .vertexData = {.deviceAddress = model.getVerticesBuffer().getDeviceAddress(logicalDevice)},
+            .vertexData = {.deviceAddress = models.getVerticesBuffer().getDeviceAddress(logicalDevice)},
             .vertexStride = 4 * sizeof(float),
             .maxVertex = vertexCount - 1,
             .indexType = VK_INDEX_TYPE_UINT32,
-            .indexData = {.deviceAddress = model.getIndicesBuffer().getDeviceAddress(logicalDevice)}
+            .indexData = {.deviceAddress = models.getIndicesBuffer().getDeviceAddress(logicalDevice)}
     };
 
     VkAccelerationStructureGeometryKHR geometry{
@@ -23,9 +27,9 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
     };
 
     VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{
-            .primitiveCount = static_cast<uint32_t>(model.getIndicesBufferSize()) / 3,
-            .primitiveOffset = 0,
-            .firstVertex = 0,
+            .primitiveCount = modelRange.indexCount,
+            .primitiveOffset = modelRange.indexOffset,
+            .firstVertex = modelRange.firstVertex,
             .transformOffset = 0
     };
 

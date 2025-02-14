@@ -14,7 +14,7 @@
 #include "window/Window.h"
 #include "core/DescriptorSet.h"
 #include "core/PushConstants.h"
-#include "graphics/Model.h"
+#include "graphics/Models.h"
 #include "graphics/ObjectProperties.h"
 #include "graphics/Blas.h"
 #include "graphics/Instance.h"
@@ -147,8 +147,8 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    rt::graphics::Model model{logicalDevice, physicalDevice, "../models/cornell_box.obj"};
-    rt::graphics::Blas blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, model};
+    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/cornell_box.obj"}};
+    rt::graphics::Blas blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
@@ -201,10 +201,10 @@ void run() {
         };
         rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
 
-        VkDescriptorBufferInfo verticesInfo{.buffer = model.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo verticesInfo{.buffer = models.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
 
-        VkDescriptorBufferInfo indicesInfo{.buffer = model.getIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo indicesInfo{.buffer = models.getIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
         VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
@@ -386,7 +386,7 @@ void run() {
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
-    model.destroy(logicalDevice);
+    models.destroy(logicalDevice);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, rasterizationPipelineInfo.pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);

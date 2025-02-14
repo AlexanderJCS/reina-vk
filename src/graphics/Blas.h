@@ -5,13 +5,13 @@
 #include <optional>
 #include <glm/mat4x4.hpp>
 
-#include "Model.h"
+#include "Models.h"
 #include "../core/Buffer.h"
 
 namespace rt::graphics {
     class Blas {
     public:
-        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Model& model);
+        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const rt::graphics::ModelRange& modelRange);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
         [[nodiscard]] const rt::core::Buffer& getBuffer() const;

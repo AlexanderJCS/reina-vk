@@ -27,7 +27,9 @@ add_executable(raygun_vk src/main.cpp
         src/graphics/Blas.cpp
         src/graphics/Blas.h
         src/graphics/Instance.cpp
-        src/graphics/Instance.h)
+        src/graphics/Instance.h
+        src/graphics/Models.cpp
+        src/graphics/Models.h)
 
 target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
 
