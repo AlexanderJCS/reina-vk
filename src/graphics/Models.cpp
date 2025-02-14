@@ -5,27 +5,60 @@
 #include <cmath>
 
 rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths) {
-    ObjData obj = getObjData(modelFilepaths[0]);
+    modelRanges = std::vector<ModelRange>(modelFilepaths.size());
+    std::vector<ObjData> allObjectsData(modelFilepaths.size());
+    size_t totalVertices = 0;
+    size_t totalIndices = 0;
+
+    for (int i = 0; i < modelFilepaths.size(); i++) {
+        allObjectsData[i] = getObjData(modelFilepaths[i]);
+
+        totalVertices += allObjectsData[i].vertices.size();
+        totalIndices += allObjectsData[i].indices.size();
+    }
+
+    std::vector<float> allVertices(totalVertices);
+    std::vector<uint32_t> allIndices(totalIndices);
+
+    size_t vertexOffset = 0;
+    size_t indexOffset = 0;
+
+    // Copy the data to allVertices and allIndices
+    for (int i = 0; i < allObjectsData.size(); i++) {
+        const ObjData& objectData = allObjectsData[i];
+
+        modelRanges[i] = ModelRange{
+            .firstVertex = static_cast<uint32_t>(vertexOffset / 4),  // I have no idea why this is / 4 instead of / 3
+            .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
+            .indexCount  = static_cast<uint32_t>(objectData.indices.size() / 3)
+        };
+
+        std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<std::vector<float>::difference_type>(vertexOffset));
+        std::copy(objectData.indices.begin(), objectData.indices.end(), allIndices.begin() + static_cast<std::vector<float>::difference_type>(indexOffset));
+
+        vertexOffset += objectData.vertices.size();
+        indexOffset += objectData.indices.size();
+    }
 
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-    verticesBufferSize = obj.vertices.size();
+    verticesBufferSize = allVertices.size();
     verticesBuffer = rt::core::Buffer{
             logicalDevice,
             physicalDevice,
-            obj.vertices,
+            allVertices,
             usage,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
 
-    indicesBufferSize = obj.indices.size();
+    indicesBufferSize = allIndices.size();
     indicesBuffer = rt::core::Buffer{
             logicalDevice,
             physicalDevice,
-            obj.indices,
+            allIndices,
             usage,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -81,7 +114,7 @@ const rt::core::Buffer &rt::graphics::Models::getIndicesBuffer() const {
 }
 
 rt::graphics::ModelRange rt::graphics::Models::getModelRange(int index) const {
-    return rt::graphics::ModelRange{0, 0, static_cast<uint32_t>(getIndicesBufferSize()) / 3};
+    return modelRanges[index];
 }
 
 void rt::graphics::Models::destroy(VkDevice logicalDevice) {

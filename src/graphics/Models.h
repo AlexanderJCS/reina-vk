@@ -34,7 +34,7 @@ namespace rt::graphics {
         void destroy(VkDevice logicalDevice);
 
     private:
-        static ObjData getObjData(const std::string& filepath);
+        [[nodiscard]] static ObjData getObjData(const std::string& filepath);
 
         std::optional<rt::core::Buffer> verticesBuffer;
         std::optional<rt::core::Buffer> indicesBuffer;
@@ -42,7 +42,7 @@ namespace rt::graphics {
         size_t verticesBufferSize;
         size_t indicesBufferSize;
 
-        std::vector<ModelRange> modelData;
+        std::vector<ModelRange> modelRanges;
     };
 }
 

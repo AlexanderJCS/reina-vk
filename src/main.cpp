@@ -147,8 +147,8 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/cornell_box.obj"}};
-    rt::graphics::Blas blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
+    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/cornell_box.obj", "../models/cornell_box.obj"}};
+    rt::graphics::Blas blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
