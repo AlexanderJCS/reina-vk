@@ -98,8 +98,8 @@ void run() {
     };
 
     std::vector<rt::graphics::ObjectProperties> objectProperties{
-            {glm::vec3{0.9, 0.5, 0.5}, 0, glm::vec4(0.2, 0.8, 0.3, 0)},
-            {glm::vec3{0.3, 0.4, 0.9}, 0, glm::vec4(0.3, 0.4, 0.9, 20)}
+            {glm::vec3{0.9, 0.5, 0.5}, 0, glm::vec4(0.2, 0.8, 0.3, 0), 0.05f},
+            {glm::vec3{0.3, 0.4, 0.9}, 0, glm::vec4(0.3, 0.4, 0.9, 20), 0}
     };
     rt::core::Buffer objectPropertiesBuffer{
         logicalDevice, physicalDevice, objectProperties,

@@ -21,6 +21,8 @@ struct ObjectProperties {
     vec3 albedo;
     float padding;
     vec4 emission;
+    float fuzzOrRefIdx;
+    vec3 padding2;
 };
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
@@ -99,13 +101,24 @@ vec3 offsetPositionAlongNormal(vec3 worldPosition, vec3 normal) {
     );
 }
 
+vec3 randomUnitVec(inout uint rngState) {
+    // todo: see if this method or sampling a sphere is faster. profile it
+    while (true) {
+        vec3 vector = vec3(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
+
+        float lenSquared = dot(vector, vector);
+        if (0.0001 < lenSquared && lenSquared < 1) {
+            return normalize(vector);
+        }
+    }
+}
+
 vec3 diffuseReflection(vec3 normal, inout uint rngState) {
     const float theta = 2.0 * k_pi * stepAndOutputRNGFloat(rngState);  // Random in [0, 2pi]
     const float u = 2.0 * stepAndOutputRNGFloat(rngState) - 1.0;   // Random in [-1, 1]
     const float r = sqrt(1.0 - u * u);
     const vec3 direction = normal + vec3(r * cos(theta), r * sin(theta), u);
 
-    // Then normalize the ray direction:
     return normalize(direction);
 }
 
