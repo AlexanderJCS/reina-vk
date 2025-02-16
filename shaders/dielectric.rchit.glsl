@@ -19,9 +19,9 @@ void main() {
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
     bool cannot_refract = bool(ri * sinTheta > 1.0);  // must wrap in bool() to prevent glsl linter from throwing false-positive error
-    float reflectance = reflectance(cosTheta, ri);
+    float reflectivity = reflectance(cosTheta, ri);
 
-    if (cannot_refract || reflectance > stepAndOutputRNGFloat(pld.rngState)) {
+    if (cannot_refract || reflectivity > stepAndOutputRNGFloat(pld.rngState)) {
         // specular reflection
         pld.rayDirection = reflect(unitDir, hitInfo.worldNormal);
         pld.color = vec3(1);
