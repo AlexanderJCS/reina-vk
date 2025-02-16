@@ -95,7 +95,7 @@ namespace vktools {
     vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<rt::graphics::Instance>& instances);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
-    rt::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, int shaderGroups);
+    rt::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, uint32_t shaderGroups);
     PipelineInfo createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const rt::core::PushConstants& pushConstants);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);

@@ -114,11 +114,12 @@ void run() {
     std::vector<rt::graphics::Shader> shaders = {
             rt::graphics::Shader(logicalDevice, "../shaders/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
             rt::graphics::Shader(logicalDevice, "../shaders/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
-            rt::graphics::Shader(logicalDevice, "../shaders/raytrace.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            rt::graphics::Shader(logicalDevice, "../shaders/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            rt::graphics::Shader(logicalDevice, "../shaders/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
     vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
-    rt::core::Buffer sbtBuffer = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, 3);
+    rt::core::Buffer sbtBuffer = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, shaders.size());
 
     for (rt::graphics::Shader& shader : shaders) {
         shader.destroy(logicalDevice);
@@ -153,7 +154,7 @@ void run() {
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
     std::vector<rt::graphics::Instance> instances{
-            {blas, 0, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, -5)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
+            {blas, 0, 1, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, -5)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
             {blas, 1, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, -1, -1))}
     };
 
@@ -222,11 +223,11 @@ void run() {
 
         sbtMissRegion = sbtRayGenRegion;
         sbtMissRegion.deviceAddress = sbtStartAddress + sbtSpacing.stride;
-        sbtMissRegion.size = sbtSpacing.stride;  // empty
+        sbtMissRegion.size = sbtSpacing.stride;
 
         sbtHitRegion = sbtRayGenRegion;
         sbtHitRegion.deviceAddress = sbtStartAddress + 2 * sbtSpacing.stride;
-        sbtHitRegion.size = sbtSpacing.stride * 1 /* todo: since there's only one hit shader */;
+        sbtHitRegion.size = sbtSpacing.stride * 2 /* todo: since there's only two hit shaders */;
 
         sbtCallableRegion = sbtRayGenRegion;
         sbtCallableRegion.size = 0;
