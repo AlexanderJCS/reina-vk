@@ -114,6 +114,7 @@ const rt::core::Buffer &rt::graphics::Models::getIndicesBuffer() const {
 }
 
 rt::graphics::ModelRange rt::graphics::Models::getModelRange(int index) const {
+    // todo: do input validation
     return modelRanges[index];
 }
 

@@ -47,6 +47,11 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
             0                      // Location of payload
         );
 
+        #ifdef DEBUG_SHOW_NORMALS
+            incomingLight += pld.color;
+            break;
+        #endif
+
         if (pld.rayHitSky) {
             incomingLight += pld.color * accumulatedRayColor;
             break;
@@ -89,7 +94,7 @@ void main() {
     // State of the random number generator with an initial seed
     pld.rngState = uint((pushConstants.sampleBatch * resolution.y + pixel.y) * resolution.x + pixel.x);
 
-    const vec3 cameraOrigin = vec3(0, 1, 10);
+    const vec3 cameraOrigin = vec3(0, 1, 0.9);
     const float fovVerticalSlope = 1.0 / 5;
 
     const int NUM_SAMPLES = 64;

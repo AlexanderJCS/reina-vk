@@ -67,7 +67,7 @@ void transitionImage(
 
 void run() {
     // init
-    rt::window::Window renderWindow{800, 600};
+    rt::window::Window renderWindow{800, 800};
     VkInstance instance = vktools::createInstance();
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
     VkSurfaceKHR surface = vktools::createSurface(instance, renderWindow.getGlfwWindow());
@@ -98,8 +98,9 @@ void run() {
     };
 
     std::vector<rt::graphics::ObjectProperties> objectProperties{
-            {glm::vec3{0.9, 0.5, 0.5}, 0, glm::vec4(0.2, 0.8, 0.3, 0), 1.5f},
-            {glm::vec3{0.3, 0.4, 0.9}, 0, glm::vec4(0.3, 0.4, 0.9, 20), 0}
+            {glm::vec3{0.9}, 0, glm::vec4(0), 0},
+            {glm::vec3{0.9}, 0, glm::vec4(1, 1, 1, 20), 0},
+            {glm::vec3(0.9, 0.3, 0.5), 0, glm::vec4(0), 0}
     };
     rt::core::Buffer objectPropertiesBuffer{
         logicalDevice, physicalDevice, objectProperties,
@@ -149,14 +150,17 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/cornell_box.obj", "../models/cornell_box.obj"}};
-    rt::graphics::Blas blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
+    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/empty_cornell_box.obj", "../models/cornell_light.obj", "../models/stanford_bunny.obj"}};
+    rt::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
+    rt::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
+    rt::graphics::Blas bunny{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
     std::vector<rt::graphics::Instance> instances{
-            {blas, 0, 2, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, -5)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
-            {blas, 1, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, -1, -1))}
+            {box, 0, 0, baseTransform},
+            {light, 1, 0, baseTransform},
+            {bunny, 0, 0, baseTransform}
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
@@ -375,7 +379,9 @@ void run() {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
     }
 
-    blas.destroy(logicalDevice);
+    light.destroy(logicalDevice);
+    box.destroy(logicalDevice);
+    bunny.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
