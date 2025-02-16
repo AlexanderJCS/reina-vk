@@ -150,10 +150,10 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/empty_cornell_box.obj", "../models/cornell_light.obj", "../models/stanford_bunny.obj"}};
-    rt::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
-    rt::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
-    rt::graphics::Blas bunny{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
+    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    rt::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
+    rt::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
+    rt::graphics::Blas bunny{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 

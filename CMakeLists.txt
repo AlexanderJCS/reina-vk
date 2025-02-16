@@ -19,8 +19,6 @@ add_executable(raygun_vk src/main.cpp
         polyglot/common.h
         src/core/PushConstants.cpp
         src/core/PushConstants.h
-        src/graphics/Model.cpp
-        src/graphics/Model.h
         src/core/Buffer.cpp
         src/core/Buffer.h
         src/graphics/ObjectProperties.h
