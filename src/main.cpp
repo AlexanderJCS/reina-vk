@@ -98,7 +98,7 @@ void run() {
     };
 
     std::vector<rt::graphics::ObjectProperties> objectProperties{
-            {glm::vec3{0.9, 0.5, 0.5}, 0, glm::vec4(0.2, 0.8, 0.3, 0), 0.05f},
+            {glm::vec3{0.9, 0.5, 0.5}, 0, glm::vec4(0.2, 0.8, 0.3, 0), 1.5f},
             {glm::vec3{0.3, 0.4, 0.9}, 0, glm::vec4(0.3, 0.4, 0.9, 20), 0}
     };
     rt::core::Buffer objectPropertiesBuffer{
@@ -115,7 +115,8 @@ void run() {
             rt::graphics::Shader(logicalDevice, "../shaders/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
             rt::graphics::Shader(logicalDevice, "../shaders/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
             rt::graphics::Shader(logicalDevice, "../shaders/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
-            rt::graphics::Shader(logicalDevice, "../shaders/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+            rt::graphics::Shader(logicalDevice, "../shaders/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            rt::graphics::Shader(logicalDevice, "../shaders/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
     vktools::PipelineInfo rtPipelineInfo = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
@@ -154,7 +155,7 @@ void run() {
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
     std::vector<rt::graphics::Instance> instances{
-            {blas, 0, 1, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, -5)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
+            {blas, 0, 2, glm::rotate(glm::translate(baseTransform, glm::vec3(-1.5f, 0, -5)), glm::radians(45.0f), glm::vec3(0, 1, 1))},
             {blas, 1, 0, glm::rotate(glm::translate(baseTransform, glm::vec3(1.5f, 0, 0)), glm::radians(45.0f), glm::vec3(0, -1, -1))}
     };
 
@@ -227,7 +228,7 @@ void run() {
 
         sbtHitRegion = sbtRayGenRegion;
         sbtHitRegion.deviceAddress = sbtStartAddress + 2 * sbtSpacing.stride;
-        sbtHitRegion.size = sbtSpacing.stride * 2 /* todo: since there's only two hit shaders */;
+        sbtHitRegion.size = sbtSpacing.stride * (shaders.size() - 2);  // assuming shaders vector includes 2 non-rchit shaders
 
         sbtCallableRegion = sbtRayGenRegion;
         sbtCallableRegion.size = 0;

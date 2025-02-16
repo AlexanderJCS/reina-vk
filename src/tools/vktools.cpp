@@ -700,17 +700,16 @@ rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
 }
 
 vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const rt::core::PushConstants& pushConstants) {
-    if (shaders.size() != 4) {
-        throw std::runtime_error("Shaders must have size of 4");
+    if (shaders.size() < 2) {
+        throw std::runtime_error("Must have minimally two shaders: raygen (index 0) and ray miss (index 1). Any following shaders are hit shaders");
     }
 
-    std::array<VkPipelineShaderStageCreateInfo, 4> stages{};
+    std::vector<VkPipelineShaderStageCreateInfo> stages(shaders.size());
     for (int i = 0; i < shaders.size(); i++) {
         stages[i] = shaders[i].pipelineShaderStageCreateInfo();
     }
 
-    // todo: make this not hard-coded
-    std::array<VkRayTracingShaderGroupCreateInfoKHR, 4> groups{};
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> groups(shaders.size());
     groups[0] = {
             .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
             .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
@@ -727,22 +726,17 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt
             .anyHitShader = VK_SHADER_UNUSED_KHR,
             .intersectionShader = VK_SHADER_UNUSED_KHR
     };
-    groups[2] = {
-            .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
-            .generalShader = VK_SHADER_UNUSED_KHR,
-            .closestHitShader = 2,
-            .anyHitShader = VK_SHADER_UNUSED_KHR,
-            .intersectionShader = VK_SHADER_UNUSED_KHR
-    };
-    groups[3] = {
-            .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
-            .generalShader = VK_SHADER_UNUSED_KHR,
-            .closestHitShader = 3,
-            .anyHitShader = VK_SHADER_UNUSED_KHR,
-            .intersectionShader = VK_SHADER_UNUSED_KHR
-    };
+
+    for (int groupIdx = 2; groupIdx < shaders.size(); groupIdx++) {
+        groups[groupIdx] = {
+                .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+                .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
+                .generalShader = VK_SHADER_UNUSED_KHR,
+                .closestHitShader = static_cast<uint32_t>(groupIdx),
+                .anyHitShader = VK_SHADER_UNUSED_KHR,
+                .intersectionShader = VK_SHADER_UNUSED_KHR
+        };
+    }
 
     VkDescriptorSetLayout descriptorLayout = descriptorSet.getLayout();
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{
@@ -760,9 +754,9 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt
 
     VkRayTracingPipelineCreateInfoKHR rtPipelineCreateInfo {
         .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
-        .stageCount = stages.size(),
+        .stageCount = static_cast<uint32_t>(stages.size()),
         .pStages = stages.data(),
-        .groupCount = groups.size(),
+        .groupCount = static_cast<uint32_t>(groups.size()),
         .pGroups = groups.data(),
         .maxPipelineRayRecursionDepth = 1,
         .layout = pipelineLayout

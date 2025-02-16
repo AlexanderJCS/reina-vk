@@ -34,6 +34,7 @@ struct HitInfo {
     vec3 worldPosition;
     vec3 worldNormal;
     vec3 color;
+    bool frontFace;
 };
 
 HitInfo getObjectHitInfo() {
@@ -67,7 +68,9 @@ HitInfo getObjectHitInfo() {
 
     // Flip the normal so it points against the ray direction:
     const vec3 rayDirection = gl_WorldRayDirectionEXT;
-    result.worldNormal      = faceforward(result.worldNormal, rayDirection, result.worldNormal);
+
+    result.frontFace = dot(rayDirection, result.worldNormal) < 0;
+    result.worldNormal = faceforward(result.worldNormal, rayDirection, result.worldNormal);
 
     return result;
 }
