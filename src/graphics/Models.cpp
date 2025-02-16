@@ -29,7 +29,7 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
         const ObjData& objectData = allObjectsData[i];
 
         modelRanges[i] = ModelRange{
-            .firstVertex = static_cast<uint32_t>(vertexOffset / 4),  // I have no idea why this is / 4 instead of / 3
+            .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
             .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
             .indexCount  = static_cast<uint32_t>(objectData.indices.size() / 3)
         };
