@@ -97,18 +97,6 @@ void run() {
         }
     };
 
-    std::vector<rt::graphics::ObjectProperties> objectProperties{
-            {glm::vec3{0.9}, 0, glm::vec4(0), 0},
-            {glm::vec3{0.9}, 0, glm::vec4(1, 1, 1, 20), 0},
-            {glm::vec3(0.9, 0.3, 0.5), 0, glm::vec4(0), 0}
-    };
-    rt::core::Buffer objectPropertiesBuffer{
-        logicalDevice, physicalDevice, objectProperties,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        static_cast<VkMemoryAllocateFlags>(0),
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-    };
-
     rt::core::PushConstants pushConstants{PushConstantsStruct{0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
@@ -160,10 +148,22 @@ void run() {
     std::vector<rt::graphics::Instance> instances{
             {box, 0, 0, baseTransform},
             {light, 1, 0, baseTransform},
-            {bunny, 0, 0, baseTransform}
+            {bunny, 2, 0, baseTransform}
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
+
+    std::vector<rt::graphics::ObjectProperties> objectProperties{
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 20), 0},
+            {models.getModelRange(0).indexOffset, glm::vec3(0.9, 0.3, 0.5), glm::vec4(0), 0}
+    };
+    rt::core::Buffer objectPropertiesBuffer{
+            logicalDevice, physicalDevice, objectProperties,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            static_cast<VkMemoryAllocateFlags>(0),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+    };
 
 
     // render
@@ -210,7 +210,7 @@ void run() {
         VkDescriptorBufferInfo verticesInfo{.buffer = models.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
 
-        VkDescriptorBufferInfo indicesInfo{.buffer = models.getIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo indicesInfo{.buffer = models.getOffsetIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
         rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
 
         VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};

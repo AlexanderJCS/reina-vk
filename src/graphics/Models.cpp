@@ -19,26 +19,32 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
     }
 
     std::vector<float> allVertices(totalVertices);
-    std::vector<uint32_t> allIndices(totalIndices);
+    std::vector<uint32_t> allIndicesOffset(totalIndices);
+    std::vector<uint32_t> allIndicesNonOffset(totalIndices);
 
     size_t vertexOffset = 0;
     size_t indexOffset = 0;
 
-    // Copy the data to allVertices and allIndices
+    // Copy the data to allVertices and allIndicesOffset
     for (int i = 0; i < allObjectsData.size(); i++) {
         const ObjData& objectData = allObjectsData[i];
 
         modelRanges[i] = ModelRange{
-            .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
-            .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
-            .indexCount  = static_cast<uint32_t>(objectData.indices.size() / 3)
+                .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
+                .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
+                .indexCount  = static_cast<uint32_t>(objectData.indices.size() / 3)
         };
 
-        std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<std::vector<float>::difference_type>(vertexOffset));
-        std::copy(objectData.indices.begin(), objectData.indices.end(), allIndices.begin() + static_cast<std::vector<float>::difference_type>(indexOffset));
+        // Copy vertices
+        std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + vertexOffset);
+
+        // Copy indices with proper offset
+        for (uint32_t idx : objectData.indices) {
+            allIndicesOffset[indexOffset] = idx + (vertexOffset / 4);
+            allIndicesNonOffset[indexOffset++] = idx;
+        }
 
         vertexOffset += objectData.vertices.size();
-        indexOffset += objectData.indices.size();
     }
 
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
@@ -55,11 +61,19 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
 
-    indicesBufferSize = allIndices.size();
-    indicesBuffer = rt::core::Buffer{
+    indicesBuffersSize = allIndicesOffset.size();
+    offsetIndicesBuffer = rt::core::Buffer{
             logicalDevice,
             physicalDevice,
-            allIndices,
+            allIndicesOffset,
+            usage,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    };
+    nonOffsetIndicesBuffer = rt::core::Buffer{
+            logicalDevice,
+            physicalDevice,
+            allIndicesNonOffset,
             usage,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -102,16 +116,20 @@ size_t rt::graphics::Models::getVerticesBufferSize() const {
     return verticesBufferSize;
 }
 
-size_t rt::graphics::Models::getIndicesBufferSize() const {
-    return indicesBufferSize;
+size_t rt::graphics::Models::getIndicesBuffersSize() const {
+    return indicesBuffersSize;
 }
 
 const rt::core::Buffer& rt::graphics::Models::getVerticesBuffer() const {
     return verticesBuffer.value();
 }
 
-const rt::core::Buffer &rt::graphics::Models::getIndicesBuffer() const {
-    return indicesBuffer.value();
+const rt::core::Buffer& rt::graphics::Models::getOffsetIndicesBuffer() const {
+    return offsetIndicesBuffer.value();
+}
+
+const rt::core::Buffer& rt::graphics::Models::getNonOffsetIndicesBuffer() const {
+    return nonOffsetIndicesBuffer.value();
 }
 
 rt::graphics::ModelRange rt::graphics::Models::getModelRange(int index) const {
@@ -122,7 +140,9 @@ rt::graphics::ModelRange rt::graphics::Models::getModelRange(int index) const {
 void rt::graphics::Models::destroy(VkDevice logicalDevice) {
     if (verticesBuffer.has_value()) {
         verticesBuffer.value().destroy(logicalDevice);
-    } if (indicesBuffer.has_value()) {
-        indicesBuffer.value().destroy(logicalDevice);
+    } if (offsetIndicesBuffer.has_value()) {
+        offsetIndicesBuffer.value().destroy(logicalDevice);
+    } if (nonOffsetIndicesBuffer.has_value()) {
+        nonOffsetIndicesBuffer.value().destroy(logicalDevice);
     }
 }

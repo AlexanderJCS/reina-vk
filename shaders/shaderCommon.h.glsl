@@ -1,7 +1,8 @@
 #ifndef VK_MINI_PATH_TRACER_SHADER_COMMON_H
 #define VK_MINI_PATH_TRACER_SHADER_COMMON_H
 
-#define DEBUG_SHOW_NORMALS
+// define this to show normals on lambertian surfaces
+// #define DEBUG_SHOW_NORMALS
 
 struct PassableInfo
 {

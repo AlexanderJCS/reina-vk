@@ -18,8 +18,8 @@ layout(binding = 3, set = 0, scalar) buffer Indices {
 layout(location = 0) rayPayloadInEXT PassableInfo pld;
 
 struct ObjectProperties {
+    uint indicesBytesOffset;
     vec3 albedo;
-    float padding;
     vec4 emission;
     float fuzzOrRefIdx;
     vec3 padding2;
@@ -40,12 +40,15 @@ struct HitInfo {
 HitInfo getObjectHitInfo() {
     HitInfo result;
     // Get the ID of the triangle
-    const int primitiveID = gl_PrimitiveID;
+    const uint primitiveID = gl_PrimitiveID;
+
+    // divide by 4 since 4 bytes for an int32
+    const uint indexOffset = objectProperties[gl_InstanceCustomIndexEXT].indicesBytesOffset / 4;
 
     // Get the indices of the vertices of the triangle
-    const uint i0 = indices[3 * primitiveID + 0];
-    const uint i1 = indices[3 * primitiveID + 1];
-    const uint i2 = indices[3 * primitiveID + 2];
+    const uint i0 = indices[3 * primitiveID + indexOffset + 0];
+    const uint i1 = indices[3 * primitiveID + indexOffset + 1];
+    const uint i2 = indices[3 * primitiveID + indexOffset + 2];
 
     // Get the vertices of the triangle
     const vec3 v0 = vertices[i0].xyz;

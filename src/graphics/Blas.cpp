@@ -16,7 +16,7 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
             .vertexStride = 4 * sizeof(float),
             .maxVertex = vertexCount - 1,
             .indexType = VK_INDEX_TYPE_UINT32,
-            .indexData = {.deviceAddress = models.getIndicesBuffer().getDeviceAddress(logicalDevice)}
+            .indexData = {.deviceAddress = models.getNonOffsetIndicesBuffer().getDeviceAddress(logicalDevice)}
     };
 
     VkAccelerationStructureGeometryKHR geometry{

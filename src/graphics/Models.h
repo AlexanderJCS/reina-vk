@@ -24,10 +24,11 @@ namespace rt::graphics {
         Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths);
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
-        [[nodiscard]] size_t getIndicesBufferSize() const;
+        [[nodiscard]] size_t getIndicesBuffersSize() const;
 
         [[nodiscard]] const rt::core::Buffer& getVerticesBuffer() const;
-        [[nodiscard]] const rt::core::Buffer& getIndicesBuffer() const;
+        [[nodiscard]] const rt::core::Buffer& getOffsetIndicesBuffer() const;
+        [[nodiscard]] const rt::core::Buffer& getNonOffsetIndicesBuffer() const;
 
         [[nodiscard]] ModelRange getModelRange(int index) const;
 
@@ -37,10 +38,11 @@ namespace rt::graphics {
         [[nodiscard]] static ObjData getObjData(const std::string& filepath);
 
         std::optional<rt::core::Buffer> verticesBuffer;
-        std::optional<rt::core::Buffer> indicesBuffer;
+        std::optional<rt::core::Buffer> offsetIndicesBuffer;
+        std::optional<rt::core::Buffer> nonOffsetIndicesBuffer;
 
         size_t verticesBufferSize;
-        size_t indicesBufferSize;
+        size_t indicesBuffersSize;
 
         std::vector<ModelRange> modelRanges;
     };
