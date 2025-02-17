@@ -138,17 +138,17 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    rt::graphics::Models models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     rt::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     rt::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
-    rt::graphics::Blas bunny{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
+    rt::graphics::Blas sphere{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
     std::vector<rt::graphics::Instance> instances{
             {box, 0, 0, baseTransform},
             {light, 1, 0, baseTransform},
-            {bunny, 2, 0, baseTransform}
+            {sphere, 2, 2, glm::translate(glm::scale(baseTransform, glm::vec3(0.3)), glm::vec3(0, 3, 0))}
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
@@ -156,7 +156,7 @@ void run() {
     std::vector<rt::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 20), 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(0.9, 0.3, 0.5), glm::vec4(0), 0}
+            {models.getModelRange(0).indexOffset, glm::vec3(0.9), glm::vec4(0), 1.5}
     };
     rt::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
@@ -381,7 +381,7 @@ void run() {
 
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
-    bunny.destroy(logicalDevice);
+    sphere.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);

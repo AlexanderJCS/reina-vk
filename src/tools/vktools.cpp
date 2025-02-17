@@ -460,7 +460,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
                 .instanceCustomIndex = instance.objectPropertiesID,
                 .mask = 0xFF,
                 .instanceShaderBindingTableRecordOffset = instance.materialOffset,
-                .flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR,
+                .flags = 0,
                 .accelerationStructureReference = blasAddress
         };
         vkInstances.push_back(vkInstance);
