@@ -20,18 +20,18 @@ vec3 offsetPositionForDielectric(vec3 worldPosition, vec3 normal, vec3 rayDir) {
     // Offset each component of worldPosition using its bit representation.
     // The sign check on worldPosition components helps to handle negative values.
     const vec3 p_i = vec3(
-    intBitsToFloat(floatBitsToInt(worldPosition.x) + ((worldPosition.x < 0.0) ? -of_i.x : of_i.x)),
-    intBitsToFloat(floatBitsToInt(worldPosition.y) + ((worldPosition.y < 0.0) ? -of_i.y : of_i.y)),
-    intBitsToFloat(floatBitsToInt(worldPosition.z) + ((worldPosition.z < 0.0) ? -of_i.z : of_i.z))
+        intBitsToFloat(floatBitsToInt(worldPosition.x) + ((worldPosition.x < 0.0) ? -of_i.x : of_i.x)),
+        intBitsToFloat(floatBitsToInt(worldPosition.y) + ((worldPosition.y < 0.0) ? -of_i.y : of_i.y)),
+        intBitsToFloat(floatBitsToInt(worldPosition.z) + ((worldPosition.z < 0.0) ? -of_i.z : of_i.z))
     );
 
     // For points near the origin, use a smaller floating-point offset.
     const float origin = 1.0 / 32.0;
     const float floatScale = 1.0 / 65536.0;
     return vec3(
-    abs(worldPosition.x) < origin ? worldPosition.x + floatScale * offsetNormal.x : p_i.x,
-    abs(worldPosition.y) < origin ? worldPosition.y + floatScale * offsetNormal.y : p_i.y,
-    abs(worldPosition.z) < origin ? worldPosition.z + floatScale * offsetNormal.z : p_i.z
+        abs(worldPosition.x) < origin ? worldPosition.x + floatScale * offsetNormal.x : p_i.x,
+        abs(worldPosition.y) < origin ? worldPosition.y + floatScale * offsetNormal.y : p_i.y,
+        abs(worldPosition.z) < origin ? worldPosition.z + floatScale * offsetNormal.z : p_i.z
     );
 }
 

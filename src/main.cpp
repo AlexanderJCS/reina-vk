@@ -381,7 +381,7 @@ void run() {
 
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
-    sphere.destroy(logicalDevice);
+    bunny.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
