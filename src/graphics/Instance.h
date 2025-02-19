@@ -5,7 +5,7 @@
 
 #include <glm/mat4x4.hpp>
 
-namespace rt::graphics {
+namespace reina::graphics {
     struct Instance {
         const Blas& blas;
         uint32_t objectPropertiesID = 0;

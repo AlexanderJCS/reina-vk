@@ -7,7 +7,7 @@
 
 #include "../core/Buffer.h"
 
-namespace rt::graphics {
+namespace reina::graphics {
     struct ModelRange {
         uint32_t firstVertex;
         uint32_t indexOffset;
@@ -26,9 +26,9 @@ namespace rt::graphics {
         [[nodiscard]] size_t getVerticesBufferSize() const;
         [[nodiscard]] size_t getIndicesBuffersSize() const;
 
-        [[nodiscard]] const rt::core::Buffer& getVerticesBuffer() const;
-        [[nodiscard]] const rt::core::Buffer& getOffsetIndicesBuffer() const;
-        [[nodiscard]] const rt::core::Buffer& getNonOffsetIndicesBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getVerticesBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getOffsetIndicesBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getNonOffsetIndicesBuffer() const;
 
         [[nodiscard]] ModelRange getModelRange(int index) const;
 
@@ -37,9 +37,9 @@ namespace rt::graphics {
     private:
         [[nodiscard]] static ObjData getObjData(const std::string& filepath);
 
-        std::optional<rt::core::Buffer> verticesBuffer;
-        std::optional<rt::core::Buffer> offsetIndicesBuffer;
-        std::optional<rt::core::Buffer> nonOffsetIndicesBuffer;
+        std::optional<reina::core::Buffer> verticesBuffer;
+        std::optional<reina::core::Buffer> offsetIndicesBuffer;
+        std::optional<reina::core::Buffer> nonOffsetIndicesBuffer;
 
         size_t verticesBufferSize;
         size_t indicesBuffersSize;

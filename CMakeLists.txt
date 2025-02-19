@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.29)
-project(raygun_vk)
+project(reina_vk)
 
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(Vulkan REQUIRED)
 add_subdirectory(lib/glfw-3.4)
 
-add_executable(raygun_vk src/main.cpp
+add_executable(reina_vk src/main.cpp
         src/tools/consts.h
         src/tools/vktools.cpp
         src/tools/vktools.h
@@ -29,7 +29,7 @@ add_executable(raygun_vk src/main.cpp
         src/graphics/Models.cpp
         src/graphics/Models.h)
 
-target_link_libraries(raygun_vk Vulkan::Vulkan glfw)
+target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 
-target_include_directories(raygun_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
-target_include_directories(raygun_vk PUBLIC ${CMAKE_SOURCE_DIR}/lib/tiny_obj_loader)
+target_include_directories(reina_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
+target_include_directories(reina_vk PUBLIC ${CMAKE_SOURCE_DIR}/lib/tiny_obj_loader)

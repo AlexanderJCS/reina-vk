@@ -6,7 +6,7 @@
 #include <vector>
 #include <optional>
 
-namespace rt::core {
+namespace reina::core {
     struct Binding {
         uint32_t bindingPoint;
         VkDescriptorType type;

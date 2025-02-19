@@ -292,7 +292,7 @@ std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logical
     return swapchainFramebuffers;
 }
 
-vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet &descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader &vertexShader, const rt::graphics::Shader &fragmentShader) {
+vktools::PipelineInfo vktools::createRasterizationPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet &descriptorSet, VkRenderPass renderPass, const reina::graphics::Shader &vertexShader, const reina::graphics::Shader &fragmentShader) {
     VkPipelineShaderStageCreateInfo shaderStages[] = {
             vertexShader.pipelineShaderStageCreateInfo(),
             fragmentShader.pipelineShaderStageCreateInfo()
@@ -438,7 +438,7 @@ VkRenderPass vktools::createRenderPass(VkDevice logicalDevice, VkFormat swapchai
 
 vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice,
                                               VkCommandPool cmdPool, VkQueue queue,
-                                              const std::vector<rt::graphics::Instance>& instances) {
+                                              const std::vector<reina::graphics::Instance>& instances) {
 
     std::vector<VkAccelerationStructureInstanceKHR> vkInstances;
     for (const auto& instance : instances) {
@@ -467,7 +467,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     }
 
     // Create the instance buffer
-    rt::core::Buffer instanceBuffer{
+    reina::core::Buffer instanceBuffer{
         logicalDevice, physicalDevice,
         vkInstances,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
@@ -516,7 +516,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     );
 
     // Create TLAS buffer
-    rt::core::Buffer tlasBuffer{
+    reina::core::Buffer tlasBuffer{
             logicalDevice, physicalDevice,
             buildSizes.accelerationStructureSize,
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -548,7 +548,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     const VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfo = &buildRangeInfo;
 
     // Allocate scratch buffer (similar to BLAS)
-    rt::core::Buffer scratchBuffer{
+    reina::core::Buffer scratchBuffer{
         logicalDevice, physicalDevice, buildSizes.buildScratchSize,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -667,7 +667,7 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     return {sbtHeaderSize, sbtBaseAlignment, sbtHandleAlignment, sbtStride};
 }
 
-rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, uint32_t shaderGroups) {
+reina::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing sbtSpacing, uint32_t shaderGroups) {
     std::vector<uint8_t> cpuShaderHandleStorage(sbtSpacing.headerSize * shaderGroups);
 
     auto vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
@@ -679,7 +679,7 @@ rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
 
     auto sbtSize = static_cast<VkDeviceSize>(sbtSpacing.stride * shaderGroups);
 
-    rt::core::Buffer sbtBuffer{
+    reina::core::Buffer sbtBuffer{
             logicalDevice, physicalDevice, sbtSize,
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -699,7 +699,7 @@ rt::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice phy
     return sbtBuffer;
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const rt::core::PushConstants& pushConstants) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants& pushConstants) {
     if (shaders.size() < 2) {
         throw std::runtime_error("Must have minimally two shaders: raygen (index 0) and ray miss (index 1). Any following shaders are hit shaders");
     }

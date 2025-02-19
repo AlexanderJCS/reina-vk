@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 
-rt::window::Window::Window(int width, int height) {
+reina::window::Window::Window(int width, int height) {
     if (glfwInit() != GLFW_TRUE) {  // todo: should glfw init for every object or just once?
         throw std::runtime_error("Cannot init GLFW");
     }
@@ -16,28 +16,28 @@ rt::window::Window::Window(int width, int height) {
     glfwGetWindowSize(glfwWindow, &this->width, &this->height);
 }
 
-int rt::window::Window::getWidth() const {
+int reina::window::Window::getWidth() const {
     return width;
 }
 
-int rt::window::Window::getHeight() const {
+int reina::window::Window::getHeight() const {
     return height;
 }
 
-void rt::window::Window::destroy() {
+void reina::window::Window::destroy() {
     glfwDestroyWindow(glfwWindow);
     glfwTerminate();  // todo: verify if this is best practice.
 }
 
-GLFWwindow* rt::window::Window::getGlfwWindow() const {
+GLFWwindow* reina::window::Window::getGlfwWindow() const {
     return glfwWindow;
 }
 
-bool rt::window::Window::shouldClose() {
+bool reina::window::Window::shouldClose() {
     return glfwWindowShouldClose(glfwWindow);
 }
 
-bool rt::window::Window::isMinimized() const {
+bool reina::window::Window::isMinimized() const {
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(glfwWindow, &fbWidth, &fbHeight);
     return fbWidth == 0 || fbHeight == 0;

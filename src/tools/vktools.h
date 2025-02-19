@@ -16,7 +16,7 @@
 #include "../core/Buffer.h"
 
 // forward declaration
-namespace rt::graphics {
+namespace reina::graphics {
     class Instance;
 }
 
@@ -66,7 +66,7 @@ namespace vktools {
 
     struct AccStructureInfo {
         VkAccelerationStructureKHR accelerationStructure;
-        rt::core::Buffer buffer;
+        reina::core::Buffer buffer;
     };
 
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -89,14 +89,14 @@ namespace vktools {
     bool isDeviceSuitable(VkPhysicalDevice device);
 
     std::vector<VkFramebuffer> createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews);
-    PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, VkRenderPass renderPass, const rt::graphics::Shader& vertexShader, const rt::graphics::Shader& fragmentShader);
+    PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, VkRenderPass renderPass, const reina::graphics::Shader& vertexShader, const reina::graphics::Shader& fragmentShader);
     VkRenderPass createRenderPass(VkDevice logicalDevice, VkFormat swapchainImageFormat);
 
-    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<rt::graphics::Instance>& instances);
+    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<reina::graphics::Instance>& instances);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
-    rt::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, uint32_t shaderGroups);
-    PipelineInfo createRtPipeline(VkDevice logicalDevice, const rt::core::DescriptorSet& descriptorSet, const std::vector<rt::graphics::Shader>& shaders, const rt::core::PushConstants& pushConstants);
+    reina::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, uint32_t shaderGroups);
+    PipelineInfo createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants& pushConstants);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 

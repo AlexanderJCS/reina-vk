@@ -3,7 +3,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace rt::graphics {
+namespace reina::graphics {
     struct alignas(16) ObjectProperties {
         uint32_t indicesBytesOffset;
         glm::vec3 albedo;

@@ -3,8 +3,8 @@
 
 #include "../tools/vktools.h"
 
-rt::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage,
-               VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
+reina::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage,
+                            VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
 
     VkBufferCreateInfo createInfo{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -39,15 +39,15 @@ rt::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
     vkBindBufferMemory(logicalDevice, buffer, deviceMemory, 0);
 }
 
-VkBuffer rt::core::Buffer::getHandle() const {
+VkBuffer reina::core::Buffer::getHandle() const {
     return buffer;
 }
 
-VkDeviceMemory rt::core::Buffer::getDeviceMemory() const {
+VkDeviceMemory reina::core::Buffer::getDeviceMemory() const {
     return deviceMemory;
 }
 
-VkDeviceAddress rt::core::Buffer::getDeviceAddress(VkDevice logicalDevice) const {
+VkDeviceAddress reina::core::Buffer::getDeviceAddress(VkDevice logicalDevice) const {
     VkBufferDeviceAddressInfo addressInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
         .buffer = buffer
@@ -56,7 +56,7 @@ VkDeviceAddress rt::core::Buffer::getDeviceAddress(VkDevice logicalDevice) const
     return vkGetBufferDeviceAddress(logicalDevice, &addressInfo);
 }
 
-void rt::core::Buffer::destroy(VkDevice logicalDevice) {
+void reina::core::Buffer::destroy(VkDevice logicalDevice) {
     vkDestroyBuffer(logicalDevice, buffer, nullptr);
     vkFreeMemory(logicalDevice, deviceMemory, nullptr);
 }

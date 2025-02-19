@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <cmath>
 
-rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths) {
+reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths) {
     modelRanges = std::vector<ModelRange>(modelFilepaths.size());
     std::vector<ObjData> allObjectsData(modelFilepaths.size());
     size_t totalVertices = 0;
@@ -52,7 +52,7 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
     verticesBufferSize = allVertices.size();
-    verticesBuffer = rt::core::Buffer{
+    verticesBuffer = reina::core::Buffer{
             logicalDevice,
             physicalDevice,
             allVertices,
@@ -62,7 +62,7 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
     };
 
     indicesBuffersSize = allIndicesOffset.size();
-    offsetIndicesBuffer = rt::core::Buffer{
+    offsetIndicesBuffer = reina::core::Buffer{
             logicalDevice,
             physicalDevice,
             allIndicesOffset,
@@ -70,7 +70,7 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
-    nonOffsetIndicesBuffer = rt::core::Buffer{
+    nonOffsetIndicesBuffer = reina::core::Buffer{
             logicalDevice,
             physicalDevice,
             allIndicesNonOffset,
@@ -80,7 +80,7 @@ rt::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
     };
 }
 
-rt::graphics::ObjData rt::graphics::Models::getObjData(const std::string& filepath) {
+reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& filepath) {
     tinyobj::ObjReader reader;
     reader.ParseFromFile(filepath);
 
@@ -112,32 +112,32 @@ rt::graphics::ObjData rt::graphics::Models::getObjData(const std::string& filepa
     return {objVertices, objIndices};
 }
 
-size_t rt::graphics::Models::getVerticesBufferSize() const {
+size_t reina::graphics::Models::getVerticesBufferSize() const {
     return verticesBufferSize;
 }
 
-size_t rt::graphics::Models::getIndicesBuffersSize() const {
+size_t reina::graphics::Models::getIndicesBuffersSize() const {
     return indicesBuffersSize;
 }
 
-const rt::core::Buffer& rt::graphics::Models::getVerticesBuffer() const {
+const reina::core::Buffer& reina::graphics::Models::getVerticesBuffer() const {
     return verticesBuffer.value();
 }
 
-const rt::core::Buffer& rt::graphics::Models::getOffsetIndicesBuffer() const {
+const reina::core::Buffer& reina::graphics::Models::getOffsetIndicesBuffer() const {
     return offsetIndicesBuffer.value();
 }
 
-const rt::core::Buffer& rt::graphics::Models::getNonOffsetIndicesBuffer() const {
+const reina::core::Buffer& reina::graphics::Models::getNonOffsetIndicesBuffer() const {
     return nonOffsetIndicesBuffer.value();
 }
 
-rt::graphics::ModelRange rt::graphics::Models::getModelRange(int index) const {
+reina::graphics::ModelRange reina::graphics::Models::getModelRange(int index) const {
     // todo: do input validation
     return modelRanges[index];
 }
 
-void rt::graphics::Models::destroy(VkDevice logicalDevice) {
+void reina::graphics::Models::destroy(VkDevice logicalDevice) {
     if (verticesBuffer.has_value()) {
         verticesBuffer.value().destroy(logicalDevice);
     } if (offsetIndicesBuffer.has_value()) {

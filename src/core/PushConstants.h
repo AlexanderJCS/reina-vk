@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rt::core {
+namespace reina::core {
     class PushConstants {
     public:
         PushConstants(const PushConstantsStruct& defaultValues, VkShaderStageFlags stageFlags);

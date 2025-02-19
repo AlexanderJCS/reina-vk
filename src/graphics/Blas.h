@@ -8,19 +8,19 @@
 #include "Models.h"
 #include "../core/Buffer.h"
 
-namespace rt::graphics {
+namespace reina::graphics {
     class Blas {
     public:
-        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const rt::graphics::ModelRange& modelRange);
+        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const reina::graphics::ModelRange& modelRange);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
-        [[nodiscard]] const rt::core::Buffer& getBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getBuffer() const;
 
 
         void destroy(VkDevice logicalDevice);
 
     private:
-        std::optional<rt::core::Buffer> blasBuffer;
+        std::optional<reina::core::Buffer> blasBuffer;
         VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
     };
 }

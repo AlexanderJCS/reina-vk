@@ -6,7 +6,7 @@
 #include <vector>
 
 
-namespace rt::graphics {
+namespace reina::graphics {
     class Shader {
     public:
         Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage, std::string entryPoint = "main");

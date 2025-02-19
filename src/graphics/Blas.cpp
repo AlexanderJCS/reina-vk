@@ -4,8 +4,8 @@
 
 #include "../tools/vktools.h"
 
-rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
-                         const rt::graphics::Models& models, const rt::graphics::ModelRange& modelRange) {
+reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
+                            const reina::graphics::Models& models, const reina::graphics::ModelRange& modelRange) {
 
     uint32_t vertexCount = static_cast<uint32_t>(models.getVerticesBufferSize()) / 3;
 
@@ -57,7 +57,7 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
             &buildSizes
     );
 
-    blasBuffer = rt::core::Buffer{
+    blasBuffer = reina::core::Buffer{
             logicalDevice, physicalDevice, buildSizes.accelerationStructureSize,
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -75,7 +75,7 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
 
     vkCreateAccelerationStructureKHR(logicalDevice, &createInfo, nullptr, &blas);
 
-    rt::core::Buffer scratchBufferObjects{
+    reina::core::Buffer scratchBufferObjects{
             logicalDevice, physicalDevice, buildSizes.buildScratchSize,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
@@ -145,15 +145,15 @@ rt::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice
     scratchBufferObjects.destroy(logicalDevice);
 }
 
-VkAccelerationStructureKHR rt::graphics::Blas::getHandle() const {
+VkAccelerationStructureKHR reina::graphics::Blas::getHandle() const {
     return blas;
 }
 
-const rt::core::Buffer &rt::graphics::Blas::getBuffer() const {
+const reina::core::Buffer &reina::graphics::Blas::getBuffer() const {
     return blasBuffer.value();
 }
 
-void rt::graphics::Blas::destroy(VkDevice logicalDevice) {
+void reina::graphics::Blas::destroy(VkDevice logicalDevice) {
     auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
 

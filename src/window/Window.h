@@ -3,7 +3,7 @@
 
 #include "GLFW/glfw3.h"
 
-namespace rt::window {
+namespace reina::window {
     class Window {
     private:
         GLFWwindow* glfwWindow;
