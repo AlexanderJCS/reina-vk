@@ -21,19 +21,23 @@ namespace reina::tools {
      */
     class Clock {
     public:
+        Clock();
+
         static double getTime();
+        double getTimeFromCreation();
 
         void markFrame();
         void markCategory(const std::string& category);
 
         [[nodiscard]] unsigned int getFrameCount() const;
-        [[nodiscard]] unsigned int getSamplesCount() const;
+        [[nodiscard]] unsigned int getSampleCount() const;
 
         [[nodiscard]] double getAverageFrameTime() const;
         [[nodiscard]] double getAverageCategoryTime(const std::string& category) const;
 
         std::string summary();
     private:
+        double creationTime;
         double lastFrameTime = 0;
         TimeEntries frameTime;
 

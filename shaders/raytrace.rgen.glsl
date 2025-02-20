@@ -32,7 +32,8 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
     vec3 accumulatedRayColor = vec3(1.0);
     vec3 incomingLight = vec3(0.0);
 
-    for (int tracedSegments = 0; tracedSegments < 32; tracedSegments++) {
+    // BOUNCES_PER_SAMPLE defined in common.h
+    for (int tracedSegments = 0; tracedSegments < BOUNCES_PER_SAMPLE; tracedSegments++) {
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
             gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"

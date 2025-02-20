@@ -172,8 +172,8 @@ void run() {
     while (!renderWindow.shouldClose()) {
         bool firstFrame = clock.getFrameCount() == 0;
 
-        if (firstFrame) {
-            std::cout << clock.summary();
+        if (!firstFrame) {
+            std::cout << clock.summary() << "\n";
         }
 
         clock.markFrame();

@@ -14,8 +14,14 @@ void reina::tools::TimeEntries::addEntry(double timing) {
     recordings++;
 }
 
+reina::tools::Clock::Clock() : creationTime(getTime()) {}
+
 double reina::tools::Clock::getTime() {
     return glfwGetTime();
+}
+
+double reina::tools::Clock::getTimeFromCreation() {
+    return getTime() - creationTime;
 }
 
 void reina::tools::Clock::markFrame() {
@@ -50,6 +56,8 @@ void reina::tools::Clock::markCategory(const std::string& category) {
 
 std::string reina::tools::Clock::summary() {
     std::ostringstream oss;
+    oss << "Timer age: " << getTimeFromCreation() << "s\n";
+    oss << "Samples: " << getSampleCount() << "\n";
     oss << "Average frame time: " << frameTime.averageTime * 1000 << "ms\n";
     oss << "Average time per spp: " << frameTime.averageTime * 1000 / SAMPLES_PER_PIXEL << "ms\n";
 
@@ -64,7 +72,7 @@ unsigned int reina::tools::Clock::getFrameCount() const {
     return frameTime.recordings;
 }
 
-unsigned int reina::tools::Clock::getSamplesCount() const {
+unsigned int reina::tools::Clock::getSampleCount() const {
     return getFrameCount() * SAMPLES_PER_PIXEL;
 }
 

@@ -7,6 +7,7 @@
 #endif  // #ifdef __cplusplus
 
 #define SAMPLES_PER_PIXEL 64
+#define BOUNCES_PER_SAMPLE 16
 
 struct PushConstantsStruct {
     uint sampleBatch;
