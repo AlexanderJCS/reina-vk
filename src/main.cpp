@@ -155,9 +155,9 @@ void run() {
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0},
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0.2},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(0.9), glm::vec4(0), 1.5}
+            {models.getModelRange(0).indexOffset, glm::vec3(53.0f/255, 196.0f/255, 91.0f/255), glm::vec4(0), 1.5}
     };
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
