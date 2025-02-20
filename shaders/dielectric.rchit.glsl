@@ -61,4 +61,5 @@ void main() {
 
     pld.emission  = objectProperties[gl_InstanceCustomIndexEXT].emission;
     pld.rayHitSky = false;
+    pld.skip      = false;
 }

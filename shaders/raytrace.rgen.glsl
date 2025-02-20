@@ -47,6 +47,13 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
             0                      // Location of payload
         );
 
+        origin = pld.rayOrigin;
+        direction = pld.rayDirection;
+
+        if (pld.skip) {
+            continue;
+        }
+
         #ifdef DEBUG_SHOW_NORMALS
             incomingLight += pld.color;
             break;
@@ -59,9 +66,6 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
 
         incomingLight += pld.emission.xyz * pld.emission.w * accumulatedRayColor;
         accumulatedRayColor *= pld.color;
-
-        origin = pld.rayOrigin;
-        direction = pld.rayDirection;
     }
 
     return incomingLight;

@@ -155,7 +155,7 @@ void run() {
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 20), 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), 0},
             {models.getModelRange(0).indexOffset, glm::vec3(0.9), glm::vec4(0), 1.5}
     };
     reina::core::Buffer objectPropertiesBuffer{

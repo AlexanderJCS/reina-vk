@@ -107,6 +107,22 @@ vec3 offsetPositionAlongNormal(vec3 worldPosition, vec3 normal) {
     );
 }
 
+/*
+ * Keep the ray moving in the same direction and origin and enable the 'skip' flag, which tells the raygen shader to
+ * not count this ray to the total color. This is useful for skipping rays that hit the back face of an object.
+ * I can't just turn on back face culling because some materials (like dielectrics) require the back face to be
+ * considered.
+ */
+void skip(HitInfo hitInfo) {
+    // ignore back faces. this should ideally be done in the any hit shader but I don't feel like modifying the SBT
+    // right now.
+    // todo: do this in the any hit shader instead
+    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, -hitInfo.worldNormal);
+    pld.rayDirection = gl_WorldRayDirectionEXT;
+    pld.rayHitSky = false;
+    pld.skip = true;
+}
+
 vec3 randomUnitVec(inout uint rngState) {
     // todo: see if this method or sampling a sphere is faster. profile it
     while (true) {

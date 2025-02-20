@@ -12,6 +12,7 @@ struct PassableInfo
     uint rngState;      // State of the random number generator.
     bool rayHitSky;     // True if the ray hit the sky.
     vec4 emission;      // xyz: emission color, w: emission strength
+    bool skip;          // If true, the raygen shader knows to skip this ray
 };
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.
