@@ -101,11 +101,11 @@ void main() {
     const vec3 cameraOrigin = vec3(0, 1, 0.9);
     const float fovVerticalSlope = 1.0 / 5;
 
-    const int NUM_SAMPLES = 64;
     int actualSamples = 0;
     vec3 summedPixelColor = vec3(0.0);
 
-    for (int sampleIdx = 0; sampleIdx < NUM_SAMPLES; sampleIdx++) {
+    // SAMPLES_PER_PIXEL defined in common.h polyglot file
+    for (int sampleIdx = 0; sampleIdx < SAMPLES_PER_PIXEL; sampleIdx++) {
         vec3 color = computeSample(pixel, resolution, cameraOrigin, fovVerticalSlope);
 
         if (any(isnan(color))) {

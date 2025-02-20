@@ -18,6 +18,7 @@
 #include "graphics/ObjectProperties.h"
 #include "graphics/Blas.h"
 #include "graphics/Instance.h"
+#include "tools/Clock.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -167,8 +168,17 @@ void run() {
 
 
     // render
-    bool firstFrame = true;
+    reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {
+        bool firstFrame = clock.getFrameCount() == 0;
+
+        if (firstFrame) {
+            std::cout << clock.summary();
+        }
+
+        clock.markFrame();
+        clock.markCategory("Ray Tracing");
+
         if (vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
             throw std::runtime_error("Could not wait for fences");
         }
@@ -256,6 +266,7 @@ void run() {
         );
 
         // everything below here is swapchain stuff
+        clock.markCategory("Display");
 
         // transition to the same and synchronize
         transitionImage(
@@ -362,7 +373,6 @@ void run() {
         }
 
         glfwPollEvents();
-        firstFrame = false;
     }
 
     vkDeviceWaitIdle(logicalDevice);
