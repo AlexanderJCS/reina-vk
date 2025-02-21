@@ -17,6 +17,11 @@ layout (push_constant) uniform PushConsts {
     PushConstantsStruct pushConstants;
 };
 
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
 // Uses the Box-Muller transform to return a normally distributed (centered
 // at 0, standard deviation 1) 2D point.
 vec2 randomGaussian(inout uint rngState) {
@@ -28,7 +33,7 @@ vec2 randomGaussian(inout uint rngState) {
     return r * vec2(cos(theta), sin(theta));
 }
 
-vec3 traceSegments(vec3 origin, vec3 direction) {
+vec3 traceSegments(Ray ray) {
     vec3 accumulatedRayColor = vec3(1.0);
     vec3 incomingLight = vec3(0.0);
 
@@ -41,15 +46,15 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
             0,                     // SBT record offset
             0,                     // SBT record stride for offset
             0,                     // Miss index
-            origin,                // Ray origin
+            ray.origin,            // Ray origin
             0.0,                   // Minimum t-value
-            direction,             // Ray direction
+            ray.direction,         // Ray direction
             10000.0,               // Maximum t-value
             0                      // Location of payload
         );
 
-        origin = pld.rayOrigin;
-        direction = pld.rayDirection;
+        ray.origin = pld.rayOrigin;
+        ray.direction = pld.rayDirection;
 
         if (pld.skip) {
             continue;
@@ -72,9 +77,7 @@ vec3 traceSegments(vec3 origin, vec3 direction) {
     return incomingLight;
 }
 
-vec3 computeSample(vec2 pixel, vec2 resolution, vec3 cameraOrigin, float fovVerticalSlope) {
-    vec3 rayOrigin = cameraOrigin;
-
+Ray getStartingRay(vec2 pixel, vec2 resolution, vec3 cameraOrigin, float fovVerticalSlope) {
     const vec2 randomPixelCenter = vec2(pixel) + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
     const vec2 screenUV = vec2(
         (2.0 * randomPixelCenter.x - resolution.x) / resolution.y,
@@ -85,7 +88,7 @@ vec3 computeSample(vec2 pixel, vec2 resolution, vec3 cameraOrigin, float fovVert
     vec3 rayDirection = vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0);
     rayDirection = normalize(rayDirection);
 
-    return traceSegments(rayOrigin, rayDirection);
+    return Ray(cameraOrigin, rayDirection);
 }
 
 void main() {
@@ -99,7 +102,6 @@ void main() {
     // State of the random number generator with an initial seed
     pld.rngState = uint((pushConstants.sampleBatch * resolution.y + pixel.y) * resolution.x + pixel.x);
 
-    const vec3 cameraOrigin = vec3(0, 1, 0.9);
     const float fovVerticalSlope = 1.0 / 5;
 
     int actualSamples = 0;
@@ -107,7 +109,8 @@ void main() {
 
     // SAMPLES_PER_PIXEL defined in common.h polyglot file
     for (int sampleIdx = 0; sampleIdx < SAMPLES_PER_PIXEL; sampleIdx++) {
-        vec3 color = computeSample(pixel, resolution, cameraOrigin, fovVerticalSlope);
+        Ray startingRay = getStartingRay(vec2(pixel), vec2(resolution), pushConstants.cameraPos, fovVerticalSlope);
+        vec3 color = traceSegments(startingRay);
 
         if (any(isnan(color))) {
             continue;

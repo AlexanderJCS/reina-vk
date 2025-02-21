@@ -98,7 +98,7 @@ void run() {
         }
     };
 
-    reina::core::PushConstants pushConstants{PushConstantsStruct{0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+    reina::core::PushConstants pushConstants{PushConstantsStruct{glm::vec3(0, 1, 0.9), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<reina::graphics::Shader> shaders = {
