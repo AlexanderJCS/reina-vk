@@ -77,18 +77,35 @@ vec3 traceSegments(Ray ray) {
     return incomingLight;
 }
 
-Ray getStartingRay(vec2 pixel, vec2 resolution, vec3 cameraOrigin, float fovVerticalSlope) {
-    const vec2 randomPixelCenter = vec2(pixel) + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
-    const vec2 screenUV = vec2(
-        (2.0 * randomPixelCenter.x - resolution.x) / resolution.y,
-        (2.0 * randomPixelCenter.y - resolution.y) / resolution.y * -1
+Ray getStartingRay(
+    vec2 pixel,
+    vec2 resolution,
+    mat4 invView,
+    mat4 invProjection
+) {
+    // Random pixel center for antialiasing
+    vec2 randomPixelCenter = pixel + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
+
+    vec2 ndc = vec2(
+        (randomPixelCenter.x / resolution.x) * 2.0 - 1.0,
+        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down
     );
 
-    // Create a ray direction:
-    vec3 rayDirection = vec3(fovVerticalSlope * screenUV.x, fovVerticalSlope * screenUV.y, -1.0);
-    rayDirection = normalize(rayDirection);
+    vec4 clipPos = vec4(ndc, -1.0, 1.0);
 
-    return Ray(cameraOrigin, rayDirection);
+    // Unproject from clip space to view (camera) space using the inverse projection matrix.
+    vec4 viewPos = vec4(invProjection * clipPos);
+    viewPos /= viewPos.w;  // Perspective divide
+
+    // Ray direction in view space (camera space origin is at (0,0,0)).
+    vec3 viewDir = normalize(viewPos.xyz);
+
+    // Transform the view-space direction to world space using the inverse view matrix.
+    // Use a w component of 0.0 to indicate that we're transforming a direction.
+    vec4 worldDir4 = vec4(invView * vec4(viewDir, 0.0));
+    vec3 rayDirection = normalize(worldDir4.xyz);
+
+    return Ray(invView[3].xyz, rayDirection);
 }
 
 void main() {
@@ -109,7 +126,7 @@ void main() {
 
     // SAMPLES_PER_PIXEL defined in common.h polyglot file
     for (int sampleIdx = 0; sampleIdx < SAMPLES_PER_PIXEL; sampleIdx++) {
-        Ray startingRay = getStartingRay(vec2(pixel), vec2(resolution), pushConstants.cameraPos, fovVerticalSlope);
+        Ray startingRay = getStartingRay(vec2(pixel), vec2(resolution), pushConstants.invView, pushConstants.invProjection);
         vec3 color = traceSegments(startingRay);
 
         if (any(isnan(color))) {

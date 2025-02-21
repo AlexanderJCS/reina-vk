@@ -98,7 +98,13 @@ void run() {
         }
     };
 
-    reina::core::PushConstants pushConstants{PushConstantsStruct{glm::vec3(0, 1, 0.9), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+    glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(swapchainObjects.swapchainExtent.width) / static_cast<float>(swapchainObjects.swapchainExtent.height), 0.1f, 100.0f);
+
+    glm::vec3 cameraPos = glm::vec3(0, 1, 0.9);
+    glm::vec3 cameraTarget = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+    reina::core::PushConstants pushConstants{PushConstantsStruct{glm::inverse(view), glm::inverse(proj), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<reina::graphics::Shader> shaders = {
