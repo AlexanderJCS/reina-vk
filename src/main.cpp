@@ -100,9 +100,9 @@ void run() {
 
     glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(swapchainObjects.swapchainExtent.width) / static_cast<float>(swapchainObjects.swapchainExtent.height), 0.1f, 100.0f);
 
-    glm::vec3 cameraPos = glm::vec3(0, 1, 0.9);
+    glm::vec3 cameraPos = glm::vec3(0.0f, 1, 0.9);
     glm::vec3 cameraTarget = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 cameraUp = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
     reina::core::PushConstants pushConstants{PushConstantsStruct{glm::inverse(view), glm::inverse(proj), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
@@ -174,6 +174,25 @@ void run() {
 
 
     // render
+    VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
+
+    VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            .accelerationStructureCount = 1,
+            .pAccelerationStructures = &tlas.accelerationStructure
+    };
+    rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
+
+    VkDescriptorBufferInfo verticesInfo{.buffer = models.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
+
+    VkDescriptorBufferInfo indicesInfo{.buffer = models.getOffsetIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
+
+    VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
+
     reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {
         bool firstFrame = clock.getFrameCount() == 0;
@@ -212,25 +231,6 @@ void run() {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
 
         rtDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
-
-        VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-        rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
-
-        VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
-            .accelerationStructureCount = 1,
-            .pAccelerationStructures = &tlas.accelerationStructure
-        };
-        rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
-
-        VkDescriptorBufferInfo verticesInfo{.buffer = models.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-        rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
-
-        VkDescriptorBufferInfo indicesInfo{.buffer = models.getOffsetIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-        rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
-
-        VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-        rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
 
         pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
