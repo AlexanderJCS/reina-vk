@@ -23,8 +23,8 @@ namespace reina::tools {
     public:
         Clock();
 
-        static double getTime();
-        double getTimeFromCreation();
+        [[nodiscard]] static double getTime();
+        [[nodiscard]] double getTimeFromCreation() const;
 
         void markFrame();
         void markCategory(const std::string& category);
@@ -35,9 +35,12 @@ namespace reina::tools {
         [[nodiscard]] double getAverageFrameTime() const;
         [[nodiscard]] double getAverageCategoryTime(const std::string& category) const;
 
+        [[nodiscard]] double getTimeDelta() const;
+
         std::string summary();
     private:
         double creationTime;
+        double secondToLastFrameTime = 0;
         double lastFrameTime = 0;
         TimeEntries frameTime;
 

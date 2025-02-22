@@ -16,9 +16,12 @@ namespace reina::window {
         [[nodiscard]] int getHeight() const;
         [[nodiscard]] GLFWwindow* getGlfwWindow() const;
 
-        bool isMinimized() const;
+        [[nodiscard]] bool isMinimized() const;
+        [[nodiscard]] bool shouldClose() const;
 
-        bool shouldClose();
+        [[nodiscard]] bool keyPressed(int glfwKey) const;
+
+        void setInputMode(int mode, int value) const;
 
         void destroy();
     };

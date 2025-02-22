@@ -33,7 +33,7 @@ GLFWwindow* reina::window::Window::getGlfwWindow() const {
     return glfwWindow;
 }
 
-bool reina::window::Window::shouldClose() {
+bool reina::window::Window::shouldClose() const {
     return glfwWindowShouldClose(glfwWindow);
 }
 
@@ -41,4 +41,12 @@ bool reina::window::Window::isMinimized() const {
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(glfwWindow, &fbWidth, &fbHeight);
     return fbWidth == 0 || fbHeight == 0;
+}
+
+bool reina::window::Window::keyPressed(int glfwKey) const {
+    return glfwGetKey(glfwWindow, glfwKey) == GLFW_PRESS;
+}
+
+void reina::window::Window::setInputMode(int mode, int value) const {
+    glfwSetInputMode(glfwWindow, mode, value);
 }

@@ -19,6 +19,7 @@
 #include "graphics/Blas.h"
 #include "graphics/Instance.h"
 #include "tools/Clock.h"
+#include "graphics/Camera.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -69,6 +70,8 @@ void transitionImage(
 void run() {
     // init
     reina::window::Window renderWindow{800, 800};
+    renderWindow.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     VkInstance instance = vktools::createInstance();
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
     VkSurfaceKHR surface = vktools::createSurface(instance, renderWindow.getGlfwWindow());
@@ -100,11 +103,9 @@ void run() {
 
     glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(swapchainObjects.swapchainExtent.width) / static_cast<float>(swapchainObjects.swapchainExtent.height), 0.1f, 100.0f);
 
-    glm::vec3 cameraPos = glm::vec3(0.0f, 1, 0.9);
-    glm::vec3 cameraTarget = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 cameraUp = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
-    reina::core::PushConstants pushConstants{PushConstantsStruct{glm::inverse(view), glm::inverse(proj), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+    float aspectRatio = static_cast<float>(swapchainObjects.swapchainExtent.width) / static_cast<float>(swapchainObjects.swapchainExtent.height);
+    reina::graphics::Camera camera{renderWindow, glm::radians(22.5f), aspectRatio, glm::vec3(0, 1, 0.9f), glm::vec3(0, 0, -1)};
+    reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<reina::graphics::Shader> shaders = {
@@ -172,7 +173,6 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 
-
     // render
     VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
     rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
@@ -195,15 +195,27 @@ void run() {
 
     reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {
+        // camera
+        camera.processInput(renderWindow, clock.getTimeDelta());
+        if (camera.hasChanged()) {
+            camera.refresh();
+            PushConstantsStruct& pushConstantsStruct = pushConstants.getPushConstants();
+            pushConstantsStruct.invView = camera.getInverseView();
+            pushConstantsStruct.invProjection = camera.getInverseProjection();
+            pushConstantsStruct.sampleBatch = 0;  // reset the image
+        }
+
+        // clock
         bool firstFrame = clock.getFrameCount() == 0;
 
         if (!firstFrame) {
-            std::cout << clock.summary() << "\n";
+             std::cout << clock.summary() << "\n";
         }
 
         clock.markFrame();
         clock.markCategory("Ray Tracing");
 
+        // render ray traced image
         if (vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
             throw std::runtime_error("Could not wait for fences");
         }

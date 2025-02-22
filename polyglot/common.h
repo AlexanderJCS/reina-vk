@@ -10,8 +10,8 @@
     using mat4 = glm::mat4;
 #endif  // #ifdef __cplusplus
 
-#define SAMPLES_PER_PIXEL 64
-#define BOUNCES_PER_SAMPLE 16
+#define SAMPLES_PER_PIXEL 32
+#define BOUNCES_PER_SAMPLE 12
 
 struct PushConstantsStruct {
     mat4 invView;

@@ -20,7 +20,7 @@ double reina::tools::Clock::getTime() {
     return glfwGetTime();
 }
 
-double reina::tools::Clock::getTimeFromCreation() {
+double reina::tools::Clock::getTimeFromCreation() const {
     return getTime() - creationTime;
 }
 
@@ -34,6 +34,7 @@ void reina::tools::Clock::markFrame() {
 
     double time = getTime();
     frameTime.addEntry(time - lastFrameTime);
+    secondToLastFrameTime = lastFrameTime;
     lastFrameTime = time;
 }
 
@@ -82,4 +83,8 @@ double reina::tools::Clock::getAverageFrameTime() const {
 
 double reina::tools::Clock::getAverageCategoryTime(const std::string& category) const {
     return categoryTimes.at(category).averageTime;
+}
+
+double reina::tools::Clock::getTimeDelta() const {
+    return lastFrameTime - secondToLastFrameTime;
 }

@@ -29,7 +29,9 @@ add_executable(reina_vk src/main.cpp
         src/graphics/Models.cpp
         src/graphics/Models.h
         src/tools/Clock.cpp
-        src/tools/Clock.h)
+        src/tools/Clock.h
+        src/graphics/Camera.cpp
+        src/graphics/Camera.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 
