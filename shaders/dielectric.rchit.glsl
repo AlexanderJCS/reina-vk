@@ -49,12 +49,14 @@ void main() {
 
     if (cannot_refract || reflectivity > stepAndOutputRNGFloat(pld.rngState)) {
         // specular reflection
-        pld.rayDirection = reflect(unitDir, hitInfo.worldNormal);
+        // add by k * randomUnitVec to make jagged shapes look slightly smoother
+        pld.rayDirection = reflect(unitDir, hitInfo.worldNormal) + 0.02 * randomUnitVec(pld.rngState);
         pld.color = vec3(1);
         pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
     } else {
         // refract
-        pld.rayDirection = refract(unitDir, hitInfo.worldNormal, ri);
+        // add by k * randomUnitVec to make jagged shapes look slightly smoother
+        pld.rayDirection = refract(unitDir, hitInfo.worldNormal, ri) + 0.02 * randomUnitVec(pld.rngState);
         pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
         pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
     }

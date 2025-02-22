@@ -146,7 +146,7 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/uv_sphere_highres.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
     reina::graphics::Blas sphere{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};

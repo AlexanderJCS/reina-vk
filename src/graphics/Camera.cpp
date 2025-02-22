@@ -36,7 +36,7 @@ void reina::graphics::Camera::processInput(const reina::window::Window& window, 
     } if (window.keyPressed(GLFW_KEY_SPACE)) {
         changed = true;
         cameraPos += cameraSpeed * cameraUp;
-    } if (window.keyPressed(GLFW_KEY_LEFT_SHIFT)) {
+    } if (window.keyPressed(GLFW_KEY_LEFT_CONTROL)) {
         changed = true;
         cameraPos -= cameraSpeed * cameraUp;
     }
