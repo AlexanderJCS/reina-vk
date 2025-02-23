@@ -70,7 +70,6 @@ void transitionImage(
 void run() {
     // init
     reina::window::Window renderWindow{800, 800};
-    renderWindow.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     VkInstance instance = vktools::createInstance();
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
@@ -156,7 +155,7 @@ void run() {
     std::vector<reina::graphics::Instance> instances{
             {box, 0, 0, baseTransform},
             {light, 1, 0, baseTransform},
-            {sphere, 2, 2, glm::translate(glm::scale(baseTransform, glm::vec3(0.3)), glm::vec3(0, 3, 0))}
+            {sphere, 2, 1, glm::translate(glm::scale(baseTransform, glm::vec3(0.3)), glm::vec3(0, 3, 0))}
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
@@ -164,7 +163,7 @@ void run() {
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0.2},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(53.0f/255, 196.0f/255, 91.0f/255), glm::vec4(0), 1.5}
+            {models.getModelRange(0).indexOffset, glm::vec3(53.0f/255, 196.0f/255, 91.0f/255), glm::vec4(0), 0.1}
     };
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,

@@ -13,12 +13,17 @@ reina::graphics::Camera::Camera(const reina::window::Window& renderWindow, float
 
     glfwSetWindowUserPointer(renderWindow.getGlfwWindow(), this);  // I feel like this is kinda bad design but it works
     glfwSetCursorPosCallback(renderWindow.getGlfwWindow(), mouseCallback);
+    glfwSetKeyCallback(renderWindow.getGlfwWindow(), keyCallback);
 
     pitch = static_cast<float>(glm::degrees(asin(cameraFront.y)));
     yaw = static_cast<float>(glm::degrees(atan2(cameraFront.z, cameraFront.x)));
 }
 
 void reina::graphics::Camera::processInput(const reina::window::Window& window, double timeDelta) {
+    if (!input) {
+        return;
+    }
+
     const float cameraSpeed = 2.5f * static_cast<float>(timeDelta);
 
     if (window.keyPressed(GLFW_KEY_W)) {
@@ -60,6 +65,10 @@ const glm::mat4& reina::graphics::Camera::getInverseProjection() const {
 void reina::graphics::Camera::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     auto* cam = static_cast<Camera*>(glfwGetWindowUserPointer(window));
 
+    if (!cam->input) {
+        return;
+    }
+
     if (abs(cam->lastMousePos.x + 1) < 0.00001 && abs(cam->lastMousePos.y + 1) < 0.00001) {
         cam->lastMousePos.x = static_cast<float>(xpos);
         cam->lastMousePos.y = static_cast<float>(ypos);
@@ -99,6 +108,20 @@ void reina::graphics::Camera::mouseCallback(GLFWwindow* window, double xpos, dou
     });
 }
 
+void reina::graphics::Camera::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto* cam = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        cam->toggleInput(window);
+    }
+}
+
 bool reina::graphics::Camera::hasChanged() const {
     return changed;
+}
+
+void reina::graphics::Camera::toggleInput(GLFWwindow* window) {
+    input = !input;
+    // todo: maybe GLFW_CURSOR_CAPTURED is better than GLFW_CURSOR_DISABLED?
+    glfwSetInputMode(window, GLFW_CURSOR, input ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }

@@ -21,8 +21,6 @@ namespace reina::window {
 
         [[nodiscard]] bool keyPressed(int glfwKey) const;
 
-        void setInputMode(int mode, int value) const;
-
         void destroy();
     };
 }

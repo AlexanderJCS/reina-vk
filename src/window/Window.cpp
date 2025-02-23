@@ -46,7 +46,3 @@ bool reina::window::Window::isMinimized() const {
 bool reina::window::Window::keyPressed(int glfwKey) const {
     return glfwGetKey(glfwWindow, glfwKey) == GLFW_PRESS;
 }
-
-void reina::window::Window::setInputMode(int mode, int value) const {
-    glfwSetInputMode(glfwWindow, mode, value);
-}

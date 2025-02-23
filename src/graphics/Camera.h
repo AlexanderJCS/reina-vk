@@ -21,7 +21,10 @@ namespace reina::graphics {
          */
         void processInput(const reina::window::Window& window, double timeDelta);
 
+        void toggleInput(GLFWwindow* window);
+
         static void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+        static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
         [[nodiscard]] const glm::mat4& getInverseView() const;
         [[nodiscard]] const glm::mat4& getInverseProjection() const;
@@ -30,6 +33,7 @@ namespace reina::graphics {
         void refresh();
 
     private:
+        bool input = false;
         glm::vec2 lastMousePos = glm::vec2(-1, -1);
         float pitch = 0;
         float yaw = -90.0f;
