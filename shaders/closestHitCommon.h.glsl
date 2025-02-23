@@ -126,7 +126,7 @@ void skip(HitInfo hitInfo) {
 vec3 randomUnitVec(inout uint rngState) {
     // todo: see if this method or sampling a sphere is faster. profile it
     while (true) {
-        vec3 vector = vec3(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
+        vec3 vector = 2 * vec3(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState)) - vec3(1);
 
         float lenSquared = dot(vector, vector);
         if (0.0001 < lenSquared && lenSquared < 1) {
