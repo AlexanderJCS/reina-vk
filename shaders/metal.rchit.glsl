@@ -11,10 +11,15 @@ void main() {
         return;
     }
 
-    pld.color        = objectProperties[gl_InstanceCustomIndexEXT].albedo;
+    #ifdef DEBUG_SHOW_NORMALS
+        pld.color = hitInfo.worldNormal * vec3(1, 10, 10) * 0.5 + 0.5;
+    #else
+        pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
+    #endif
+
     pld.emission     = objectProperties[gl_InstanceCustomIndexEXT].emission;
-    pld.rayOrigin    = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
-    pld.rayDirection = reflect(gl_WorldRayDirectionEXT, hitInfo.worldNormal) + objectProperties[gl_InstanceCustomIndexEXT].fuzzOrRefIdx * randomUnitVec(pld.rngState);
+    pld.rayOrigin    = offsetPositionAlongNormal(hitInfo.worldPosition, normalize(hitInfo.worldNormal));
+    pld.rayDirection = reflect(normalize(gl_WorldRayDirectionEXT), normalize(hitInfo.worldNormal)) + objectProperties[gl_InstanceCustomIndexEXT].fuzzOrRefIdx * randomUnitVec(pld.rngState);
     pld.rayHitSky    = false;
     pld.skip         = false;
 }

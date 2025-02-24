@@ -1,9 +1,6 @@
 #ifndef VK_MINI_PATH_TRACER_SHADER_COMMON_H
 #define VK_MINI_PATH_TRACER_SHADER_COMMON_H
 
-// define this to show normals on lambertian surfaces
-// #define DEBUG_SHOW_NORMALS
-
 struct PassableInfo
 {
     vec3 color;         // The reflectivity of the surface.

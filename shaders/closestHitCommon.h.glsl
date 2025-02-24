@@ -5,6 +5,9 @@
 #extension GL_EXT_scalar_block_layout : require
 #include "shaderCommon.h.glsl"
 
+// include this primarily for DEBUG_SHOW_NORMALS
+#include "../polyglot/common.h"
+
 hitAttributeEXT vec2 attributes;
 
 layout(binding = 2, set = 0, scalar) buffer Vertices {

@@ -1,5 +1,8 @@
 #version 460
 
+// for DEBUG_SHOW_NORMALS
+#include "../polyglot/common.h"
+
 layout(location = 0) out vec4 fragColor;
 
 layout(binding = 0, set = 0, rgba32f) uniform image2D hdrImage;
@@ -22,7 +25,12 @@ vec3 tonemapACES(vec3 color) {
 
 void main() {
     vec4 color = imageLoad(hdrImage, ivec2(gl_FragCoord.xy));
-    vec3 tonemapped = tonemapACES(color.rgb);
+
+    #ifdef DEBUG_SHOW_NORMALS
+        vec3 tonemapped = color.xyz;
+    #else
+        vec3 tonemapped = tonemapACES(color.rgb);
+    #endif
 
     // todo: there's no sRGB conversion, but from my experience that gives poor contrast. so no sRGB for now
     fragColor = vec4(tonemapped, color.w);
