@@ -12,7 +12,7 @@ void main() {
     }
 
     #ifdef DEBUG_SHOW_NORMALS
-        pld.color = hitInfo.worldNormal * vec3(1, 10, 10) * 0.5 + 0.5;
+        pld.color = hitInfo.worldNormal * 0.5 + 0.5;
     #else
         pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
     #endif
