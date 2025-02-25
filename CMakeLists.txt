@@ -31,9 +31,11 @@ add_executable(reina_vk src/main.cpp
         src/tools/Clock.cpp
         src/tools/Clock.h
         src/graphics/Camera.cpp
-        src/graphics/Camera.h)
+        src/graphics/Camera.h
+        lib/stb/stb_image_write.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 
 target_include_directories(reina_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
+target_include_directories(reina_vk PRIVATE ${CMAKE_SOURCE_DIR}/lib/stb)
 target_include_directories(reina_vk PUBLIC ${CMAKE_SOURCE_DIR}/lib/tiny_obj_loader)

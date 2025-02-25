@@ -6,6 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include <iostream>
 #include <vulkan/vulkan.h>
 
@@ -193,6 +196,15 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 
+    VkDeviceSize imageSize = swapchainObjects.swapchainExtent.width * swapchainObjects.swapchainExtent.height * 4; // RGBA8
+
+    reina::core::Buffer stagingBuffer{
+        logicalDevice, physicalDevice, imageSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        static_cast<VkMemoryAllocateFlags>(0),
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    };
+
     // render
     VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
     rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
@@ -358,6 +370,73 @@ void run() {
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
         );
 
+        // save
+        clock.markCategory("Save");
+
+        if (clock.getSampleCount() > 16000) {
+            transitionImage(
+                    commandBuffer, postprocessingOutputImageObjects.image,
+                    VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT
+            );
+
+            VkBufferImageCopy region{
+                    .bufferOffset = 0,
+                    .bufferRowLength = 0,
+                    .bufferImageHeight = 0,
+                    .imageSubresource = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .mipLevel = 0,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1,
+                    },
+                    .imageOffset = {0, 0, 0},
+                    .imageExtent = {
+                            swapchainObjects.swapchainExtent.width,
+                            swapchainObjects.swapchainExtent.height,
+                            1
+                    }
+            };
+
+            vkCmdCopyImageToBuffer(
+                    commandBuffer,
+                    postprocessingOutputImageObjects.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    stagingBuffer.getHandle(),
+                    1,
+                    &region
+            );
+
+            // todo: make this a method in Buffer
+            void* data;
+            vkMapMemory(logicalDevice, stagingBuffer.getDeviceMemory(), 0, imageSize, 0, &data);
+            std::vector<uint8_t> pixels(imageSize);
+            memcpy(pixels.data(), data, static_cast<size_t>(imageSize));
+            vkUnmapMemory(logicalDevice, stagingBuffer.getDeviceMemory());
+
+            std::string filename = "../output.png";
+            int success = stbi_write_png(
+                    filename.c_str(),
+                    static_cast<int>(swapchainObjects.swapchainExtent.width),
+                    static_cast<int>(swapchainObjects.swapchainExtent.height),
+                    4,
+                    pixels.data(),
+                    static_cast<int>(swapchainObjects.swapchainExtent.width) * 4
+            );
+
+            if (!success) {
+                throw std::runtime_error("Could not save PNG");
+            }
+
+            transitionImage(
+                    commandBuffer, postprocessingOutputImageObjects.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                    VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+            );
+        }
+
         // render
         clock.markCategory("Display");
         uint32_t imageIndex = -1;
@@ -472,6 +551,8 @@ void run() {
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
+
+    stagingBuffer.destroy(logicalDevice);
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
