@@ -213,7 +213,7 @@ void run() {
     VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
     rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
 
-    VkDescriptorImageInfo rasterizationInputDescriptor{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    VkDescriptorImageInfo rasterizationInputDescriptor{.imageView = postprocessingOutputImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);
 
     VkDescriptorImageInfo postprocessingInputDescriptor{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
@@ -312,7 +312,7 @@ void run() {
         );
 
         // everything below here is swapchain stuff
-        clock.markCategory("Display");
+        clock.markCategory("Post Processing");
 
         // transition to the same and synchronize
         transitionImage(
@@ -323,6 +323,43 @@ void run() {
                 VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
         );
 
+        // apply postprocessing
+        transitionImage(
+                commandBuffer,
+                postprocessingOutputImageObjects.image,
+                firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_GENERAL,
+                VK_IMAGE_LAYOUT_GENERAL,
+                firstFrame ? static_cast<VkAccessFlagBits>(0) : VK_ACCESS_SHADER_READ_BIT,
+                VK_ACCESS_SHADER_WRITE_BIT,
+                firstFrame ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+        );
+
+        const int workgroupWidth = 32;
+        const int workgroupHeight = 8;
+
+        postprocessingDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
+        vkCmdDispatch(
+                commandBuffer,
+                (swapchainObjects.swapchainExtent.width + workgroupWidth - 1) / workgroupWidth,
+                (swapchainObjects.swapchainExtent.height + workgroupHeight - 1) / workgroupHeight,
+                1
+                );
+
+        transitionImage(
+                commandBuffer,
+                postprocessingOutputImageObjects.image,
+                VK_IMAGE_LAYOUT_GENERAL,
+                VK_IMAGE_LAYOUT_GENERAL,
+                VK_ACCESS_SHADER_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+        );
+
+        // render
+        clock.markCategory("Display");
         uint32_t imageIndex = -1;
         if (!renderWindow.isMinimized()) {
             VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -332,9 +369,7 @@ void run() {
             } else if (result != VK_SUCCESS) {
                 throw std::runtime_error("Failed to acquire swapchain image");
             }
-        }
 
-        if (!renderWindow.isMinimized()) {
             VkClearValue clearColor = {{0, 0, 0, 1}};
 
             VkRenderPassBeginInfo renderPassBeginInfo{
