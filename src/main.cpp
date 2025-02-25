@@ -130,6 +130,9 @@ void run() {
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             );
+
+    VkImageView postprocessingOutputImageView = vktools::createImageView(logicalDevice, postprocessingOutputImageObjects.image, VK_FORMAT_R8G8B8A8_UNORM);
+
     reina::core::DescriptorSet postprocessingDescriptorSet{
         logicalDevice,
         {
@@ -210,6 +213,15 @@ void run() {
     VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
     rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
 
+    VkDescriptorImageInfo rasterizationInputDescriptor{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);
+
+    VkDescriptorImageInfo postprocessingInputDescriptor{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, &postprocessingInputDescriptor, nullptr, nullptr, nullptr);
+
+    VkDescriptorImageInfo postprocessingOutputDescriptor{.imageView = postprocessingOutputImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 1, &postprocessingOutputDescriptor, nullptr, nullptr, nullptr);
+
     reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {
         // camera
@@ -258,7 +270,6 @@ void run() {
         );
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
-
         rtDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
 
         pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
@@ -339,11 +350,7 @@ void run() {
             };
 
             vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            VkDescriptorImageInfo readImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-
             rasterizationDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipelineLayout);
-            rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &readImageInfo, nullptr, nullptr, nullptr);
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipeline);
 
@@ -448,6 +455,8 @@ void run() {
     vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rasterizationPipelineInfo.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, postprocessingPipeline.pipelineLayout, nullptr);
+
+    vkDestroyImageView(logicalDevice, postprocessingOutputImageView, nullptr);
     vkDestroyImageView(logicalDevice, rtImageView, nullptr);
 
     vkDestroyImage(logicalDevice, postprocessingOutputImageObjects.image, nullptr);

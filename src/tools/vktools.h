@@ -100,6 +100,8 @@ namespace vktools {
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     reina::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, uint32_t shaderGroups);
     PipelineInfo createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants& pushConstants);
+
+    VkImageView createImageView(VkDevice logicalDevice, VkImage image, VkFormat imageFormat);
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 
