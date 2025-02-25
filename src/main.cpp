@@ -122,6 +122,24 @@ void run() {
         shader.destroy(logicalDevice);
     }
 
+    vktools::ImageObjects postprocessingOutputImageObjects = vktools::createImage(
+            logicalDevice, physicalDevice,
+            swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            );
+    reina::core::DescriptorSet postprocessingDescriptorSet{
+        logicalDevice,
+        {
+            reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},  // input image
+            reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT}   // output image
+        }
+    };
+    reina::graphics::Shader postprocessingShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+    vktools::PipelineInfo postprocessingPipeline = vktools::createComputePipeline(logicalDevice, postprocessingDescriptorSet, postprocessingShader);
+
     reina::core::DescriptorSet rasterizationDescriptorSet{
         logicalDevice,
         {
@@ -417,6 +435,8 @@ void run() {
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);
+    postprocessingDescriptorSet.destroy(logicalDevice);
+    postprocessingShader.destroy(logicalDevice);
     rasterizationDescriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
@@ -424,9 +444,14 @@ void run() {
     models.destroy(logicalDevice);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, rasterizationPipelineInfo.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, postprocessingPipeline.pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rasterizationPipelineInfo.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, postprocessingPipeline.pipelineLayout, nullptr);
     vkDestroyImageView(logicalDevice, rtImageView, nullptr);
+
+    vkDestroyImage(logicalDevice, postprocessingOutputImageObjects.image, nullptr);
+    vkFreeMemory(logicalDevice, postprocessingOutputImageObjects.imageMemory, nullptr);
     vkDestroyImage(logicalDevice, rtImageObjects.image, nullptr);
     vkFreeMemory(logicalDevice, rtImageObjects.imageMemory, nullptr);
 

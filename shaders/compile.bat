@@ -6,3 +6,5 @@ glslc -fshader-stage=rchit --target-env=vulkan1.3 dielectric.rchit.glsl -o diele
 
 glslc -fshader-stage=vert --target-env=vulkan1.3 display.vert.glsl -o display.vert.spv
 glslc -fshader-stage=frag --target-env=vulkan1.3 display.frag.glsl -o display.frag.spv
+
+glslc -fshader-stage=comp --target-env=vulkan1.3 postprocessing.comp.glsl -o postprocessing.comp.spv

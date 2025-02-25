@@ -88,6 +88,9 @@ namespace vktools {
     uint64_t getDeviceLocalMemory(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
 
+    ImageObjects createImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+    PipelineInfo createComputePipeline(VkDevice logicalDevice, const::reina::core::DescriptorSet& descriptorSet, const reina::graphics::Shader& shader);
+
     std::vector<VkFramebuffer> createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews);
     PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, VkRenderPass renderPass, const reina::graphics::Shader& vertexShader, const reina::graphics::Shader& fragmentShader);
     VkRenderPass createRenderPass(VkDevice logicalDevice, VkFormat swapchainImageFormat);
