@@ -72,7 +72,10 @@ void transitionImage(
 
 void run() {
     // init
-    reina::window::Window renderWindow{800, 800};
+    const int width = 2000;
+    const int height = 2000;
+
+    reina::window::Window renderWindow{width, height};
 
     VkInstance instance = vktools::createInstance();
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
@@ -89,7 +92,7 @@ void run() {
     vktools::SwapchainObjects swapchainObjects = vktools::createSwapchain(surface, physicalDevice, logicalDevice, renderWindow.getWidth(), renderWindow.getHeight());
     std::vector<VkImageView> swapchainImageViews = vktools::createSwapchainImageViews(logicalDevice, swapchainObjects.swapchainImageFormat, swapchainObjects.swapchainImages);
 
-    vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height);
+    vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, width, height);
     VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
     reina::core::DescriptorSet rtDescriptorSet{
@@ -103,9 +106,9 @@ void run() {
         }
     };
 
-    glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(swapchainObjects.swapchainExtent.width) / static_cast<float>(swapchainObjects.swapchainExtent.height), 0.1f, 100.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 
-    float aspectRatio = static_cast<float>(swapchainObjects.swapchainExtent.width) / static_cast<float>(swapchainObjects.swapchainExtent.height);
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     reina::graphics::Camera camera{renderWindow, glm::radians(22.5f), aspectRatio, glm::vec3(0, 1, 0.9f), glm::vec3(0, 0, -1)};
     reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
@@ -127,7 +130,7 @@ void run() {
 
     vktools::ImageObjects postprocessingOutputImageObjects = vktools::createImage(
             logicalDevice, physicalDevice,
-            swapchainObjects.swapchainExtent.width, swapchainObjects.swapchainExtent.height,
+            width, height,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -196,7 +199,7 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 
-    VkDeviceSize imageSize = swapchainObjects.swapchainExtent.width * swapchainObjects.swapchainExtent.height * 4; // RGBA8
+    VkDeviceSize imageSize = width * height * 4; // RGBA8
 
     reina::core::Buffer stagingBuffer{
         logicalDevice, physicalDevice, imageSize,
@@ -318,8 +321,8 @@ void run() {
                 &sbtMissRegion,
                 &sbtHitRegion,
                 &sbtCallableRegion,
-                swapchainObjects.swapchainExtent.width,
-                swapchainObjects.swapchainExtent.height,
+                width,
+                height,
                 1
         );
 
@@ -354,8 +357,8 @@ void run() {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
         vkCmdDispatch(
                 commandBuffer,
-                (swapchainObjects.swapchainExtent.width + workgroupWidth - 1) / workgroupWidth,
-                (swapchainObjects.swapchainExtent.height + workgroupHeight - 1) / workgroupHeight,
+                (width + workgroupWidth - 1) / workgroupWidth,
+                (height + workgroupHeight - 1) / workgroupHeight,
                 1
                 );
 
@@ -373,7 +376,7 @@ void run() {
         // save
         clock.markCategory("Save");
 
-        if (clock.getSampleCount() > 16000) {
+        if (clock.getSampleCount() > 1000) {
             transitionImage(
                     commandBuffer, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -393,8 +396,7 @@ void run() {
                     },
                     .imageOffset = {0, 0, 0},
                     .imageExtent = {
-                            swapchainObjects.swapchainExtent.width,
-                            swapchainObjects.swapchainExtent.height,
+                            width, height,
                             1
                     }
             };
@@ -418,11 +420,11 @@ void run() {
             std::string filename = "../output.png";
             int success = stbi_write_png(
                     filename.c_str(),
-                    static_cast<int>(swapchainObjects.swapchainExtent.width),
-                    static_cast<int>(swapchainObjects.swapchainExtent.height),
+                    static_cast<int>(width),
+                    static_cast<int>(height),
                     4,
                     pixels.data(),
-                    static_cast<int>(swapchainObjects.swapchainExtent.width) * 4
+                    static_cast<int>(width) * 4
             );
 
             if (!success) {
