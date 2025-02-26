@@ -72,8 +72,8 @@ void transitionImage(
 
 void run() {
     // init
-    const int width = 2000;
-    const int height = 2000;
+    const int width = 800;
+    const int height = 800;
 
     reina::window::Window renderWindow{width, height};
 
@@ -138,6 +138,7 @@ void run() {
             );
 
     VkImageView postprocessingOutputImageView = vktools::createImageView(logicalDevice, postprocessingOutputImageObjects.image, VK_FORMAT_R8G8B8A8_UNORM);
+    VkSampler fragmentImageSampler = vktools::createSampler(logicalDevice);
 
     reina::core::DescriptorSet postprocessingDescriptorSet{
         logicalDevice,
@@ -152,7 +153,7 @@ void run() {
     reina::core::DescriptorSet rasterizationDescriptorSet{
         logicalDevice,
         {
-                reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT}
+                reina::core::Binding{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT}
         }
     };
 
@@ -228,7 +229,7 @@ void run() {
     VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
     rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
 
-    VkDescriptorImageInfo rasterizationInputDescriptor{.imageView = postprocessingOutputImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    VkDescriptorImageInfo rasterizationInputDescriptor{.sampler = fragmentImageSampler, .imageView = postprocessingOutputImageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);
 
     VkDescriptorImageInfo postprocessingInputDescriptor{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
@@ -342,7 +343,7 @@ void run() {
         transitionImage(
                 commandBuffer,
                 postprocessingOutputImageObjects.image,
-                firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_GENERAL,
+                firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_GENERAL,
                 firstFrame ? static_cast<VkAccessFlagBits>(0) : VK_ACCESS_SHADER_READ_BIT,
                 VK_ACCESS_SHADER_WRITE_BIT,
@@ -362,21 +363,10 @@ void run() {
                 1
                 );
 
-        transitionImage(
-                commandBuffer,
-                postprocessingOutputImageObjects.image,
-                VK_IMAGE_LAYOUT_GENERAL,
-                VK_IMAGE_LAYOUT_GENERAL,
-                VK_ACCESS_SHADER_WRITE_BIT,
-                VK_ACCESS_SHADER_READ_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-        );
-
         // save
         clock.markCategory("Save");
 
-        if (clock.getSampleCount() > 1000) {
+        if (clock.getSampleCount() > 16000) {
             transitionImage(
                     commandBuffer, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -441,6 +431,18 @@ void run() {
 
         // render
         clock.markCategory("Display");
+
+        transitionImage(
+                commandBuffer,
+                postprocessingOutputImageObjects.image,
+                VK_IMAGE_LAYOUT_GENERAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_SHADER_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+        );
+
         uint32_t imageIndex = -1;
         if (!renderWindow.isMinimized()) {
             VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -556,6 +558,7 @@ void run() {
 
     stagingBuffer.destroy(logicalDevice);
 
+    vkDestroySampler(logicalDevice, fragmentImageSampler, nullptr);
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
