@@ -72,8 +72,8 @@ void transitionImage(
 
 void run() {
     // init
-    const int renderWidth = 800;
-    const int renderHeight = 800;
+    const int renderWidth = 1080;
+    const int renderHeight = 1350;
     const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
     const int windowWidth = 800;
@@ -112,7 +112,9 @@ void run() {
 
     glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(renderWidth) / static_cast<float>(renderHeight), 0.1f, 100.0f);
 
-    reina::graphics::Camera camera{renderWindow, glm::radians(22.5f), aspectRatio, glm::vec3(0, 1, 0.9f), glm::vec3(0, 0, -1)};
+    glm::vec3 pos = glm::vec3(-1.1, 2, 6);
+    glm::vec3 lookAt = glm::vec3(0, 1, 0);
+    reina::graphics::Camera camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
     reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
@@ -181,7 +183,7 @@ void run() {
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
     reina::graphics::Blas sphere{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
 
-    glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+    glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     std::vector<reina::graphics::Instance> instances{
             {box, 0, 1, baseTransform},
@@ -369,7 +371,7 @@ void run() {
         // save
         clock.markCategory("Save");
 
-        if (clock.getSampleCount() > 16000) {
+        if (clock.getSampleCount() > 20000) {
             transitionImage(
                     commandBuffer, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -410,7 +412,7 @@ void run() {
             memcpy(pixels.data(), data, static_cast<size_t>(imageSize));
             vkUnmapMemory(logicalDevice, stagingBuffer.getDeviceMemory());
 
-            std::string filename = "../output.png";
+            std::string filename = "../green_ball.png";
             int success = stbi_write_png(
                     filename.c_str(),
                     static_cast<int>(renderWidth),
