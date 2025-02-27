@@ -72,10 +72,14 @@ void transitionImage(
 
 void run() {
     // init
-    const int width = 800;
-    const int height = 800;
+    const int renderWidth = 800;
+    const int renderHeight = 800;
+    const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
-    reina::window::Window renderWindow{width, height};
+    const int windowWidth = 800;
+    const int windowHeight = static_cast<int>(windowWidth / aspectRatio);
+
+    reina::window::Window renderWindow{windowWidth, windowHeight};
 
     VkInstance instance = vktools::createInstance();
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger = vktools::createDebugMessenger(instance);
@@ -92,7 +96,7 @@ void run() {
     vktools::SwapchainObjects swapchainObjects = vktools::createSwapchain(surface, physicalDevice, logicalDevice, renderWindow.getWidth(), renderWindow.getHeight());
     std::vector<VkImageView> swapchainImageViews = vktools::createSwapchainImageViews(logicalDevice, swapchainObjects.swapchainImageFormat, swapchainObjects.swapchainImages);
 
-    vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, width, height);
+    vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, renderWidth, renderHeight);
     VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
 
     reina::core::DescriptorSet rtDescriptorSet{
@@ -106,9 +110,8 @@ void run() {
         }
     };
 
-    glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(renderWidth) / static_cast<float>(renderHeight), 0.1f, 100.0f);
 
-    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     reina::graphics::Camera camera{renderWindow, glm::radians(22.5f), aspectRatio, glm::vec3(0, 1, 0.9f), glm::vec3(0, 0, -1)};
     reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
@@ -130,7 +133,7 @@ void run() {
 
     vktools::ImageObjects postprocessingOutputImageObjects = vktools::createImage(
             logicalDevice, physicalDevice,
-            width, height,
+            renderWidth, renderHeight,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -200,7 +203,7 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 
-    VkDeviceSize imageSize = width * height * 4; // RGBA8
+    VkDeviceSize imageSize = renderWidth * renderHeight * 4; // RGBA8
 
     reina::core::Buffer stagingBuffer{
         logicalDevice, physicalDevice, imageSize,
@@ -322,8 +325,8 @@ void run() {
                 &sbtMissRegion,
                 &sbtHitRegion,
                 &sbtCallableRegion,
-                width,
-                height,
+                renderWidth,
+                renderHeight,
                 1
         );
 
@@ -358,8 +361,8 @@ void run() {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
         vkCmdDispatch(
                 commandBuffer,
-                (width + workgroupWidth - 1) / workgroupWidth,
-                (height + workgroupHeight - 1) / workgroupHeight,
+                (renderWidth + workgroupWidth - 1) / workgroupWidth,
+                (renderHeight + workgroupHeight - 1) / workgroupHeight,
                 1
                 );
 
@@ -386,7 +389,7 @@ void run() {
                     },
                     .imageOffset = {0, 0, 0},
                     .imageExtent = {
-                            width, height,
+                            renderWidth, renderHeight,
                             1
                     }
             };
@@ -410,11 +413,11 @@ void run() {
             std::string filename = "../output.png";
             int success = stbi_write_png(
                     filename.c_str(),
-                    static_cast<int>(width),
-                    static_cast<int>(height),
+                    static_cast<int>(renderWidth),
+                    static_cast<int>(renderHeight),
                     4,
                     pixels.data(),
-                    static_cast<int>(width) * 4
+                    static_cast<int>(renderWidth) * 4
             );
 
             if (!success) {
