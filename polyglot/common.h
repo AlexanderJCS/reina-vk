@@ -10,11 +10,11 @@
     using mat4 = glm::mat4;
 #endif  // #ifdef __cplusplus
 
-#define SAMPLES_PER_PIXEL 32
-#define BOUNCES_PER_SAMPLE 12
+#define SAMPLES_PER_PIXEL 1
+#define BOUNCES_PER_SAMPLE 8
 
 // define this to show normals on non-dielectric surfaces
-// #define DEBUG_SHOW_NORMALS
+#define DEBUG_SHOW_NORMALS
 
 struct PushConstantsStruct {
     mat4 invView;

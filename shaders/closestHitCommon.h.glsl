@@ -24,8 +24,10 @@ struct ObjectProperties {
     uint indicesBytesOffset;
     vec3 albedo;
     vec4 emission;
+    uint normalsIndicesBytesOffset;
     float fuzzOrRefIdx;
-    vec3 padding2;
+    bool interpNormals;
+    float padding;
 };
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
@@ -66,6 +68,15 @@ HitInfo getObjectHitInfo() {
     result.objectPosition = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
     // Transform from object space to world space:
     result.worldPosition = gl_ObjectToWorldEXT * vec4(result.objectPosition, 1.0f);
+
+    if (!objectProperties[gl_InstanceCustomIndexEXT].interpNormals) {
+        result.worldNormal = normalize(cross(v1 - v0, v2 - v0));
+    } else {
+        const vec3 n0 = vertices[i0].w == 0.0 ? normalize(vertices[i0].xyz) : normalize(gl_ObjectToWorldEXT * vec4(vertices[i0].xyz, 0.0));
+        const vec3 n1 = vertices[i1].w == 0.0 ? normalize(vertices[i1].xyz) : normalize(gl_ObjectToWorldEXT * vec4(vertices[i1].xyz, 0.0));
+        const vec3 n2 = vertices[i2].w == 0.0 ? normalize(vertices[i2].xyz) : normalize(gl_ObjectToWorldEXT * vec4(vertices[i2].xyz, 0.0));
+        result.worldNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
+    }
 
     const vec3 objectNormal = cross(v1 - v0, v2 - v0);
     // Transform normals from object space to world space. These use the transpose of the inverse matrix,

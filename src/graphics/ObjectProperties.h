@@ -8,8 +8,10 @@ namespace reina::graphics {
         uint32_t indicesBytesOffset;
         glm::vec3 albedo;
         glm::vec4 emission;  // xyz: emission RGB, w: emission strength
+        uint32_t normalsIndicesBytesOffset;  // same concept as indicesBytesOffset; it is here in the struct to prevent vec4 being aligned as 8 bytes, which the gpu doesn't like
         float fuzzOrRefIdx;  // fuzz of the material if metal, refractive index if dielectric. ignored for lambertian
-        glm::vec3 padding2 = glm::vec3(0.0f);
+        bool interpNormals;  // interpolate normals for smooth shading
+        float padding = 0;
     };
 }
 

@@ -5,6 +5,25 @@
 #include <stdexcept>
 #include <cmath>
 
+/**
+ * Convert from 3 floats to vertex to 4 floats per vertex to more easily upload to the GPU.
+ * @param tinyobjArr The array of tinyobj data
+ * @return The array with 4 floats per vertex
+ */
+static std::vector<float> tinyobjToVec4(const std::vector<tinyobj::real_t>& tinyobjArr) {
+    // convert from 3 floats per vertex to 4 floats per vertex. std::round removes any potential floating-point inaccuracies
+    std::vector<float> output(static_cast<int>(std::round(static_cast<double>(tinyobjArr.size()) * 4.0/3)));
+
+    for (int i = 0; i < tinyobjArr.size() / 3; i++) {
+        output[i * 4] = tinyobjArr[i * 3];
+        output[i * 4 + 1] = tinyobjArr[i * 3 + 1];
+        output[i * 4 + 2] = tinyobjArr[i * 3 + 2];
+        output[i * 4 + 3] = 0;
+    }
+
+    return output;
+}
+
 reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths) {
     modelRanges = std::vector<ModelRange>(modelFilepaths.size());
     std::vector<ObjData> allObjectsData(modelFilepaths.size());
@@ -36,7 +55,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         };
 
         // Copy vertices
-        std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + vertexOffset);
+        std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
 
         // Copy indices with proper offset
         for (uint32_t idx : objectData.indices) {
@@ -88,16 +107,8 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
         throw std::runtime_error("Error reading OBJ:\n" + reader.Error());
     }
 
-    std::vector<tinyobj::real_t> tinyobjVertices = reader.GetAttrib().GetVertices();
-    // convert from 3 floats per vertex to 4 floats per vertex. std::round removes any potential floating-point inaccuracies
-    std::vector<float> objVertices(static_cast<int>(std::round(static_cast<double>(tinyobjVertices.size()) * 4.0/3)));
-
-    for (int vertex = 0; vertex < tinyobjVertices.size() / 3; vertex++) {
-        objVertices[vertex * 4] = tinyobjVertices[vertex * 3];
-        objVertices[vertex * 4 + 1] = tinyobjVertices[vertex * 3 + 1];
-        objVertices[vertex * 4 + 2] = tinyobjVertices[vertex * 3 + 2];
-        objVertices[vertex * 4 + 3] = 0;
-    }
+    std::vector<float> objVertices = tinyobjToVec4(reader.GetAttrib().GetVertices());
+    std::vector<float> objNormals = tinyobjToVec4(reader.GetAttrib().normals);
 
     const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
     if (shapes.size() != 1) {
@@ -105,11 +116,13 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
     }
 
     std::vector<uint32_t> objIndices(shapes[0].mesh.indices.size());
+    std::vector<uint32_t> objNormalsIndices(shapes[0].mesh.indices.size());
     for (int i = 0; i < shapes[0].mesh.indices.size(); i++) {
         objIndices[i] = shapes[0].mesh.indices[i].vertex_index;
+        objNormalsIndices[i] = shapes[0].mesh.indices[i].normal_index;
     }
 
-    return {objVertices, objIndices};
+    return {objVertices, objIndices, objNormals, objNormalsIndices};
 }
 
 size_t reina::graphics::Models::getVerticesBufferSize() const {
@@ -133,7 +146,10 @@ const reina::core::Buffer& reina::graphics::Models::getNonOffsetIndicesBuffer() 
 }
 
 reina::graphics::ModelRange reina::graphics::Models::getModelRange(int index) const {
-    // todo: do input validation
+    if (index >= modelRanges.size() || index < 0) {
+        throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
+    }
+
     return modelRanges[index];
 }
 

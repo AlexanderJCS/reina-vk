@@ -34,7 +34,10 @@ void main() {
 
     vec4 pixel = imageLoad(inImage, pixelCoord);
     vec3 color = pixel.rgb;
-    color = tonemapACES(color);
+
+    #ifdef DEBUG_SHOW_NORMALS
+        color = tonemapACES(color);
+    #endif
 
     imageStore(outImage, pixelCoord, vec4(color, 1));
 }

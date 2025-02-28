@@ -112,8 +112,8 @@ void run() {
 
     glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(renderWidth) / static_cast<float>(renderHeight), 0.1f, 100.0f);
 
-    glm::vec3 pos = glm::vec3(-1.1, 2, 6);
-    glm::vec3 lookAt = glm::vec3(0, 1, 0);
+    glm::vec3 pos = glm::vec3(0, 1.3f, 8.4f);
+    glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     reina::graphics::Camera camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
     reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
@@ -178,25 +178,25 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/ico_sphere_highres.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
-    reina::graphics::Blas sphere{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
+    reina::graphics::Blas dragon{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     std::vector<reina::graphics::Instance> instances{
-            {box, 0, 1, baseTransform},
-            {light, 1, 0, baseTransform},
-            {sphere, 2, 2, glm::translate(glm::scale(baseTransform, glm::vec3(0.3)), glm::vec3(0, 3, 0))}
+            {box,    0, 0, baseTransform},
+            {light,  1, 0, baseTransform},
+            {dragon, 2, 0, glm::rotate(baseTransform, glm::radians(30.0f), glm::vec3(0, 1, 0))},
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), 0.01},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(53.0f/255, 196.0f/255, 91.0f/255), glm::vec4(0), 1.5}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), models.getModelRange(2).normalsIndexOffset, 0, false},
+            {models.getModelRange(0).indexOffset, glm::vec3(220.0f / 255, 20.0f / 255, 95.0f / 255), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.7f, false}
     };
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
@@ -371,7 +371,7 @@ void run() {
         // save
         clock.markCategory("Save");
 
-        if (clock.getSampleCount() > 20000) {
+        if (clock.getSampleCount() > 33333000000) {
             transitionImage(
                     commandBuffer, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -412,7 +412,7 @@ void run() {
             memcpy(pixels.data(), data, static_cast<size_t>(imageSize));
             vkUnmapMemory(logicalDevice, stagingBuffer.getDeviceMemory());
 
-            std::string filename = "../green_ball.png";
+            std::string filename = "../output.png";
             int success = stbi_write_png(
                     filename.c_str(),
                     static_cast<int>(renderWidth),
@@ -556,7 +556,7 @@ void run() {
 
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
-    sphere.destroy(logicalDevice);
+    dragon.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);

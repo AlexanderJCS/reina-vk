@@ -11,12 +11,16 @@ namespace reina::graphics {
     struct ModelRange {
         uint32_t firstVertex;
         uint32_t indexOffset;
+        uint32_t normalsIndexOffset;
         uint32_t indexCount;
+        uint32_t normalsIndexCount;
     };
 
     struct ObjData {
         std::vector<float> vertices;
         std::vector<uint32_t> indices;
+        std::vector<float> normals;
+        std::vector<uint32_t> normalsIndices;
     };
 
     class Models {
