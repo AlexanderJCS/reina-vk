@@ -11,7 +11,7 @@ namespace reina::graphics {
         uint32_t normalsIndicesBytesOffset;  // same concept as indicesBytesOffset; it is here in the struct to prevent vec4 being aligned as 8 bytes, which the gpu doesn't like
         float fuzzOrRefIdx;  // fuzz of the material if metal, refractive index if dielectric. ignored for lambertian
         bool interpNormals;  // interpolate normals for smooth shading
-        float padding = 0;
+        float absorption;  // the molar absorptivity (liters/mol/cm) times the molar concentration (mol/liter). used for rendering transparent dielectrics
     };
 }
 

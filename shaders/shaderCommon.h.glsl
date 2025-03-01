@@ -1,8 +1,7 @@
 #ifndef VK_MINI_PATH_TRACER_SHADER_COMMON_H
 #define VK_MINI_PATH_TRACER_SHADER_COMMON_H
 
-struct PassableInfo
-{
+struct PassableInfo {
     vec3 color;         // The reflectivity of the surface.
     vec3 rayOrigin;     // The new ray origin in world-space.
     vec3 rayDirection;  // The new ray direction in world-space.
@@ -10,6 +9,8 @@ struct PassableInfo
     bool rayHitSky;     // True if the ray hit the sky.
     vec4 emission;      // xyz: emission color, w: emission strength
     bool skip;          // If true, the raygen shader knows to skip this ray
+    float accumulatedDistance;  // Used for Beer's law. The distance the ray has traveled inside any media.
+    bool insideDielectric;  // Apply color for this iteration
 };
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.

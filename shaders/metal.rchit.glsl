@@ -17,9 +17,11 @@ void main() {
         pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
     #endif
 
-    pld.emission     = objectProperties[gl_InstanceCustomIndexEXT].emission;
-    pld.rayOrigin    = offsetPositionAlongNormal(hitInfo.worldPosition, normalize(hitInfo.worldNormal));
+    pld.emission = objectProperties[gl_InstanceCustomIndexEXT].emission;
+    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, normalize(hitInfo.worldNormal));
     pld.rayDirection = reflect(normalize(gl_WorldRayDirectionEXT), normalize(hitInfo.worldNormal)) + objectProperties[gl_InstanceCustomIndexEXT].fuzzOrRefIdx * randomUnitVec(pld.rngState);
-    pld.rayHitSky    = false;
-    pld.skip         = false;
+    pld.rayHitSky = false;
+    pld.skip = false;
+    pld.insideDielectric = false;
+    pld.accumulatedDistance = 0.0;
 }

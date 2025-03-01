@@ -65,7 +65,7 @@ vec3 traceSegments(Ray ray) {
             break;
         #endif
 
-        if (pld.rayHitSky) {
+        if (pld.rayHitSky && !pld.insideDielectric) {
             incomingLight += pld.color * accumulatedRayColor;
             break;
         }
@@ -129,6 +129,7 @@ void main() {
         Ray startingRay = getStartingRay(vec2(pixel), vec2(resolution), pushConstants.invView, pushConstants.invProjection);
         vec3 color = traceSegments(startingRay);
 
+        // this is a hack. for some reason, some rays are returning NaN. no clue why.
         if (any(isnan(color))) {
             continue;
         }

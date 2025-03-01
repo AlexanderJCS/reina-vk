@@ -35,7 +35,7 @@ struct ObjectProperties {
     uint normalsIndicesBytesOffset;
     float fuzzOrRefIdx;
     bool interpNormals;
-    float padding;
+    float absorption;
 };
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {

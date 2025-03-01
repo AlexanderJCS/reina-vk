@@ -44,22 +44,38 @@ void main() {
     float cosTheta = min(dot(-unitDir, hitInfo.worldNormal), 1.0);
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
-    bool cannot_refract = bool(ri * sinTheta > 1.0);  // must wrap in bool() to prevent glsl linter from throwing false-positive error
+    bool cannotRefract = bool(ri * sinTheta > 1.0);  // must wrap in bool() to prevent glsl linter from throwing false-positive error
     float reflectivity = reflectance(cosTheta, ri);
 
-    if (cannot_refract || reflectivity > stepAndOutputRNGFloat(pld.rngState)) {
+    bool previouslyInsideDielectric = pld.insideDielectric;
+
+    if (cannotRefract || reflectivity > stepAndOutputRNGFloat(pld.rngState)) {
         // specular reflection
         pld.rayDirection = reflect(unitDir, hitInfo.worldNormal);
         pld.color = vec3(1);
         pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
     } else {
+        pld.insideDielectric = hitInfo.frontFace;
+
         // refract
         pld.rayDirection = refract(unitDir, hitInfo.worldNormal, ri);
         pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
         pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
     }
 
-    pld.emission  = objectProperties[gl_InstanceCustomIndexEXT].emission;
+    if (previouslyInsideDielectric) {
+        pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
+    }
+
+    bool exitingDielectric = previouslyInsideDielectric && !pld.insideDielectric;
+    if (exitingDielectric) {
+        pld.color = vec3(1) * exp(-objectProperties[gl_InstanceCustomIndexEXT].absorption * pld.accumulatedDistance);
+        pld.color *= objectProperties[gl_InstanceCustomIndexEXT].albedo;
+
+        pld.accumulatedDistance = 0.0;
+    }
+
+    pld.emission = objectProperties[gl_InstanceCustomIndexEXT].emission;
     pld.rayHitSky = false;
-    pld.skip      = false;
+    pld.skip = false;
 }
