@@ -29,29 +29,40 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     std::vector<ObjData> allObjectsData(modelFilepaths.size());
     size_t totalVertices = 0;
     size_t totalIndices = 0;
+    size_t totalNormals = 0;
+    size_t totalNormalsIndices = 0;
 
     for (int i = 0; i < modelFilepaths.size(); i++) {
         allObjectsData[i] = getObjData(modelFilepaths[i]);
 
         totalVertices += allObjectsData[i].vertices.size();
         totalIndices += allObjectsData[i].indices.size();
+        totalNormals += allObjectsData[i].normals.size();
+        totalNormalsIndices += allObjectsData[i].normalsIndices.size();
     }
 
     std::vector<float> allVertices(totalVertices);
+    std::vector<float> allNormals(totalNormals);
     std::vector<uint32_t> allIndicesOffset(totalIndices);
+    std::vector<uint32_t> allNormalsIndicesOffset(totalNormalsIndices);
     std::vector<uint32_t> allIndicesNonOffset(totalIndices);
 
     size_t vertexOffset = 0;
+    size_t normalsOffset = 0;
     size_t indexOffset = 0;
+    size_t normalsIndexOffset = 0;
 
     // Copy the data to allVertices and allIndicesOffset
     for (int i = 0; i < allObjectsData.size(); i++) {
         const ObjData& objectData = allObjectsData[i];
 
         modelRanges[i] = ModelRange{
-                .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
-                .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
-                .indexCount  = static_cast<uint32_t>(objectData.indices.size() / 3)
+            .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
+            .firstNormal = static_cast<uint32_t>(normalsOffset / 4),
+            .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
+            .normalsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
+            .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
+            .normalsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3)
         };
 
         // Copy vertices
@@ -63,39 +74,53 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
             allIndicesNonOffset[indexOffset++] = idx;
         }
 
+        for (uint32_t idx : objectData.normalsIndices) {
+            allNormalsIndicesOffset[normalsIndexOffset++] = idx + (normalsOffset / 4);
+        }
+
         vertexOffset += objectData.vertices.size();
+        normalsOffset += objectData.normals.size();
     }
 
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
+    VkMemoryAllocateFlagBits allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+    VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
     verticesBufferSize = allVertices.size();
     verticesBuffer = reina::core::Buffer{
-            logicalDevice,
-            physicalDevice,
-            allVertices,
-            usage,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        logicalDevice, physicalDevice,
+        allVertices,
+        usage, allocFlags, memFlags
     };
 
     indicesBuffersSize = allIndicesOffset.size();
     offsetIndicesBuffer = reina::core::Buffer{
-            logicalDevice,
-            physicalDevice,
-            allIndicesOffset,
-            usage,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        logicalDevice,
+        physicalDevice,
+        allIndicesOffset,
+        usage, allocFlags, memFlags
     };
     nonOffsetIndicesBuffer = reina::core::Buffer{
-            logicalDevice,
-            physicalDevice,
-            allIndicesNonOffset,
-            usage,
-            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        logicalDevice, physicalDevice,
+        allIndicesNonOffset,
+        usage, allocFlags, memFlags
+    };
+
+    normalsBufferSize = allNormals.size();
+    normalsBuffer = reina::core::Buffer{
+        logicalDevice, physicalDevice,
+        allNormals,
+        usage, allocFlags, memFlags
+    };
+
+    offsetNormalsIndicesSize = allNormalsIndicesOffset.size();
+    offsetNormalsIndicesBuffer = reina::core::Buffer{
+        logicalDevice, physicalDevice,
+        allNormalsIndicesOffset,
+        usage, allocFlags, memFlags
     };
 }
 
@@ -160,5 +185,9 @@ void reina::graphics::Models::destroy(VkDevice logicalDevice) {
         offsetIndicesBuffer.value().destroy(logicalDevice);
     } if (nonOffsetIndicesBuffer.has_value()) {
         nonOffsetIndicesBuffer.value().destroy(logicalDevice);
+    } if (offsetNormalsIndicesBuffer.has_value()) {
+        offsetNormalsIndicesBuffer.value().destroy(logicalDevice);
+    } if (normalsBuffer.has_value()) {
+        normalsBuffer.value().destroy(logicalDevice);
     }
 }

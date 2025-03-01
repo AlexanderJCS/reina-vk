@@ -10,6 +10,7 @@
 namespace reina::graphics {
     struct ModelRange {
         uint32_t firstVertex;
+        uint32_t firstNormal;
         uint32_t indexOffset;
         uint32_t normalsIndexOffset;
         uint32_t indexCount;
@@ -44,9 +45,13 @@ namespace reina::graphics {
         std::optional<reina::core::Buffer> verticesBuffer;
         std::optional<reina::core::Buffer> offsetIndicesBuffer;
         std::optional<reina::core::Buffer> nonOffsetIndicesBuffer;
+        std::optional<reina::core::Buffer> normalsBuffer;
+        std::optional<reina::core::Buffer> offsetNormalsIndicesBuffer;
 
         size_t verticesBufferSize;
         size_t indicesBuffersSize;
+        size_t normalsBufferSize;
+        size_t offsetNormalsIndicesSize;
 
         std::vector<ModelRange> modelRanges;
     };
