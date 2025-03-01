@@ -67,6 +67,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 
         // Copy vertices
         std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
+        std::copy(objectData.normals.begin(), objectData.normals.end(), allNormals.begin() + static_cast<long long>(normalsOffset));
 
         // Copy indices with proper offset
         for (uint32_t idx : objectData.indices) {
@@ -116,7 +117,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         usage, allocFlags, memFlags
     };
 
-    offsetNormalsIndicesSize = allNormalsIndicesOffset.size();
+    normalsIndicesBufferSize = allNormalsIndicesOffset.size();
     offsetNormalsIndicesBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice,
         allNormalsIndicesOffset,
@@ -190,4 +191,20 @@ void reina::graphics::Models::destroy(VkDevice logicalDevice) {
     } if (normalsBuffer.has_value()) {
         normalsBuffer.value().destroy(logicalDevice);
     }
+}
+
+size_t reina::graphics::Models::getNormalsBufferSize() const {
+    return normalsBufferSize;
+}
+
+size_t reina::graphics::Models::getNormalsIndicesBufferSize() const {
+    return normalsIndicesBufferSize;
+}
+
+const reina::core::Buffer &reina::graphics::Models::getNormalsBuffer() const {
+    return normalsBuffer.value();
+}
+
+const reina::core::Buffer &reina::graphics::Models::getOffsetNormalsIndicesBuffer() const {
+    return offsetNormalsIndicesBuffer.value();
 }

@@ -18,6 +18,14 @@ layout(binding = 3, set = 0, scalar) buffer Indices {
     uint indices[];
 };
 
+layout (binding = 5, set = 0, scalar) buffer NormalsBuffer {
+    vec4 normals[];
+};
+
+layout (binding = 6, set = 0, scalar) buffer NormalsIndicesBuffer {
+    uint normalsIndices[];
+};
+
 layout(location = 0) rayPayloadInEXT PassableInfo pld;
 
 struct ObjectProperties {
@@ -69,16 +77,22 @@ HitInfo getObjectHitInfo() {
     // Transform from object space to world space:
     result.worldPosition = gl_ObjectToWorldEXT * vec4(result.objectPosition, 1.0f);
 
+    vec3 objectNormal;
     if (!objectProperties[gl_InstanceCustomIndexEXT].interpNormals) {
-        result.worldNormal = normalize(cross(v1 - v0, v2 - v0));
+        objectNormal = normalize(cross(v1 - v0, v2 - v0));
     } else {
-        const vec3 n0 = vertices[i0].w == 0.0 ? normalize(vertices[i0].xyz) : normalize(gl_ObjectToWorldEXT * vec4(vertices[i0].xyz, 0.0));
-        const vec3 n1 = vertices[i1].w == 0.0 ? normalize(vertices[i1].xyz) : normalize(gl_ObjectToWorldEXT * vec4(vertices[i1].xyz, 0.0));
-        const vec3 n2 = vertices[i2].w == 0.0 ? normalize(vertices[i2].xyz) : normalize(gl_ObjectToWorldEXT * vec4(vertices[i2].xyz, 0.0));
-        result.worldNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
+        const uint normalsIndexOffset = objectProperties[gl_InstanceCustomIndexEXT].normalsIndicesBytesOffset / 4;
+        const uint n0Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 0];
+        const uint n1Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 1];
+        const uint n2Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 2];
+
+        const vec3 n0 = normals[n0Index].xyz;
+        const vec3 n1 = normals[n1Index].xyz;
+        const vec3 n2 = normals[n2Index].xyz;
+
+        objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
     }
 
-    const vec3 objectNormal = cross(v1 - v0, v2 - v0);
     // Transform normals from object space to world space. These use the transpose of the inverse matrix,
     // because they're directions of normals, not positions:
     result.worldNormal = normalize((objectNormal * gl_WorldToObjectEXT).xyz);

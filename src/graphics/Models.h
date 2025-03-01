@@ -30,10 +30,14 @@ namespace reina::graphics {
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
         [[nodiscard]] size_t getIndicesBuffersSize() const;
+        [[nodiscard]] size_t getNormalsBufferSize() const;
+        [[nodiscard]] size_t getNormalsIndicesBufferSize() const;
 
         [[nodiscard]] const reina::core::Buffer& getVerticesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getOffsetIndicesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getNonOffsetIndicesBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getNormalsBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getOffsetNormalsIndicesBuffer() const;
 
         [[nodiscard]] ModelRange getModelRange(int index) const;
 
@@ -51,7 +55,7 @@ namespace reina::graphics {
         size_t verticesBufferSize;
         size_t indicesBuffersSize;
         size_t normalsBufferSize;
-        size_t offsetNormalsIndicesSize;
+        size_t normalsIndicesBufferSize;
 
         std::vector<ModelRange> modelRanges;
     };
