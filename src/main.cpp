@@ -180,7 +180,7 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
     reina::graphics::Blas dragon{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
@@ -267,10 +267,9 @@ void run() {
         bool firstFrame = clock.getFrameCount() == 0;
 
         if (!firstFrame) {
-             std::cout << clock.summary() << "\n";
+            std::cout << clock.summary() << "\n";
         }
 
-        clock.markFrame();
         clock.markCategory("Ray Tracing");
 
         // render ray traced image
@@ -546,6 +545,7 @@ void run() {
             vkQueuePresentKHR(presentQueue, &presentInfo);
         }
 
+        clock.markFrame();
         glfwPollEvents();
     }
 
