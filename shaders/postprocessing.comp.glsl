@@ -35,7 +35,7 @@ void main() {
     vec4 pixel = imageLoad(inImage, pixelCoord);
     vec3 color = pixel.rgb;
 
-    #ifdef DEBUG_SHOW_NORMALS
+    #ifndef DEBUG_SHOW_NORMALS
         color = tonemapACES(color);
     #endif
 
