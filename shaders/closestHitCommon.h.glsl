@@ -52,11 +52,12 @@ struct HitInfo {
 
 HitInfo getObjectHitInfo() {
     HitInfo result;
+    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
     // Get the ID of the triangle
     const uint primitiveID = gl_PrimitiveID;
 
     // divide by 4 since 4 bytes for an int32
-    const uint indexOffset = objectProperties[gl_InstanceCustomIndexEXT].indicesBytesOffset / 4;
+    const uint indexOffset = props.indicesBytesOffset / 4;
 
     // Get the indices of the vertices of the triangle
     const uint i0 = indices[3 * primitiveID + indexOffset + 0];
@@ -78,10 +79,10 @@ HitInfo getObjectHitInfo() {
     result.worldPosition = gl_ObjectToWorldEXT * vec4(result.objectPosition, 1.0f);
 
     vec3 objectNormal;
-    if (!objectProperties[gl_InstanceCustomIndexEXT].interpNormals) {
+    if (!props.interpNormals) {
         objectNormal = normalize(cross(v1 - v0, v2 - v0));
     } else {
-        const uint normalsIndexOffset = objectProperties[gl_InstanceCustomIndexEXT].normalsIndicesBytesOffset / 4;
+        const uint normalsIndexOffset = props.normalsIndicesBytesOffset / 4;
         const uint n0Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 0];
         const uint n1Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 1];
         const uint n2Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 2];
