@@ -106,10 +106,6 @@ HitInfo getObjectHitInfo() {
     return result;
 }
 
-vec3 distSquared(vec3 v) {
-    return dot(v, v);
-}
-
 /*
  * Credit: Carsten Wächter and Nikolaus Binder from "A Fast and Robust Method for Avoiding Self-Intersection"
  * from Ray Tracing Gems (version 1.7, 2020)

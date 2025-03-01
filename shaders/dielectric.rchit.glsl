@@ -37,9 +37,10 @@ vec3 offsetPositionForDielectric(vec3 worldPosition, vec3 normal, vec3 rayDir) {
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
+    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
     // todo: extract a bunch of this into a function
-    float ri = hitInfo.frontFace ? 1.0 / objectProperties[gl_InstanceCustomIndexEXT].fuzzOrRefIdx : objectProperties[gl_InstanceCustomIndexEXT].fuzzOrRefIdx;
+    float ri = hitInfo.frontFace ? 1.0 / props.fuzzOrRefIdx : props.fuzzOrRefIdx;
     vec3 unitDir = normalize(gl_WorldRayDirectionEXT);
     float cosTheta = min(dot(-unitDir, hitInfo.worldNormal), 1.0);
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -59,7 +60,7 @@ void main() {
 
         // refract
         pld.rayDirection = refract(unitDir, hitInfo.worldNormal, ri);
-        pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
+        pld.color = props.albedo;
         pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
     }
 
@@ -70,13 +71,13 @@ void main() {
         float dist = pld.accumulatedDistance;
         dist *= 100.0;  // convert meters to cm
 
-        pld.color = vec3(1) * exp(-objectProperties[gl_InstanceCustomIndexEXT].absorption * pld.accumulatedDistance);
-        pld.color *= objectProperties[gl_InstanceCustomIndexEXT].albedo;
+        pld.color = vec3(1) * exp(-props.absorption * pld.accumulatedDistance);
+        pld.color *= props.albedo;
 
         pld.accumulatedDistance = 0.0;
     }
 
-    pld.emission = objectProperties[gl_InstanceCustomIndexEXT].emission;
+    pld.emission = props.emission;
     pld.rayHitSky = false;
     pld.skip = false;
 }
