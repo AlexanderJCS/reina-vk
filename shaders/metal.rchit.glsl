@@ -23,5 +23,10 @@ void main() {
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;
-    pld.accumulatedDistance = 0.0;
+
+    if (pld.insideDielectric) {
+        pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
+    } else {
+        pld.accumulatedDistance = 0.0;
+    }
 }

@@ -180,7 +180,7 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
     reina::graphics::Blas dragon{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
@@ -190,7 +190,7 @@ void run() {
     std::vector<reina::graphics::Instance> instances{
             {box,    0, 0, baseTransform},
             {light,  1, 0, baseTransform},
-            {dragon, 2, 2, glm::translate(glm::scale(glm::rotate(baseTransform, glm::radians(30.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3)), glm::vec3(0, 2, 0))},
+            {dragon, 2, 2, glm::translate(glm::rotate(baseTransform, glm::radians(30.0f), glm::vec3(0, 1, 0)), glm::vec3(0, -0.02, 0))},
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
@@ -198,7 +198,7 @@ void run() {
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.7f, true, 1}
+            {models.getModelRange(0).indexOffset, glm::vec3(255/255.0f, 140/255.0f, 120/255.0f), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.7f, true, 1}
     };
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,

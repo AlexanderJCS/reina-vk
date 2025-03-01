@@ -63,12 +63,13 @@ void main() {
         pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
     }
 
-    if (previouslyInsideDielectric) {
-        pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
-    }
+    pld.accumulatedDistance += mix(0, length(hitInfo.worldPosition - gl_WorldRayOriginEXT), previouslyInsideDielectric);
 
     bool exitingDielectric = previouslyInsideDielectric && !pld.insideDielectric;
     if (exitingDielectric) {
+        float dist = pld.accumulatedDistance;
+        dist *= 100.0;  // convert meters to cm
+
         pld.color = vec3(1) * exp(-objectProperties[gl_InstanceCustomIndexEXT].absorption * pld.accumulatedDistance);
         pld.color *= objectProperties[gl_InstanceCustomIndexEXT].albedo;
 

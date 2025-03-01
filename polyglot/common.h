@@ -10,7 +10,7 @@
     using mat4 = glm::mat4;
 #endif  // #ifdef __cplusplus
 
-#define SAMPLES_PER_PIXEL 64
+#define SAMPLES_PER_PIXEL 32
 #define BOUNCES_PER_SAMPLE 8
 
 // define this to show normals on non-dielectric surfaces
