@@ -65,13 +65,15 @@ vec3 traceSegments(Ray ray) {
             break;
         #endif
 
-        if (pld.rayHitSky && !pld.insideDielectric) {
+        if (pld.rayHitSky) {
             incomingLight += pld.color * accumulatedRayColor;
             break;
         }
 
-        incomingLight += pld.emission.xyz * pld.emission.w * accumulatedRayColor;
-        accumulatedRayColor *= pld.color;
+        if (!pld.insideDielectric) {
+            incomingLight += pld.emission.xyz * clamp(pld.emission.w, 0, pushConstants.indirectClamp) * accumulatedRayColor;
+            accumulatedRayColor *= pld.color;
+        }
     }
 
     return incomingLight;
@@ -127,7 +129,7 @@ void main() {
     // SAMPLES_PER_PIXEL defined in common.h polyglot file
     for (int sampleIdx = 0; sampleIdx < SAMPLES_PER_PIXEL; sampleIdx++) {
         Ray startingRay = getStartingRay(vec2(pixel), vec2(resolution), pushConstants.invView, pushConstants.invProjection);
-        vec3 color = traceSegments(startingRay);
+        vec3 color = clamp(traceSegments(startingRay), vec3(0), vec3(pushConstants.directClamp));
 
         // this is a hack. for some reason, some rays are returning NaN. no clue why.
         if (any(isnan(color))) {

@@ -117,7 +117,7 @@ void run() {
     glm::vec3 pos = glm::vec3(0, 1.3f, 8.4f);
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     reina::graphics::Camera camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
-    reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+    reina::core::PushConstants pushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0, 100, 10}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     vktools::SbtSpacing sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     std::vector<reina::graphics::Shader> shaders = {
@@ -180,7 +180,7 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
     reina::graphics::Blas dragon{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
@@ -198,7 +198,7 @@ void run() {
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(255/255.0f, 140/255.0f, 120/255.0f), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.7f, true, 1}
+            {models.getModelRange(0).indexOffset, glm::vec3(244/255.0f, 17/255.0f, 95/255.0f), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.7f, true, 1.2}
     };
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
@@ -379,7 +379,8 @@ void run() {
         // save
         clock.markCategory("Save");
 
-        if (clock.getSampleCount() > 33333000000) {
+        uint32_t samples = clock.getSampleCount();
+        if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
             transitionImage(
                     commandBuffer, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

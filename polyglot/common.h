@@ -10,8 +10,8 @@
     using mat4 = glm::mat4;
 #endif  // #ifdef __cplusplus
 
-#define SAMPLES_PER_PIXEL 32
-#define BOUNCES_PER_SAMPLE 8
+#define SAMPLES_PER_PIXEL 8
+#define BOUNCES_PER_SAMPLE 12
 
 // define this to show normals on non-dielectric surfaces
 //#define DEBUG_SHOW_NORMALS
@@ -20,6 +20,8 @@ struct PushConstantsStruct {
     mat4 invView;
     mat4 invProjection;
     uint sampleBatch;
+    uint directClamp;
+    uint indirectClamp;
 };
 
 #endif // #ifndef RAYGUN_VK_POLYGLOT_COMMON_H
