@@ -112,8 +112,6 @@ void run() {
         }
     };
 
-    glm::mat4 proj = glm::perspective(glm::radians(22.5f), static_cast<float>(renderWidth) / static_cast<float>(renderHeight), 0.1f, 100.0f);
-
     glm::vec3 pos = glm::vec3(0, 1.3f, 8.4f);
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     reina::graphics::Camera camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
@@ -180,25 +178,27 @@ void run() {
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
-    reina::graphics::Blas dragon{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
+    reina::graphics::Blas subject{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    glm::mat4x4 subjectTransform = glm::translate(baseTransform, glm::vec3(0.1f, 0, 0));
+
 
     std::vector<reina::graphics::Instance> instances{
-            {box,    0, 0, baseTransform},
-            {light,  1, 0, baseTransform},
-            {dragon, 2, 2, glm::translate(glm::rotate(baseTransform, glm::radians(30.0f), glm::vec3(0, 1, 0)), glm::vec3(0, -0.02, 0))},
+            {box,     0, 0, baseTransform},
+            {light,   1, 0, baseTransform},
+            {subject, 2, 1, subjectTransform},
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, true, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), models.getModelRange(2).normalsIndexOffset, 0, true, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(244/255.0f, 17/255.0f, 95/255.0f), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.7f, true, 1.2}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
+            {models.getModelRange(0).indexOffset, glm::vec3(205/255.0f, 160/255.0f, 50/255.0f) * 1.1f, glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 0.0f, true, 0.2}
     };
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
@@ -565,7 +565,7 @@ void run() {
 
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
-    dragon.destroy(logicalDevice);
+    subject.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
