@@ -19,3 +19,5 @@ Render of the Stanford bunny model with 24,000 samples per pixel. It has approxi
 * Lighting
 * OBJ model loading
   * Vertex normal interpolation for smooth shading (this is how the bunny looks so smooth)
+* Post-processing
+  * Tone mapping
