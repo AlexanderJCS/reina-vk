@@ -47,8 +47,8 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
     };
 
-    auto vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
+    PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
+    vktools::loadVkFunc(logicalDevice, "vkGetAccelerationStructureBuildSizesKHR", vkGetAccelerationStructureBuildSizesKHR);
 
     vkGetAccelerationStructureBuildSizesKHR(
             logicalDevice,
@@ -72,8 +72,8 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
             .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
     };
 
-    auto vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
+    PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
+    vktools::loadVkFunc(logicalDevice, "vkCreateAccelerationStructureKHR", vkCreateAccelerationStructureKHR);
 
     vkCreateAccelerationStructureKHR(logicalDevice, &createInfo, nullptr, &blas);
 
@@ -109,8 +109,9 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
         throw std::runtime_error("Could not begin one-time command buffer for BLAS creation");
     }
 
-    auto vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
+    PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
+    vktools::loadVkFunc(logicalDevice, "vkCmdBuildAccelerationStructuresKHR", vkCmdBuildAccelerationStructuresKHR);
+
     vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &buildInfo, rangeInfos);
 
     if (vkEndCommandBuffer(cmdBuffer) != VK_SUCCESS) {
@@ -174,6 +175,7 @@ void reina::graphics::Blas::destroy(VkDevice logicalDevice) {
 }
 
 VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
+    // todo: create functions for fence and command buffer logic
     VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     VkFence fence;
     if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
@@ -201,8 +203,8 @@ VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDe
 
     vkCmdResetQueryPool(compactCmdBuffer, queryPool, 0, 1);
 
-    auto vkCmdWriteAccelerationStructuresPropertiesKHR = reinterpret_cast<PFN_vkCmdWriteAccelerationStructuresPropertiesKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR"));
+    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR = nullptr;
+    vktools::loadVkFunc(logicalDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR", vkCmdWriteAccelerationStructuresPropertiesKHR);
 
     // write the compact buffer size
     vkCmdWriteAccelerationStructuresPropertiesKHR(
@@ -249,10 +251,10 @@ VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDe
             .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
     };
 
-    VkAccelerationStructureKHR compactBlas;
+    PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
+    vktools::loadVkFunc(logicalDevice, "vkCreateAccelerationStructureKHR", vkCreateAccelerationStructureKHR);
 
-    auto vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
+    VkAccelerationStructureKHR compactBlas;
     vkCreateAccelerationStructureKHR(logicalDevice, &asCreateInfo, nullptr, &compactBlas);
 
     // Copy the original BLAS into a compact version
@@ -260,13 +262,15 @@ VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDe
         throw std::runtime_error("Could not begin command buffer for compact BLAS copying");
     }
 
-    auto vkCmdCopyAccelerationStructureKHR = reinterpret_cast<PFN_vkCmdCopyAccelerationStructureKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkCmdCopyAccelerationStructureKHR"));
+    PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR = nullptr;
+    vktools::loadVkFunc(logicalDevice, "vkCmdCopyAccelerationStructureKHR", vkCmdCopyAccelerationStructureKHR);
 
-    VkCopyAccelerationStructureInfoKHR copyInfo{VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR};
-    copyInfo.src  = blas;
-    copyInfo.dst  = compactBlas;
-    copyInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+    VkCopyAccelerationStructureInfoKHR copyInfo{
+        .sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR,
+        .src = blas,
+        .dst = compactBlas,
+        .mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR
+    };
     vkCmdCopyAccelerationStructureKHR(compactCmdBuffer, &copyInfo);
 
     if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {

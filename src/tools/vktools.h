@@ -88,6 +88,14 @@ namespace vktools {
     uint64_t getDeviceLocalMemory(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
 
+    template <typename T>
+    void loadVkFunc(VkDevice logicalDevice, const char* funcName, T& funcPtr) {
+        funcPtr = reinterpret_cast<T>(vkGetDeviceProcAddr(logicalDevice, funcName));
+        if (!funcPtr) {
+            throw std::runtime_error(std::string("Failed to load function: ") + funcName);
+        }
+    }
+
     ImageObjects createImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
     PipelineInfo createComputePipeline(VkDevice logicalDevice, const::reina::core::DescriptorSet& descriptorSet, const reina::graphics::Shader& shader);
 
