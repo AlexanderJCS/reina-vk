@@ -8,10 +8,11 @@
 #include "Models.h"
 #include "../core/Buffer.h"
 
+// todo: accumulate all BLASes then build them all at once for faster performance
 namespace reina::graphics {
     class Blas {
     public:
-        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const reina::graphics::ModelRange& modelRange);
+        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const reina::graphics::ModelRange& modelRange, bool compact);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
         [[nodiscard]] const reina::core::Buffer& getBuffer() const;

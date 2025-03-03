@@ -179,9 +179,9 @@ void run() {
     VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
 
     reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
-    reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1)};
-    reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2)};
-    reina::graphics::Blas subject{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0)};
+    reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
+    reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), false};
+    reina::graphics::Blas subject{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), false};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4x4 subjectTransform = glm::translate(baseTransform, glm::vec3(0.1f, 0, 0));
