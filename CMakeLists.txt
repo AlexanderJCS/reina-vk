@@ -4,7 +4,30 @@ project(reina_vk)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(Vulkan REQUIRED)
-add_subdirectory(lib/glfw-3.4)
+
+include(FetchContent)
+
+FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG        3.4
+)
+
+FetchContent_MakeAvailable(glfw)
+
+FetchContent_Declare(
+        stb
+        GIT_REPOSITORY https://github.com/nothings/stb.git
+        GIT_TAG        master
+)
+FetchContent_MakeAvailable(stb)
+
+FetchContent_Declare(
+        tinyobjloader
+        GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+        GIT_TAG        v2.0.0rc13
+)
+FetchContent_MakeAvailable(tinyobjloader)
 
 add_executable(reina_vk src/main.cpp
         src/tools/consts.h
@@ -37,5 +60,5 @@ add_executable(reina_vk src/main.cpp
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 
 target_include_directories(reina_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
-target_include_directories(reina_vk PRIVATE ${CMAKE_SOURCE_DIR}/lib/stb)
-target_include_directories(reina_vk PUBLIC ${CMAKE_SOURCE_DIR}/lib/tiny_obj_loader)
+target_include_directories(reina_vk PRIVATE ${stb_SOURCE_DIR})
+target_include_directories(reina_vk PRIVATE ${tinyobjloader_SOURCE_DIR})
