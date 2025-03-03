@@ -6,7 +6,7 @@
 #include "../tools/vktools.h"
 
 reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
-                            const reina::graphics::Models& models, const reina::graphics::ModelRange& modelRange, bool compact) {
+                            const reina::graphics::Models& models, const reina::graphics::ModelRange& modelRange, bool shouldCompact) {
 
     uint32_t vertexCount = static_cast<uint32_t>(models.getVerticesBufferSize()) / 3;
 
@@ -37,7 +37,7 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
     VkAccelerationStructureBuildGeometryInfoKHR buildSizesQueryBuildInfo{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
             .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-            .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | (compact ? VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR : static_cast<VkBuildAccelerationStructureFlagsKHR>(0)),
+            .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | (shouldCompact ? VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR : static_cast<VkBuildAccelerationStructureFlagsKHR>(0)),
             .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
             .geometryCount = 1,
             .pGeometries = &geometry
@@ -87,7 +87,7 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
     VkAccelerationStructureBuildGeometryInfoKHR buildInfo{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
             .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-            .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | (compact ? VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR : static_cast<VkBuildAccelerationStructureFlagsKHR>(0)),
+            .flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | (shouldCompact ? VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR : static_cast<VkBuildAccelerationStructureFlagsKHR>(0)),
             .mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
             .dstAccelerationStructure = blas,
             .geometryCount = 1,
@@ -144,116 +144,12 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
 
     scratchBuffer.destroy(logicalDevice);
 
-    if (compact) {
-        // todo: clean this code up
-        if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create fence for compact BLAS creation");
-        }
-
-        VkCommandBuffer compactCmdBuffer = vktools::createCommandBuffer(logicalDevice, cmdPool);
-        if (vkBeginCommandBuffer(compactCmdBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Could not begin command buffer for querying compact BLAS size");
-        }
-
-        // create query pool
-        VkQueryPoolCreateInfo queryPoolCreateInfo{VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO};
-        queryPoolCreateInfo.queryCount = 1;
-        queryPoolCreateInfo.queryType  = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
-        VkQueryPool queryPool;
-        vkCreateQueryPool(logicalDevice, &queryPoolCreateInfo, nullptr, &queryPool);
-
-        vkCmdResetQueryPool(compactCmdBuffer, queryPool, 0, 1);
-
-        auto vkCmdWriteAccelerationStructuresPropertiesKHR = reinterpret_cast<PFN_vkCmdWriteAccelerationStructuresPropertiesKHR>(
-                vkGetDeviceProcAddr(logicalDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR"));
-
-        // write the compact buffer size
-        vkCmdWriteAccelerationStructuresPropertiesKHR(
-                compactCmdBuffer, 1, &blas,
-                VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryPool, 0
-                );
-
-        queueSubmitInfo = {
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .commandBufferCount = 1,
-                .pCommandBuffers = &compactCmdBuffer
-        };
-
-        if (vkEndCommandBuffer(compactCmdBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to end command buffer for querying compact BLAS size");
-        }
-
-        if (vkQueueSubmit(queue, 1, &queueSubmitInfo, fence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit command buffer for querying compact BLAS size");
-        }
-
-        if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to wait for fence for querying compact BLAS size");
-        }
-        vkDestroyFence(logicalDevice, fence, nullptr);
-
-VkDeviceSize compactSize = 0;  // not initializing this causes undefined behavior
-vkGetQueryPoolResults(logicalDevice, queryPool, 0, 1,
-                      sizeof(VkDeviceSize), &compactSize, sizeof(VkDeviceSize),
-                      VK_QUERY_RESULT_WAIT_BIT);
-
-        // Create a compact version of the BLAS
-        reina::core::Buffer compactBlasBuffer{
-                logicalDevice, physicalDevice, compactSize,
-                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        };
-
-        VkAccelerationStructureCreateInfoKHR asCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
-            .buffer = compactBlasBuffer.getHandle(),
-            .size = compactSize,
-            .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
-        };
-
-        VkAccelerationStructureKHR compactBlas;
-        vkCreateAccelerationStructureKHR(logicalDevice, &asCreateInfo, nullptr, &compactBlas);
-
-        // Copy the original BLAS into a compact version
-        if (vkBeginCommandBuffer(compactCmdBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Could not begin command buffer for compact BLAS copying");
-        }
-
-        auto vkCmdCopyAccelerationStructureKHR = reinterpret_cast<PFN_vkCmdCopyAccelerationStructureKHR>(
-                vkGetDeviceProcAddr(logicalDevice, "vkCmdCopyAccelerationStructureKHR"));
-
-        VkCopyAccelerationStructureInfoKHR copyInfo{VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR};
-        copyInfo.src  = blas;
-        copyInfo.dst  = compactBlas;
-        copyInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
-        vkCmdCopyAccelerationStructureKHR(compactCmdBuffer, &copyInfo);
-
-        if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create fence for compact BLAS creation");
-        }
-
-        if (vkEndCommandBuffer(compactCmdBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to end command buffer for compact BLAS copying");
-        }
-
-        if (vkQueueSubmit(queue, 1, &queueSubmitInfo, fence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit command buffer for compact BLAS copying");
-        }
-
-        if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to wait for fence for compact BLAS copying");
-        }
-
-        vkDestroyFence(logicalDevice, fence, nullptr);
-
-        destroy(logicalDevice);
-        vkDestroyQueryPool(logicalDevice, queryPool, nullptr);
-
-        blas = compactBlas;
-        blasBuffer = compactBlasBuffer;
-
-        std::cout << "BLAS Compaction - reduced size by " << ((float) buildSizes.accelerationStructureSize - (float) compactSize) / (float) buildSizes.accelerationStructureSize * 100 << "%\n\n";
+    if (shouldCompact) {
+        VkDeviceSize compactSize = compact(logicalDevice, physicalDevice, cmdPool, queue);
+        auto beforeSize = static_cast<float>(buildSizes.accelerationStructureSize);
+        auto afterSize = static_cast<float>(compactSize);
+        float percentDiff = (beforeSize - afterSize) / beforeSize * 100;
+        std::cout << "BLAS Compaction: reduced size by " << percentDiff << "%\n\n";
     }
 }
 
@@ -275,4 +171,127 @@ void reina::graphics::Blas::destroy(VkDevice logicalDevice) {
 
     vkDestroyAccelerationStructureKHR(logicalDevice, blas, nullptr);
     blasBuffer.value().destroy(logicalDevice);
+}
+
+VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
+    VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    VkFence fence;
+    if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create fence for BLAS compaction");
+    }
+
+    VkCommandBufferBeginInfo beginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+    };
+
+    VkCommandBuffer compactCmdBuffer = vktools::createCommandBuffer(logicalDevice, cmdPool);
+    if (vkBeginCommandBuffer(compactCmdBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Could not begin command buffer for querying compact BLAS size");
+    }
+
+    // create query pool
+    VkQueryPoolCreateInfo queryPoolCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+            .queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
+            .queryCount = 1
+    };
+    VkQueryPool queryPool;
+    vkCreateQueryPool(logicalDevice, &queryPoolCreateInfo, nullptr, &queryPool);
+
+    vkCmdResetQueryPool(compactCmdBuffer, queryPool, 0, 1);
+
+    auto vkCmdWriteAccelerationStructuresPropertiesKHR = reinterpret_cast<PFN_vkCmdWriteAccelerationStructuresPropertiesKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR"));
+
+    // write the compact buffer size
+    vkCmdWriteAccelerationStructuresPropertiesKHR(
+            compactCmdBuffer, 1, &blas,
+            VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryPool, 0
+    );
+
+    VkSubmitInfo queueSubmitInfo = {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &compactCmdBuffer
+    };
+
+    if (vkEndCommandBuffer(compactCmdBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end command buffer for querying compact BLAS size");
+    }
+
+    if (vkQueueSubmit(queue, 1, &queueSubmitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit command buffer for querying compact BLAS size");
+    }
+
+    if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to wait for fence for querying compact BLAS size");
+    }
+    vkDestroyFence(logicalDevice, fence, nullptr);
+
+    VkDeviceSize compactSize;
+    vkGetQueryPoolResults(logicalDevice, queryPool, 0, 1,
+                          sizeof(VkDeviceSize), &compactSize, sizeof(VkDeviceSize),
+                          VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_64_BIT);
+
+    // Create a compact version of the BLAS
+    reina::core::Buffer compactBlasBuffer{
+            logicalDevice, physicalDevice, compactSize,
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
+
+    VkAccelerationStructureCreateInfoKHR asCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+            .buffer = compactBlasBuffer.getHandle(),
+            .size = compactSize,
+            .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
+    };
+
+    VkAccelerationStructureKHR compactBlas;
+
+    auto vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
+    vkCreateAccelerationStructureKHR(logicalDevice, &asCreateInfo, nullptr, &compactBlas);
+
+    // Copy the original BLAS into a compact version
+    if (vkBeginCommandBuffer(compactCmdBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Could not begin command buffer for compact BLAS copying");
+    }
+
+    auto vkCmdCopyAccelerationStructureKHR = reinterpret_cast<PFN_vkCmdCopyAccelerationStructureKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkCmdCopyAccelerationStructureKHR"));
+
+    VkCopyAccelerationStructureInfoKHR copyInfo{VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR};
+    copyInfo.src  = blas;
+    copyInfo.dst  = compactBlas;
+    copyInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+    vkCmdCopyAccelerationStructureKHR(compactCmdBuffer, &copyInfo);
+
+    if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create fence for compact BLAS creation");
+    }
+
+    if (vkEndCommandBuffer(compactCmdBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end command buffer for compact BLAS copying");
+    }
+
+    if (vkQueueSubmit(queue, 1, &queueSubmitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit command buffer for compact BLAS copying");
+    }
+
+    if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to wait for fence for compact BLAS copying");
+    }
+
+    vkDestroyFence(logicalDevice, fence, nullptr);
+
+    destroy(logicalDevice);
+    vkDestroyQueryPool(logicalDevice, queryPool, nullptr);
+
+    blas = compactBlas;
+    blasBuffer = compactBlasBuffer;
+
+    return compactSize;
 }
