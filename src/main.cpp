@@ -35,8 +35,8 @@ void transitionImage(
         VkImage image,
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
-        VkAccessFlagBits srcAccessMask,
-        VkAccessFlagBits dstAccessMask,
+        VkAccessFlags srcAccessMask,
+        VkAccessFlags dstAccessMask,
         VkPipelineStageFlagBits srcStageMask,
         VkPipelineStageFlagBits dstStageMask
 ) {
@@ -203,7 +203,7 @@ void run() {
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            static_cast<VkMemoryAllocateFlags>(0),
+            static_cast<VkMemoryAllocateFlagBits>(0),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 

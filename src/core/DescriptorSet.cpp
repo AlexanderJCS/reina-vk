@@ -8,7 +8,7 @@ VkDescriptorSetLayoutBinding reina::core::Binding::toLayoutBinding() const {
         .binding = bindingPoint,
         .descriptorType = type,
         .descriptorCount = descriptorCount,
-        .stageFlags = stageFlags,
+        .stageFlags = static_cast<VkShaderStageFlags>(stageFlags),
         .pImmutableSamplers = nullptr
     };
 }

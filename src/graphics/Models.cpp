@@ -94,7 +94,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     verticesBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice,
         allVertices,
-        usage, allocFlags, memFlags
+        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
     };
 
     indicesBuffersSize = allIndicesOffset.size();
@@ -102,26 +102,26 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         logicalDevice,
         physicalDevice,
         allIndicesOffset,
-        usage, allocFlags, memFlags
+        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
     };
     nonOffsetIndicesBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice,
         allIndicesNonOffset,
-        usage, allocFlags, memFlags
+        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
     };
 
     normalsBufferSize = allNormals.size();
     normalsBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice,
         allNormals,
-        usage, allocFlags, memFlags
+        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
     };
 
     normalsIndicesBufferSize = allNormalsIndicesOffset.size();
     offsetNormalsIndicesBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice,
         allNormalsIndicesOffset,
-        usage, allocFlags, memFlags
+        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
     };
 }
 
