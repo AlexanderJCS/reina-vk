@@ -55,7 +55,8 @@ add_executable(reina_vk src/main.cpp
         src/tools/Clock.h
         src/graphics/Camera.cpp
         src/graphics/Camera.h
-        lib/stb/stb_image_write.h)
+        src/core/CmdBuffer.cpp
+        src/core/CmdBuffer.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 
