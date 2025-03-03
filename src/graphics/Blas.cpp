@@ -192,10 +192,10 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
         }
         vkDestroyFence(logicalDevice, fence, nullptr);
 
-        VkDeviceSize compactSize = 0;  // not initializing this to 0 causes undefined behavior
-        vkGetQueryPoolResults(logicalDevice, queryPool, 0, 1,
-                              sizeof(VkDeviceSize), &compactSize, sizeof(VkDeviceSize),
-                              VK_QUERY_RESULT_WAIT_BIT);
+VkDeviceSize compactSize = 0;  // not initializing this causes undefined behavior
+vkGetQueryPoolResults(logicalDevice, queryPool, 0, 1,
+                      sizeof(VkDeviceSize), &compactSize, sizeof(VkDeviceSize),
+                      VK_QUERY_RESULT_WAIT_BIT);
 
         // Create a compact version of the BLAS
         reina::core::Buffer compactBlasBuffer{
