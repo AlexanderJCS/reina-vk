@@ -19,6 +19,18 @@ namespace reina::core {
             vkUnmapMemory(logicalDevice, deviceMemory);
         }
 
+        template<typename T>
+        std::vector<T> copyData(VkDevice logicalDevice, VkDeviceSize size) {
+            void* data;
+            vkMapMemory(logicalDevice, getDeviceMemory(), 0, size, 0, &data);
+
+            std::vector<T> result(size / sizeof(T));
+            memcpy(result.data(), data, static_cast<size_t>(size));
+
+            vkUnmapMemory(logicalDevice, getDeviceMemory());
+            return result;
+        }
+
         [[nodiscard]] VkBuffer getHandle() const;
         [[nodiscard]] VkDeviceMemory getDeviceMemory() const;
         [[nodiscard]] VkDeviceAddress getDeviceAddress(VkDevice logicalDevice) const;

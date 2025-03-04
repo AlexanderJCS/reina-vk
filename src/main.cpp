@@ -407,12 +407,7 @@ void run() {
                     &region
             );
 
-            // todo: make this a method in Buffer
-            void* data;
-            vkMapMemory(logicalDevice, stagingBuffer.getDeviceMemory(), 0, imageSize, 0, &data);
-            std::vector<uint8_t> pixels(imageSize);
-            memcpy(pixels.data(), data, static_cast<size_t>(imageSize));
-            vkUnmapMemory(logicalDevice, stagingBuffer.getDeviceMemory());
+            std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice, imageSize);
 
             std::string filename = "../output.png";
             int success = stbi_write_png(
