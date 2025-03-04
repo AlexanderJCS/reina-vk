@@ -5,6 +5,8 @@ cmake-build-debug*
 
 build/
 
+output.png
+
 # Prerequisites
 *.d
 
