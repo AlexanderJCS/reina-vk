@@ -11,7 +11,7 @@ reina::graphics::Camera::Camera(const reina::window::Window& renderWindow, float
     inverseProjection = glm::inverse(glm::perspective(fov, aspectRatio, 0.1f, 100.0f));
     inverseView = glm::inverse(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));
 
-    glfwSetWindowUserPointer(renderWindow.getGlfwWindow(), this);  // I feel like this is kinda bad design but it works
+    glfwSetWindowUserPointer(renderWindow.getGlfwWindow(), this);  // I feel like this is bad design, but it works
     glfwSetCursorPosCallback(renderWindow.getGlfwWindow(), mouseCallback);
     glfwSetKeyCallback(renderWindow.getGlfwWindow(), keyCallback);
 
@@ -69,7 +69,9 @@ void reina::graphics::Camera::mouseCallback(GLFWwindow* window, double xpos, dou
         return;
     }
 
-    if (abs(cam->lastMousePos.x + 1) < 0.00001 && abs(cam->lastMousePos.y + 1) < 0.00001) {
+    if (cam->ignoreNextMouseInput) {
+        cam->ignoreNextMouseInput = false;
+
         cam->lastMousePos.x = static_cast<float>(xpos);
         cam->lastMousePos.y = static_cast<float>(ypos);
         return;
@@ -80,11 +82,6 @@ void reina::graphics::Camera::mouseCallback(GLFWwindow* window, double xpos, dou
 
     cam->lastMousePos.x = static_cast<float>(xpos);
     cam->lastMousePos.y = static_cast<float>(ypos);
-
-    // prevent large jumps (due to weird initialization stuff)
-    if (abs(xOffset) > 100 || abs(yOffset) > 100) {
-        return;
-    }
 
     cam->changed = true;
 
@@ -122,6 +119,6 @@ bool reina::graphics::Camera::hasChanged() const {
 
 void reina::graphics::Camera::toggleInput(GLFWwindow* window) {
     input = !input;
-    // todo: maybe GLFW_CURSOR_CAPTURED is better than GLFW_CURSOR_DISABLED?
     glfwSetInputMode(window, GLFW_CURSOR, input ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    ignoreNextMouseInput = true;
 }

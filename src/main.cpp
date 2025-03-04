@@ -271,7 +271,7 @@ void run() {
         bool firstFrame = clock.getFrameCount() == 0;
 
         if (!firstFrame) {
-            std::cout << clock.summary() << "\n";
+            // std::cout << clock.summary() << "\n";
         }
 
         clock.markCategory("Ray Tracing");

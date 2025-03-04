@@ -33,6 +33,7 @@ namespace reina::graphics {
         void refresh();
 
     private:
+        bool ignoreNextMouseInput = false;
         bool input = false;
         glm::vec2 lastMousePos = glm::vec2(-1, -1);
         float pitch = 0;
