@@ -83,8 +83,7 @@ namespace vktools {
             void* pUserData
     );
 
-    // todo: rename the create and destroy debug utils messenger EXT functions to something in-line with other code standards
-    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+    VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
     void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
     uint64_t getDeviceLocalMemory(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);

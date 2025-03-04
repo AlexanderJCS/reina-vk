@@ -97,7 +97,7 @@ void vktools::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEX
     };
 }
 
-VkResult vktools::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+VkResult vktools::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -350,14 +350,11 @@ std::vector<VkFramebuffer> vktools::createSwapchainFramebuffers(VkDevice logical
     std::vector<VkFramebuffer> swapchainFramebuffers(swapchainImageViews.size());
 
     for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-        // todo: do i need to create the attachments array
-        VkImageView attachments[] = {swapchainImageViews[i]};
-
         VkFramebufferCreateInfo createInfo{
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .renderPass = renderPass,
             .attachmentCount = 1,
-            .pAttachments = attachments,
+            .pAttachments = &swapchainImageViews[i],
             .width = extent.width,
             .height = extent.height,
             .layers = 1
@@ -1190,7 +1187,7 @@ std::optional<VkDebugUtilsMessengerEXT> vktools::createDebugMessenger(VkInstance
     populateDebugMessengerCreateInfo(createInfo);
 
     VkDebugUtilsMessengerEXT debugMessenger;
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+    if (createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("Failed to initialize debug messenger");
     }
 

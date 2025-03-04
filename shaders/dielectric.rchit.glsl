@@ -39,7 +39,6 @@ void main() {
     HitInfo hitInfo = getObjectHitInfo();
     ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
-    // todo: extract a bunch of this into a function
     float ri = hitInfo.frontFace ? 1.0 / props.fuzzOrRefIdx : props.fuzzOrRefIdx;
     vec3 unitDir = normalize(gl_WorldRayDirectionEXT);
     float cosTheta = min(dot(-unitDir, hitInfo.worldNormal), 1.0);
