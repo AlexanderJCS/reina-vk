@@ -271,7 +271,7 @@ void run() {
         bool firstFrame = clock.getFrameCount() == 0;
 
         if (!firstFrame) {
-            // std::cout << clock.summary() << "\n";
+            std::cout << clock.summary() << "\n";
         }
 
         clock.markCategory("Ray Tracing");
@@ -564,7 +564,6 @@ void run() {
     rasterizationDescriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
-    vkDestroyFence(logicalDevice, syncObjects.inFlightFence, nullptr);
     models.destroy(logicalDevice);
     vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, rasterizationPipelineInfo.pipeline, nullptr);

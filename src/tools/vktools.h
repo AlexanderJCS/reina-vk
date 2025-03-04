@@ -62,7 +62,6 @@ namespace vktools {
     struct SyncObjects {
         VkSemaphore imageAvailableSemaphore;
         VkSemaphore renderFinishedSemaphore;
-        VkFence inFlightFence;
     };
 
     struct AccStructureInfo {
