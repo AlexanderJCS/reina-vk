@@ -1,6 +1,7 @@
 #ifndef RAYGUN_VK_VKTOOLS_H
 #define RAYGUN_VK_VKTOOLS_H
 
+#include <stdexcept>
 #include <optional>
 #include <utility>
 #include <vector>
