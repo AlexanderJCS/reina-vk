@@ -23,6 +23,7 @@
 #include "graphics/Instance.h"
 #include "tools/Clock.h"
 #include "graphics/Camera.h"
+#include "core/CmdBuffer.h"
 
 VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 {
@@ -176,7 +177,11 @@ void run() {
     vktools::SyncObjects syncObjects = vktools::createSyncObjects(logicalDevice);
 
     VkCommandPool commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
-    VkCommandBuffer commandBuffer = vktools::createCommandBuffer(logicalDevice, commandPool);
+
+    reina::core::CmdBuffer commandBuffer{logicalDevice, commandPool, false, true};
+    commandBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
+
+    VkCommandBuffer cmdBufferHandle = commandBuffer.getHandle();
 
     reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
@@ -185,7 +190,6 @@ void run() {
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4x4 subjectTransform = glm::translate(baseTransform, glm::vec3(0.1f, 0, 0));
-
 
     std::vector<reina::graphics::Instance> instances{
             {box,     0, 0, baseTransform},
@@ -273,21 +277,11 @@ void run() {
         clock.markCategory("Ray Tracing");
 
         // render ray traced image
-        if (vkWaitForFences(logicalDevice, 1, &syncObjects.inFlightFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-            throw std::runtime_error("Could not wait for fences");
-        }
-
-        if (vkResetFences(logicalDevice, 1, &syncObjects.inFlightFence) != VK_SUCCESS) {
-            throw std::runtime_error("Could not reset fences");
-        }
-
-        VkCommandBufferBeginInfo beginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Could not begin command buffer");
-        }
+        commandBuffer.wait(logicalDevice);
+        commandBuffer.begin();
 
         transitionImage(
-                commandBuffer,
+                cmdBufferHandle,
                 rtImageObjects.image,
                 firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_GENERAL,
                 VK_IMAGE_LAYOUT_GENERAL,
@@ -297,10 +291,10 @@ void run() {
                 VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
         );
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
-        rtDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
+        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
+        rtDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
 
-        pushConstants.push(commandBuffer, rtPipelineInfo.pipelineLayout);
+        pushConstants.push(cmdBufferHandle, rtPipelineInfo.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
 
         VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
@@ -329,7 +323,7 @@ void run() {
         }
 
         vkCmdTraceRaysKHR(
-                commandBuffer,
+                cmdBufferHandle,
                 &sbtRayGenRegion,
                 &sbtMissRegion,
                 &sbtHitRegion,
@@ -344,7 +338,7 @@ void run() {
 
         // transition to the same and synchronize
         transitionImage(
-                commandBuffer,
+                cmdBufferHandle,
                 rtImageObjects.image,
                 VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
                 VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
@@ -353,7 +347,7 @@ void run() {
 
         // apply postprocessing
         transitionImage(
-                commandBuffer,
+                cmdBufferHandle,
                 postprocessingOutputImageObjects.image,
                 firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_GENERAL,
@@ -366,10 +360,10 @@ void run() {
         const int workgroupWidth = 32;
         const int workgroupHeight = 8;
 
-        postprocessingDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
+        postprocessingDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
+        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
         vkCmdDispatch(
-                commandBuffer,
+                cmdBufferHandle,
                 (renderWidth + workgroupWidth - 1) / workgroupWidth,
                 (renderHeight + workgroupHeight - 1) / workgroupHeight,
                 1
@@ -381,7 +375,7 @@ void run() {
         uint32_t samples = clock.getSampleCount();
         if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
             transitionImage(
-                    commandBuffer, postprocessingOutputImageObjects.image,
+                    cmdBufferHandle, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT
@@ -405,7 +399,7 @@ void run() {
             };
 
             vkCmdCopyImageToBuffer(
-                    commandBuffer,
+                    cmdBufferHandle,
                     postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     stagingBuffer.getHandle(),
@@ -435,7 +429,7 @@ void run() {
             }
 
             transitionImage(
-                    commandBuffer, postprocessingOutputImageObjects.image,
+                    cmdBufferHandle, postprocessingOutputImageObjects.image,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
                     VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
@@ -446,7 +440,7 @@ void run() {
         clock.markCategory("Display");
 
         transitionImage(
-                commandBuffer,
+                cmdBufferHandle,
                 postprocessingOutputImageObjects.image,
                 VK_IMAGE_LAYOUT_GENERAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -480,10 +474,10 @@ void run() {
                 .pClearValues = &clearColor
             };
 
-            vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            rasterizationDescriptorSet.bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipelineLayout);
+            vkCmdBeginRenderPass(cmdBufferHandle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            rasterizationDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipelineLayout);
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipeline);
+            vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipeline);
 
             VkViewport viewport{
                 .x = 0,
@@ -493,42 +487,30 @@ void run() {
                 .minDepth = 0,
                 .maxDepth = 1
             };
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+            vkCmdSetViewport(cmdBufferHandle, 0, 1, &viewport);
 
             VkRect2D scissor{
                 .offset = {0, 0},
                 .extent = swapchainObjects.swapchainExtent
             };
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-
-            vkCmdEndRenderPass(commandBuffer);
+            vkCmdSetScissor(cmdBufferHandle, 0, 1, &scissor);
+            vkCmdDraw(cmdBufferHandle, 6, 1, 0, 0);
+            vkCmdEndRenderPass(cmdBufferHandle);
         }
 
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Could not end command buffer");
-        }
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore waitSemaphores[] = {syncObjects.imageAvailableSemaphore};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-        submitInfo.waitSemaphoreCount = renderWindow.isMinimized() ? 0 : 1;
-        submitInfo.pWaitSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
 
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
+        VkSubmitInfo submitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
+            .pWaitSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.imageAvailableSemaphore,
+            .pWaitDstStageMask = waitStages,
+            .signalSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
+            .pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.renderFinishedSemaphore
+        };
 
-        VkSemaphore signalSemaphores[] = {syncObjects.renderFinishedSemaphore};
-        submitInfo.signalSemaphoreCount = renderWindow.isMinimized() ? 0 : 1;
-        submitInfo.pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : signalSemaphores;
-
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, syncObjects.inFlightFence) != VK_SUCCESS) {
-            throw std::runtime_error("Could not submit graphics queue");
-        }
+        commandBuffer.endSubmit(logicalDevice, graphicsQueue, submitInfo);
 
         // Present the swapchain image
         if (!renderWindow.isMinimized()) {
@@ -536,7 +518,7 @@ void run() {
             presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
             presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores = signalSemaphores;
+            presentInfo.pWaitSemaphores = &syncObjects.renderFinishedSemaphore;
 
             presentInfo.swapchainCount = 1;
             presentInfo.pSwapchains = &swapchainObjects.swapchain;
@@ -573,7 +555,7 @@ void run() {
     stagingBuffer.destroy(logicalDevice);
 
     vkDestroySampler(logicalDevice, fragmentImageSampler, nullptr);
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
+    commandBuffer.destroy(logicalDevice);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);

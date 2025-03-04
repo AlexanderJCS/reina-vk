@@ -18,6 +18,7 @@
 #include "../core/DescriptorSet.h"
 #include "../graphics/Blas.h"
 #include "../graphics/Instance.h"
+#include "../core/CmdBuffer.h"
 
 uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
@@ -642,46 +643,15 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
             .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
     };
 
-    VkCommandBuffer cmdBuffer = createCommandBuffer(logicalDevice, cmdPool);
-    if (vkBeginCommandBuffer(cmdBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("Could not begin one-time command buffer for BLAS creation");
-    }
+    reina::core::CmdBuffer cmdBuffer{logicalDevice, cmdPool, true};
 
     auto vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
-    vkCmdBuildAccelerationStructuresKHR(cmdBuffer, 1, &buildInfo, &pBuildRangeInfo);
+    vkCmdBuildAccelerationStructuresKHR(cmdBuffer.getHandle(), 1, &buildInfo, &pBuildRangeInfo);
 
-    if (vkEndCommandBuffer(cmdBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to end command buffer for BLAS creation");
-    }
+    cmdBuffer.endWaitSubmit(logicalDevice, queue);
 
-    // Submit the command buffer
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cmdBuffer;
-
-    // Create a fence to synchronize
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    VkFence fence;
-    if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create fence for BLAS creation");
-    }
-
-    // Submit the command buffer and wait for it to complete
-    if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit command buffer for BLAS creation");
-    }
-
-    if (vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to wait for fence for TLAS creation");
-    }
-
-    // Clean up temporary resources
-    vkDestroyFence(logicalDevice, fence, nullptr);
-    vkFreeCommandBuffers(logicalDevice, cmdPool, 1, &cmdBuffer);
-
+    cmdBuffer.destroy(logicalDevice);
     scratchBuffer.destroy(logicalDevice);
     instanceBuffer.destroy(logicalDevice);
 
@@ -728,7 +698,7 @@ vktools::SbtSpacing vktools::calculateSbtSpacing(VkPhysicalDevice physicalDevice
     VkDeviceSize sbtHandleAlignment = rtProps.shaderGroupHandleAlignment;
 
     if (sbtBaseAlignment % sbtHandleAlignment != 0) {
-        throw std::runtime_error("SBT base alignment is not a multiple of SBT handle alignment");
+        throw std::runtime_error("SBT base alignment is not a multiple of SBT cmdBuffer alignment");
     }
 
     VkDeviceSize sbtStride = (rtProps.shaderGroupHandleSize + rtProps.shaderGroupBaseAlignment - 1) & ~(rtProps.shaderGroupBaseAlignment - 1);
@@ -955,7 +925,6 @@ VkCommandBuffer vktools::createCommandBuffer(VkDevice logicalDevice, VkCommandPo
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1
     };
-
 
     VkCommandBuffer commandBuffer;
     if (vkAllocateCommandBuffers(logicalDevice, &allocInfo, &commandBuffer) != VK_SUCCESS) {
