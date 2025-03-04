@@ -113,7 +113,6 @@ namespace vktools {
     VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
     ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 
-    VkCommandBuffer createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool);
     VkCommandPool createCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface);
     std::vector<VkImageView> createSwapchainImageViews(VkDevice logicalDevice, VkFormat swapchainImageFormat, std::vector<VkImage> swapchainImages);
     SwapchainObjects createSwapchain(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice logicalDevice, int windowWidth, int windowHeight);
