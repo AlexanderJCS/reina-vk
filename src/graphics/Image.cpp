@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include "../tools/vktools.h"
 
-reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, int width, int height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
-        : image(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE), imageMemory(VK_NULL_HANDLE) {
+reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
+        : width(width), height(height), image(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE), imageMemory(VK_NULL_HANDLE) {
     createImage(logicalDevice, physicalDevice, width, height, format, VK_IMAGE_TILING_OPTIMAL, usage, properties);
     createImageView(logicalDevice, format);
 }
@@ -114,4 +114,26 @@ void reina::graphics::Image::destroy(VkDevice logicalDevice) {
     vkDestroyImage(logicalDevice, image, nullptr);
     vkFreeMemory(logicalDevice, imageMemory, nullptr);
     vkDestroyImageView(logicalDevice, imageView, nullptr);
+}
+
+void reina::graphics::Image::copyToBuffer(VkCommandBuffer cmdBuffer, VkBuffer dstBuffer) {
+    VkBufferImageCopy region{
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, 1}
+    };
+
+    vkCmdCopyImageToBuffer(
+            cmdBuffer, getImage(),
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBuffer,
+            1, &region
+    );
 }

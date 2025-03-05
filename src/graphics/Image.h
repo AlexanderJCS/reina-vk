@@ -6,17 +6,20 @@
 namespace reina::graphics {
     class Image {
     public:
-        Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, int width, int height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps);
+        Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps);
 
         [[nodiscard]] VkImage getImage();
         [[nodiscard]] VkImageView getImageView();
 
         void transition(VkCommandBuffer cmdBuffer, VkImageLayout newLayout, VkAccessFlags newAccessMask, VkPipelineStageFlags newPipelineStages);
+        void copyToBuffer(VkCommandBuffer cmdBuffer, VkBuffer dstBuffer);
 
         void destroy(VkDevice logicalDevice);
     private:
         void createImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
         void createImageView(VkDevice logicalDevice, VkFormat imageFormat);
+
+        uint32_t width, height;
 
         VkImage image;
         VkDeviceMemory imageMemory;

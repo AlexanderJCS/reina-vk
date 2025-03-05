@@ -27,8 +27,8 @@
 
 void run() {
     // init
-    const int renderWidth = 1080;
-    const int renderHeight = 1350;
+    const uint32_t renderWidth = 1080;
+    const uint32_t renderHeight = 1350;
     const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
     const int windowWidth = 800;
@@ -304,33 +304,7 @@ void run() {
         uint32_t samples = clock.getSampleCount();
         if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
             postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-            VkBufferImageCopy region{
-                    .bufferOffset = 0,
-                    .bufferRowLength = 0,
-                    .bufferImageHeight = 0,
-                    .imageSubresource = {
-                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                            .mipLevel = 0,
-                            .baseArrayLayer = 0,
-                            .layerCount = 1,
-                    },
-                    .imageOffset = {0, 0, 0},
-                    .imageExtent = {
-                            renderWidth, renderHeight,
-                            1
-                    }
-            };
-
-            vkCmdCopyImageToBuffer(
-                    cmdBufferHandle,
-                    postprocessingOutputImage.getImage(),
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    stagingBuffer.getHandle(),
-                    1,
-                    &region
-            );
-
+            postprocessingOutputImage.copyToBuffer(cmdBufferHandle, stagingBuffer.getHandle());
             std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice, imageSize);
 
             std::string filename = "../output.png";
