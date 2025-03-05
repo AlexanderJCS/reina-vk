@@ -1,8 +1,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -24,51 +22,7 @@
 #include "tools/Clock.h"
 #include "graphics/Camera.h"
 #include "core/CmdBuffer.h"
-
-VkDeviceAddress getBufferDeviceAddress(VkDevice device, VkBuffer buffer)
-{
-    VkBufferDeviceAddressInfo addressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = buffer };
-    return vkGetBufferDeviceAddress(device, &addressInfo);
-}
-
-void transitionImage(
-        VkCommandBuffer cmdBuffer,
-        VkImage image,
-        VkImageLayout oldLayout,
-        VkImageLayout newLayout,
-        VkAccessFlags srcAccessMask,
-        VkAccessFlags dstAccessMask,
-        VkPipelineStageFlagBits srcStageMask,
-        VkPipelineStageFlagBits dstStageMask
-) {
-    VkImageMemoryBarrier rayTracingToGeneralBarrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask = srcAccessMask,
-        .dstAccessMask = dstAccessMask,
-        .oldLayout = oldLayout,
-        .newLayout = newLayout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image,
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        }
-    };
-
-    vkCmdPipelineBarrier(
-            cmdBuffer,
-            srcStageMask,
-            dstStageMask,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &rayTracingToGeneralBarrier
-    );
-}
+#include "graphics/Image.h"
 
 
 void run() {
@@ -97,8 +51,11 @@ void run() {
     vktools::SwapchainObjects swapchainObjects = vktools::createSwapchain(surface, physicalDevice, logicalDevice, renderWindow.getWidth(), renderWindow.getHeight());
     std::vector<VkImageView> swapchainImageViews = vktools::createSwapchainImageViews(logicalDevice, swapchainObjects.swapchainImageFormat, swapchainObjects.swapchainImages);
 
-    vktools::ImageObjects rtImageObjects = vktools::createRtImage(logicalDevice, physicalDevice, renderWidth, renderHeight);
-    VkImageView rtImageView = vktools::createRtImageView(logicalDevice, rtImageObjects.image);
+    reina::graphics::Image rtImage{
+        logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
 
     reina::core::DescriptorSet rtDescriptorSet{
         logicalDevice,
@@ -134,16 +91,12 @@ void run() {
         shader.destroy(logicalDevice);
     }
 
-    vktools::ImageObjects postprocessingOutputImageObjects = vktools::createImage(
-            logicalDevice, physicalDevice,
-            renderWidth, renderHeight,
-            VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            );
+    reina::graphics::Image postprocessingOutputImage{
+        logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
 
-    VkImageView postprocessingOutputImageView = vktools::createImageView(logicalDevice, postprocessingOutputImageObjects.image, VK_FORMAT_R8G8B8A8_UNORM);
     VkSampler fragmentImageSampler = vktools::createSampler(logicalDevice);
 
     reina::core::DescriptorSet postprocessingDescriptorSet{
@@ -221,7 +174,7 @@ void run() {
     };
 
     // render
-    VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
     rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
 
     VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
@@ -246,13 +199,13 @@ void run() {
     VkDescriptorBufferInfo normalsIndicesInfo{.buffer = models.getOffsetNormalsIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
     rtDescriptorSet.writeBinding(logicalDevice, 6, nullptr, &normalsIndicesInfo, nullptr, nullptr);
 
-    VkDescriptorImageInfo rasterizationInputDescriptor{.sampler = fragmentImageSampler, .imageView = postprocessingOutputImageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    VkDescriptorImageInfo rasterizationInputDescriptor{.sampler = fragmentImageSampler, .imageView = postprocessingOutputImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);
 
-    VkDescriptorImageInfo postprocessingInputDescriptor{.imageView = rtImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    VkDescriptorImageInfo postprocessingInputDescriptor{.imageView = rtImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
     postprocessingDescriptorSet.writeBinding(logicalDevice, 0, &postprocessingInputDescriptor, nullptr, nullptr, nullptr);
 
-    VkDescriptorImageInfo postprocessingOutputDescriptor{.imageView = postprocessingOutputImageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+    VkDescriptorImageInfo postprocessingOutputDescriptor{.imageView = postprocessingOutputImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
     postprocessingDescriptorSet.writeBinding(logicalDevice, 1, &postprocessingOutputDescriptor, nullptr, nullptr, nullptr);
 
     reina::tools::Clock clock;
@@ -280,16 +233,7 @@ void run() {
         commandBuffer.wait(logicalDevice);
         commandBuffer.begin();
 
-        transitionImage(
-                cmdBufferHandle,
-                rtImageObjects.image,
-                firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_GENERAL,
-                VK_IMAGE_LAYOUT_GENERAL,
-                firstFrame ? static_cast<VkAccessFlagBits>(0) : VK_ACCESS_SHADER_READ_BIT,
-                VK_ACCESS_SHADER_WRITE_BIT,
-                firstFrame ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR
-        );
+        rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
         vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
         rtDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
@@ -298,7 +242,7 @@ void run() {
         pushConstants.getPushConstants().sampleBatch++;
 
         VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
-        VkDeviceAddress sbtStartAddress = getBufferDeviceAddress(logicalDevice, sbtBuffer.getHandle());
+        VkDeviceAddress sbtStartAddress = sbtBuffer.getDeviceAddress(logicalDevice);
 
         sbtRayGenRegion.deviceAddress = sbtStartAddress;
         sbtRayGenRegion.stride = sbtSpacing.stride;
@@ -337,25 +281,10 @@ void run() {
         clock.markCategory("Post Processing");
 
         // transition to the same and synchronize
-        transitionImage(
-                cmdBufferHandle,
-                rtImageObjects.image,
-                VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-                VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-        );
+        rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
         // apply postprocessing
-        transitionImage(
-                cmdBufferHandle,
-                postprocessingOutputImageObjects.image,
-                firstFrame ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_GENERAL,
-                firstFrame ? static_cast<VkAccessFlagBits>(0) : VK_ACCESS_SHADER_READ_BIT,
-                VK_ACCESS_SHADER_WRITE_BIT,
-                firstFrame ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
-        );
+        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         const int workgroupWidth = 32;
         const int workgroupHeight = 8;
@@ -374,12 +303,7 @@ void run() {
 
         uint32_t samples = clock.getSampleCount();
         if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
-            transitionImage(
-                    cmdBufferHandle, postprocessingOutputImageObjects.image,
-                    VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT
-            );
+            postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             VkBufferImageCopy region{
                     .bufferOffset = 0,
@@ -400,7 +324,7 @@ void run() {
 
             vkCmdCopyImageToBuffer(
                     cmdBufferHandle,
-                    postprocessingOutputImageObjects.image,
+                    postprocessingOutputImage.getImage(),
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     stagingBuffer.getHandle(),
                     1,
@@ -423,27 +347,13 @@ void run() {
                 throw std::runtime_error("Could not save PNG");
             }
 
-            transitionImage(
-                    cmdBufferHandle, postprocessingOutputImageObjects.image,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-                    VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
-            );
+            postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
         }
 
         // render
         clock.markCategory("Display");
 
-        transitionImage(
-                cmdBufferHandle,
-                postprocessingOutputImageObjects.image,
-                VK_IMAGE_LAYOUT_GENERAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_ACCESS_SHADER_WRITE_BIT,
-                VK_ACCESS_SHADER_READ_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-        );
+        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
         uint32_t imageIndex = -1;
         if (!renderWindow.isMinimized()) {
@@ -546,6 +456,8 @@ void run() {
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
+    postprocessingOutputImage.destroy(logicalDevice);
+    rtImage.destroy(logicalDevice);
 
     stagingBuffer.destroy(logicalDevice);
 
@@ -566,14 +478,6 @@ void run() {
     vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rasterizationPipelineInfo.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, postprocessingPipeline.pipelineLayout, nullptr);
-
-    vkDestroyImageView(logicalDevice, postprocessingOutputImageView, nullptr);
-    vkDestroyImageView(logicalDevice, rtImageView, nullptr);
-
-    vkDestroyImage(logicalDevice, postprocessingOutputImageObjects.image, nullptr);
-    vkFreeMemory(logicalDevice, postprocessingOutputImageObjects.imageMemory, nullptr);
-    vkDestroyImage(logicalDevice, rtImageObjects.image, nullptr);
-    vkFreeMemory(logicalDevice, rtImageObjects.imageMemory, nullptr);
 
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 
