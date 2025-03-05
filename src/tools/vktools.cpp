@@ -268,53 +268,6 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, int wi
     return actualExtent;
 }
 
-vktools::ImageObjects vktools::createImage(
-        VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height,
-        VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
-
-    VkImageCreateInfo imageCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .flags = 0,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format = format,
-        .extent = {
-                .width = width,
-                .height = height,
-                .depth = 1
-        },
-        .mipLevels = 1,
-        .arrayLayers = 1,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .tiling = tiling,
-        .usage = usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
-    };
-
-    VkImage image;
-    if (vkCreateImage(logicalDevice, &imageCreateInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create image");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(logicalDevice, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize = memRequirements.size,
-        .memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)
-    };
-
-    VkDeviceMemory imageMemory;
-    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &imageMemory)) {
-        throw std::runtime_error("Failed to allocate image memory");
-    }
-
-    vkBindImageMemory(logicalDevice, image, imageMemory, 0);
-
-    return {image, imageMemory};
-}
-
 vktools::PipelineInfo vktools::createComputePipeline(VkDevice logicalDevice, const ::reina::core::DescriptorSet& descriptorSet, const reina::graphics::Shader& shader) {
     VkDescriptorSetLayout descriptorLayout = descriptorSet.getLayout();
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{
@@ -858,10 +811,6 @@ VkImageView vktools::createImageView(VkDevice logicalDevice, VkImage image, VkFo
     }
 
     return imageView;
-}
-
-VkImageView vktools::createRtImageView(VkDevice logicalDevice, VkImage rtImage) {
-    return createImageView(logicalDevice, rtImage, VK_FORMAT_R32G32B32A32_SFLOAT);
 }
 
 VkCommandPool vktools::createCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface) {

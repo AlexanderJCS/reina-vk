@@ -95,7 +95,6 @@ namespace vktools {
         }
     }
 
-    ImageObjects createImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
     PipelineInfo createComputePipeline(VkDevice logicalDevice, const::reina::core::DescriptorSet& descriptorSet, const reina::graphics::Shader& shader);
 
     std::vector<VkFramebuffer> createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews);
@@ -110,8 +109,6 @@ namespace vktools {
 
     VkSampler createSampler(VkDevice logicalDevice);
     VkImageView createImageView(VkDevice logicalDevice, VkImage image, VkFormat imageFormat);
-    VkImageView createRtImageView(VkDevice logicalDevice, VkImage rtImage);
-    ImageObjects createRtImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height);
 
     VkCommandPool createCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface);
     std::vector<VkImageView> createSwapchainImageViews(VkDevice logicalDevice, VkFormat swapchainImageFormat, std::vector<VkImage> swapchainImages);
