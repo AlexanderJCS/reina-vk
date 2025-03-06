@@ -25,7 +25,7 @@ Render of the Stanford bunny model with 24,000 samples per pixel. It has approxi
 
 ## Building
 
-Building Reina is simple. First, clone the repository:
+Building Reina is simple. First ensure that the [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) is installed. Then, clone the repository:
 ```shell
 $ git clone
 $ cd reina-vk
