@@ -714,7 +714,16 @@ vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const re
             .intersectionShader = VK_SHADER_UNUSED_KHR
     };
 
-    for (int groupIdx = 2; groupIdx < shaders.size(); groupIdx++) {
+    groups[2] = {
+            .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+            .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+            .generalShader = 2,  // index of ray miss
+            .closestHitShader = VK_SHADER_UNUSED_KHR,
+            .anyHitShader = VK_SHADER_UNUSED_KHR,
+            .intersectionShader = VK_SHADER_UNUSED_KHR
+    };
+
+    for (int groupIdx = 3; groupIdx < shaders.size(); groupIdx++) {
         groups[groupIdx] = {
                 .sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
                 .type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,

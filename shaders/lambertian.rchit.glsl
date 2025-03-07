@@ -24,6 +24,12 @@ void main() {
     pld.skip = false;
     pld.insideDielectric = false;
 
+    vec3 target = vec3(0, 3, 0);
+    vec3 direction = normalize(target - pld.rayOrigin);
+    float dist = length(target - pld.rayOrigin);
+
+    pld.color = shadowRayOccluded(pld.rayOrigin, direction, dist) ? vec3(0, 0, 1) : vec3(1, 0, 0);
+
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {

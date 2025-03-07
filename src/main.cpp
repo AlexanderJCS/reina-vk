@@ -61,7 +61,9 @@ void run() {
         logicalDevice,
             {
                     reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
-                    reina::core::Binding{1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+                    reina::core::Binding{1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1,
+                                         static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_RAYGEN_BIT_KHR |
+                                                                            VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)},
                     reina::core::Binding{2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
@@ -79,6 +81,7 @@ void run() {
     std::vector<reina::graphics::Shader> shaders = {
             reina::graphics::Shader(logicalDevice, "../shaders/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
             reina::graphics::Shader(logicalDevice, "../shaders/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "../shaders/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
             reina::graphics::Shader(logicalDevice, "../shaders/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
             reina::graphics::Shader(logicalDevice, "../shaders/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
             reina::graphics::Shader(logicalDevice, "../shaders/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
@@ -146,8 +149,8 @@ void run() {
 
     std::vector<reina::graphics::Instance> instances{
             {box,     0, 0, baseTransform},
-            {light,   1, 0, baseTransform},
-            {subject, 2, 1, subjectTransform},
+//            {light,   1, 0, baseTransform},
+//            {subject, 2, 1, subjectTransform},
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
@@ -250,11 +253,11 @@ void run() {
 
         sbtMissRegion = sbtRayGenRegion;
         sbtMissRegion.deviceAddress = sbtStartAddress + sbtSpacing.stride;
-        sbtMissRegion.size = sbtSpacing.stride;
+        sbtMissRegion.size = sbtSpacing.stride * 2;
 
         sbtHitRegion = sbtRayGenRegion;
-        sbtHitRegion.deviceAddress = sbtStartAddress + 2 * sbtSpacing.stride;
-        sbtHitRegion.size = sbtSpacing.stride * (shaders.size() - 2);  // assuming shaders vector includes 2 non-rchit shaders
+        sbtHitRegion.deviceAddress = sbtStartAddress + 3 * sbtSpacing.stride;
+        sbtHitRegion.size = sbtSpacing.stride * (shaders.size() - 3);  // assuming shaders vector includes 3 non-rchit shaders
 
         sbtCallableRegion = sbtRayGenRegion;
         sbtCallableRegion.size = 0;
@@ -302,7 +305,8 @@ void run() {
         clock.markCategory("Save");
 
         uint32_t samples = clock.getSampleCount();
-        if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
+//        if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
+        if (false) {
             postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
             postprocessingOutputImage.copyToBuffer(cmdBufferHandle, stagingBuffer.getHandle());
             std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice, imageSize);
