@@ -1,5 +1,8 @@
 #version 460
 
+// for DEBUG_SHOW_NORMALS
+#include "../polyglot/common.h"
+
 layout (local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
 layout(binding = 0, rgba32f) readonly uniform image2D inImage;
