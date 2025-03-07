@@ -14,7 +14,7 @@
 #define BOUNCES_PER_SAMPLE 10
 
 // define this to show normals on non-dielectric surfaces
-#define DEBUG_SHOW_NORMALS
+//#define DEBUG_SHOW_NORMALS
 
 struct PushConstantsStruct {
     mat4 invView;
