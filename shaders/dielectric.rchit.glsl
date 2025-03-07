@@ -79,4 +79,5 @@ void main() {
     pld.emission = props.emission;
     pld.rayHitSky = false;
     pld.skip = false;
+    pld.usedNEE = false;
 }

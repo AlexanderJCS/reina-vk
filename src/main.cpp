@@ -150,7 +150,7 @@ void run() {
     std::vector<reina::graphics::Instance> instances{
             {box,     0, 0, baseTransform},
 //            {light,   1, 0, baseTransform},
-//            {subject, 2, 1, subjectTransform},
+            {subject, 2, 1, subjectTransform},
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);

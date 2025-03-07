@@ -23,8 +23,9 @@ void main() {
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;
+    pld.usedNEE = true;
 
-    vec3 target = vec3(0, 1, 0);
+    vec3 target = vec3(0, 1.5, 0);
     vec3 direction = normalize(target - pld.rayOrigin);
     float dist = length(target - pld.rayOrigin);
     float lightProb = 1;

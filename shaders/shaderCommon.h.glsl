@@ -9,6 +9,7 @@ struct PassableInfo {
     bool rayHitSky;     // True if the ray hit the sky.
     vec4 emission;      // xyz: emission color, w: emission strength
     vec3 directLight;   // Direct lighting contribution
+    bool usedNEE;       // If true, the ray has used next event estimation
     bool skip;          // If true, the raygen shader knows to skip this ray
     float accumulatedDistance;  // Used for Beer's law. The distance the ray has traveled inside any media.
     bool insideDielectric;  // Apply color for this iteration
