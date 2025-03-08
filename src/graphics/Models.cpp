@@ -26,19 +26,20 @@ static std::vector<float> tinyobjToVec4(const std::vector<tinyobj::real_t>& tiny
 
 reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths) {
     modelRanges = std::vector<ModelRange>(modelFilepaths.size());
-    std::vector<ObjData> allObjectsData(modelFilepaths.size());
+    modelObjData = std::vector<ObjData>(modelFilepaths.size());
+
     size_t totalVertices = 0;
     size_t totalIndices = 0;
     size_t totalNormals = 0;
     size_t totalNormalsIndices = 0;
 
     for (int i = 0; i < modelFilepaths.size(); i++) {
-        allObjectsData[i] = getObjData(modelFilepaths[i]);
+        modelObjData[i] = getObjData(modelFilepaths[i]);
 
-        totalVertices += allObjectsData[i].vertices.size();
-        totalIndices += allObjectsData[i].indices.size();
-        totalNormals += allObjectsData[i].normals.size();
-        totalNormalsIndices += allObjectsData[i].normalsIndices.size();
+        totalVertices += modelObjData[i].vertices.size();
+        totalIndices += modelObjData[i].indices.size();
+        totalNormals += modelObjData[i].normals.size();
+        totalNormalsIndices += modelObjData[i].normalsIndices.size();
     }
 
     std::vector<float> allVertices(totalVertices);
@@ -53,8 +54,8 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     size_t normalsIndexOffset = 0;
 
     // Copy the data to allVertices and allIndicesOffset
-    for (int i = 0; i < allObjectsData.size(); i++) {
-        const ObjData& objectData = allObjectsData[i];
+    for (int i = 0; i < modelObjData.size(); i++) {
+        const ObjData& objectData = modelObjData[i];
 
         modelRanges[i] = ModelRange{
             .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
@@ -170,6 +171,15 @@ const reina::core::Buffer& reina::graphics::Models::getOffsetIndicesBuffer() con
 const reina::core::Buffer& reina::graphics::Models::getNonOffsetIndicesBuffer() const {
     return nonOffsetIndicesBuffer.value();
 }
+
+const reina::graphics::ObjData& reina::graphics::Models::getObjData(int index) const {
+    if (index >= modelRanges.size() || index < 0) {
+        throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
+    }
+
+    return modelObjData[index];
+}
+
 
 reina::graphics::ModelRange reina::graphics::Models::getModelRange(int index) const {
     if (index >= modelRanges.size() || index < 0) {

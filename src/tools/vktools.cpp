@@ -469,13 +469,13 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
     std::vector<VkAccelerationStructureInstanceKHR> vkInstances;
     for (const auto& instance : instances) {
-        glm::mat4x4 tmp = glm::transpose(instance.transform);
+        glm::mat4x4 tmp = glm::transpose(instance.getTransform());
         VkTransformMatrixKHR vkTransform;
         memcpy(&vkTransform, &tmp, sizeof(VkTransformMatrixKHR));
 
         VkAccelerationStructureDeviceAddressInfoKHR addressInfo{
                 .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
-                .accelerationStructure = instance.blas.getHandle()
+                .accelerationStructure = instance.getBlas().getHandle()
         };
 
         auto vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(
@@ -484,9 +484,9 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
         VkAccelerationStructureInstanceKHR vkInstance{
                 .transform = vkTransform,
-                .instanceCustomIndex = instance.objectPropertiesID,
+                .instanceCustomIndex = instance.getObjectPropertiesID(),
                 .mask = 0xFF,
-                .instanceShaderBindingTableRecordOffset = instance.materialOffset,
+                .instanceShaderBindingTableRecordOffset = instance.getMaterialOffset(),
                 .flags = 0,
                 .accelerationStructureReference = blasAddress
         };

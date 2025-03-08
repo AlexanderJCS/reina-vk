@@ -39,6 +39,7 @@ namespace reina::graphics {
         [[nodiscard]] const reina::core::Buffer& getNormalsBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getOffsetNormalsIndicesBuffer() const;
 
+        [[nodiscard]] const ObjData& getObjData(int index) const;
         [[nodiscard]] ModelRange getModelRange(int index) const;
 
         void destroy(VkDevice logicalDevice);
@@ -46,6 +47,7 @@ namespace reina::graphics {
     private:
         [[nodiscard]] static ObjData getObjData(const std::string& filepath);
 
+        std::vector<ObjData> modelObjData;
         std::optional<reina::core::Buffer> verticesBuffer;
         std::optional<reina::core::Buffer> offsetIndicesBuffer;
         std::optional<reina::core::Buffer> nonOffsetIndicesBuffer;
