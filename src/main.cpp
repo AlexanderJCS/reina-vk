@@ -148,7 +148,7 @@ void run() {
     glm::mat4x4 subjectTransform = glm::translate(baseTransform, glm::vec3(0.1f, 0, 0));
 
     std::vector<reina::graphics::Instance> instances{
-            {box, models.getObjData(1), 0, 0, baseTransform},
+            {box, false, models.getObjData(1), 0, 0, baseTransform},
 //            {light,   1, 0, baseTransform},
 //            {subject, 2, 1, subjectTransform},
     };

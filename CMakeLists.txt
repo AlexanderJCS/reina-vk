@@ -59,7 +59,9 @@ add_executable(reina_vk src/main.cpp
         src/core/CmdBuffer.h
         src/graphics/Image.cpp
         src/graphics/Image.h
-        src/graphics/Image.cpp)
+        src/graphics/Image.cpp
+        src/graphics/Instances.cpp
+        src/graphics/Instances.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 

@@ -2,11 +2,13 @@
 #include "Instance.h"
 
 reina::graphics::Instance::Instance(
-        const reina::graphics::Blas& blas, const reina::graphics::ObjData& objData,
+        const reina::graphics::Blas& blas, bool emissive, const reina::graphics::ObjData& objData,
         uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform)
-        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform) {
+        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), emissive(emissive) {
 
-
+    if (emissive) {
+        computeCDF(objData);
+    }
 }
 
 void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objData) {
@@ -45,7 +47,7 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
     }
 }
 
-const reina::graphics::Blas &reina::graphics::Instance::getBlas() const {
+const reina::graphics::Blas& reina::graphics::Instance::getBlas() const {
     return blas;
 }
 
@@ -59,4 +61,12 @@ uint32_t reina::graphics::Instance::getObjectPropertiesID() const {
 
 uint32_t reina::graphics::Instance::getMaterialOffset() const {
     return materialOffset;
+}
+
+const std::vector<float> &reina::graphics::Instance::getCDF() const {
+    return cdf;
+}
+
+bool reina::graphics::Instance::isEmissive() const {
+    return emissive;
 }
