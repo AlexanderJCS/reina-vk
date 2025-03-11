@@ -30,11 +30,11 @@ uint pickEmissiveTriangle(inout uint rngState) {
     uint emissiveInstanceIndex = pickEmissiveInstance(rngState);
 
     float u = stepAndOutputRNGFloat(rngState);
-    uint lowerBound = emissiveInstancesData[emissiveInstanceIndex].cdfRangeStart;
-    uint upperBound = emissiveInstancesData[emissiveInstanceIndex].cdfRangeEnd;
+    int lowerBound = int(emissiveInstancesData[emissiveInstanceIndex].cdfRangeStart);
+    int upperBound = int(emissiveInstancesData[emissiveInstanceIndex].cdfRangeEnd);
 
     while (lowerBound <= upperBound) {
-        uint mid = (lowerBound + upperBound) / 2;
+        int mid = (lowerBound + upperBound) / 2;
         if (allInstancesCDFs[mid] < u) {
             lowerBound = mid + 1;
         } else {
@@ -59,23 +59,20 @@ vec3 randomEmissivePoint(inout uint rngState) {
 
     InstanceData emissiveInstance = emissiveInstancesData[emissiveTriangleIndex];
 
-    // todo: somewhere in the code below this line there is a bug that cause a crash
+    // divide by 4 since 4 bytes for an int32
+    const uint indexOffset = emissiveInstance.indexOffset / 4;
 
-    return vec3(0);  // temp
-//    // divide by 4 since 4 bytes for an int32
-//    const uint indexOffset = emissiveInstance.indexOffset / 4;
-//
-//    // get the indices of the vertices of the triangle
-//    const uint i0 = indices[3 * emissiveTriangleIndex + indexOffset + 0];
-//    const uint i1 = indices[3 * emissiveTriangleIndex + indexOffset + 1];
-//    const uint i2 = indices[3 * emissiveTriangleIndex + indexOffset + 2];
-//
-//    // get the vertices of the triangle
-//    const vec3 v0 = vertices[i0].xyz;
-//    const vec3 v1 = vertices[i1].xyz;
-//    const vec3 v2 = vertices[i2].xyz;
-//
-//    return randomPointOnTriangle(v0, v1, v2, rngState);
+    // get the indices of the vertices of the triangle
+    const uint i0 = indices[3 * emissiveTriangleIndex + indexOffset + 0];
+    const uint i1 = indices[3 * emissiveTriangleIndex + indexOffset + 1];
+    const uint i2 = indices[3 * emissiveTriangleIndex + indexOffset + 2];
+
+    // get the vertices of the triangle
+    const vec3 v0 = vertices[i0].xyz;
+    const vec3 v1 = vertices[i1].xyz;
+    const vec3 v2 = vertices[i2].xyz;
+
+    return randomPointOnTriangle(v0, v1, v2, rngState);
 }
 
 #endif  // REINA_NEE_H
