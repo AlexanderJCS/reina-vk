@@ -43,27 +43,25 @@ std::unordered_map<size_t, size_t> reina::graphics::Instances::computeEmissiveDu
 }
 
 void reina::graphics::Instances::computeSamplingDataEmissives() {
-    // all this code is crap. delete it and start again.
-    //  P.S. I left almost no comments to help you understand this code :)
     if (instances.empty()) {
         allInstancesCDFs = {};
         emissiveInstancesData = {};
     }
 
-    std::vector<int> emissiveInstancesIndices{};
+    std::vector<int> emissiveInstanceIndices{};
     for (int i = 0; i < instances.size(); i++) {
         if (instances[i].isEmissive()) {
-            emissiveInstancesIndices.push_back(i);
+            emissiveInstanceIndices.push_back(i);
         }
     }
 
-    std::unordered_map<size_t, size_t> duplicates = computeEmissiveDuplicates(emissiveInstancesIndices);
+    std::unordered_map<size_t, size_t> duplicates = computeEmissiveDuplicates(emissiveInstanceIndices);
 
     allInstancesCDFs = std::vector<float>(0);
-    emissiveInstancesData = std::vector<InstanceData>(emissiveInstancesIndices.size());
+    emissiveInstancesData = std::vector<InstanceData>(emissiveInstanceIndices.size());
 
-    for (int instanceIdxIdx = 0; instanceIdxIdx < emissiveInstancesIndices.size(); instanceIdxIdx++) {
-        int instanceIdx = emissiveInstancesIndices[instanceIdxIdx];
+    for (int instanceIdxIdx = 0; instanceIdxIdx < emissiveInstanceIndices.size(); instanceIdxIdx++) {
+        int instanceIdx = emissiveInstanceIndices[instanceIdxIdx];
         bool isDuplicate = duplicates.contains(instanceIdxIdx);
 
         const Instance& instance = instances[instanceIdx];
@@ -71,6 +69,7 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
 
         instanceData.transform = instance.getTransform();
         instanceData.materialOffset = instance.getMaterialOffset();
+        instanceData.indexOffset = instance.getModelRange().indexOffset;
 
         if (isDuplicate) {
             const InstanceData& duplicateOf = emissiveInstancesData[duplicates.at(instanceIdx)];

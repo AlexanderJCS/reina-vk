@@ -1,10 +1,11 @@
 #include <stdexcept>
 #include "Instance.h"
+#include "Models.h"
 
 reina::graphics::Instance::Instance(
-        const reina::graphics::Blas& blas, bool emissive, const reina::graphics::ObjData& objData,
+        const reina::graphics::Blas& blas, bool emissive, ModelRange modelRange, const reina::graphics::ObjData& objData,
         uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform)
-        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), emissive(emissive) {
+        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), emissive(emissive), modelRange(modelRange) {
 
     if (emissive) {
         computeCDF(objData);
@@ -14,7 +15,7 @@ reina::graphics::Instance::Instance(
 void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objData) {
     // transform all vertices into transform space
     std::vector<glm::vec3> transformedVertices = std::vector<glm::vec3>(objData.vertices.size() / 4);
-    for (int i = 0; i < transformedVertices.size(); i += 4) {  // += 4 since each vertex is represented as a 4d vec
+    for (int i = 0; i < objData.vertices.size(); i += 4) {  // += 4 since each vertex is represented as a 4d vec
         float vx = objData.vertices[i + 0];
         float vy = objData.vertices[i + 1];
         float vz = objData.vertices[i + 2];
@@ -69,4 +70,8 @@ const std::vector<float> &reina::graphics::Instance::getCDF() const {
 
 bool reina::graphics::Instance::isEmissive() const {
     return emissive;
+}
+
+reina::graphics::ModelRange reina::graphics::Instance::getModelRange() const {
+    return modelRange;
 }

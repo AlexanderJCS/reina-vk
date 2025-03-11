@@ -23,6 +23,7 @@
 #include "graphics/Camera.h"
 #include "core/CmdBuffer.h"
 #include "graphics/Image.h"
+#include "graphics/Instances.h"
 
 
 void run() {
@@ -147,13 +148,13 @@ void run() {
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4x4 subjectTransform = glm::translate(baseTransform, glm::vec3(0.1f, 0, 0));
 
-    std::vector<reina::graphics::Instance> instances{
-            {box, false, models.getObjData(1), 0, 0, baseTransform},
+    reina::graphics::Instances instances{
+            {{box, true, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform}},
 //            {light,   1, 0, baseTransform},
 //            {subject, 2, 1, subjectTransform},
     };
 
-    vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances);
+    vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},

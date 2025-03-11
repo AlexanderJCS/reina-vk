@@ -14,7 +14,7 @@ namespace reina::graphics {
         uint32_t materialOffset;
         uint32_t cdfRangeStart;
         uint32_t cdfRangeEnd;
-        // todo: add model range stuff so it can actually access the triangle data
+        uint32_t indexOffset;
     };
 
     class Instances {
