@@ -11,7 +11,7 @@ reina::window::Window::Window(int width, int height) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    glfwWindow = glfwCreateWindow(width, height, "Raygun", nullptr, nullptr);
+    glfwWindow = glfwCreateWindow(width, height, "Reina", nullptr, nullptr);
 
     glfwGetWindowSize(glfwWindow, &this->width, &this->height);
 }
