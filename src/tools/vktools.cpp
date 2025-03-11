@@ -1092,7 +1092,7 @@ VkInstance vktools::createInstance() {
 
     VkApplicationInfo appInfo{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "Raygun",
+        .pApplicationName = "Reina",
         .applicationVersion = VK_MAKE_VERSION(1, 3, 0),
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 3, 0),
