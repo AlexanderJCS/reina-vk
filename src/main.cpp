@@ -152,9 +152,10 @@ void run() {
 
     reina::graphics::Instances instances{
         logicalDevice, physicalDevice,
-        {{box, true, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform}},
-//        {light,   1, 0, baseTransform},
-//        {subject, 2, 1, subjectTransform},
+        {
+                {box, false, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
+                {light, true, models.getModelRange(2), models.getObjData(2), 0, 0, baseTransform}
+            },
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
