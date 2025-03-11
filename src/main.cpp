@@ -69,7 +69,9 @@ void run() {
                     reina::core::Binding{3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
-                    reina::core::Binding{6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
+                    reina::core::Binding{6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                    reina::core::Binding{7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                    reina::core::Binding{8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
         }
     };
 
@@ -149,9 +151,10 @@ void run() {
     glm::mat4x4 subjectTransform = glm::translate(baseTransform, glm::vec3(0.1f, 0, 0));
 
     reina::graphics::Instances instances{
-            {{box, true, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform}},
-//            {light,   1, 0, baseTransform},
-//            {subject, 2, 1, subjectTransform},
+        logicalDevice, physicalDevice,
+        {{box, true, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform}},
+//        {light,   1, 0, baseTransform},
+//        {subject, 2, 1, subjectTransform},
     };
 
     vktools::AccStructureInfo tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
@@ -202,6 +205,12 @@ void run() {
 
     VkDescriptorBufferInfo normalsIndicesInfo{.buffer = models.getOffsetNormalsIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
     rtDescriptorSet.writeBinding(logicalDevice, 6, nullptr, &normalsIndicesInfo, nullptr, nullptr);
+
+    VkDescriptorBufferInfo emissiveInstanceDataInfo{.buffer = instances.getEmissiveInstancesDataBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 7, nullptr, &emissiveInstanceDataInfo, nullptr, nullptr);
+
+    VkDescriptorBufferInfo allInstancesCDFsBufferInfo{.buffer = instances.getAllInstancesCDFsBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 8, nullptr, &allInstancesCDFsBufferInfo, nullptr, nullptr);
 
     VkDescriptorImageInfo rasterizationInputDescriptor{.sampler = fragmentImageSampler, .imageView = postprocessingOutputImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);
@@ -437,6 +446,7 @@ void run() {
     objectPropertiesBuffer.destroy(logicalDevice);
     postprocessingOutputImage.destroy(logicalDevice);
     rtImage.destroy(logicalDevice);
+    instances.destroy(logicalDevice);
 
     stagingBuffer.destroy(logicalDevice);
 

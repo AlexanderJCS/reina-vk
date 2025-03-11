@@ -2,6 +2,11 @@
 
 #include <unordered_map>
 
+reina::graphics::Instances::Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances) : instances(instances) {
+    computeSamplingDataEmissives();
+    constructBuffers(logicalDevice, physicalDevice);
+}
+
 static bool compareFloatVectors(const std::vector<float>& vec1, const std::vector<float>& vec2) {
     const float tolerance = std::numeric_limits<float>::epsilon();
 
@@ -88,10 +93,38 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
     }
 }
 
-reina::graphics::Instances::Instances(const std::vector<Instance>& instances) : instances(instances) {
-    computeSamplingDataEmissives();
-}
-
 const std::vector<reina::graphics::Instance>& reina::graphics::Instances::getInstances() const {
     return instances;
+}
+
+void reina::graphics::Instances::constructBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice) {
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+    VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    allInstancesCDFsBuffer = reina::core::Buffer{
+        logicalDevice, physicalDevice, allInstancesCDFs,
+        usage, allocFlags, memFlags
+    };
+
+    emissiveInstancesDataBuffer = reina::core::Buffer{
+        logicalDevice, physicalDevice, emissiveInstancesData,
+        usage, allocFlags, memFlags
+    };
+}
+
+void reina::graphics::Instances::destroy(VkDevice logicalDevice) {
+    if (allInstancesCDFsBuffer.has_value()) {
+        allInstancesCDFsBuffer->destroy(logicalDevice);
+    } if (emissiveInstancesDataBuffer.has_value()) {
+        emissiveInstancesDataBuffer->destroy(logicalDevice);
+    }
+}
+
+const reina::core::Buffer &reina::graphics::Instances::getEmissiveInstancesDataBuffer() const {
+    return emissiveInstancesDataBuffer.value();
+}
+
+const reina::core::Buffer &reina::graphics::Instances::getAllInstancesCDFsBuffer() const {
+    return allInstancesCDFsBuffer.value();
 }

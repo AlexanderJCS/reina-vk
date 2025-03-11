@@ -1,5 +1,5 @@
-#ifndef VK_MINI_PATH_TRACER_CLOSEST_HIT_COMMON_H
-#define VK_MINI_PATH_TRACER_CLOSEST_HIT_COMMON_H
+#ifndef REINA_CLOSEST_HIT_COMMON_H
+#define REINA_CLOSEST_HIT_COMMON_H
 
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_scalar_block_layout : require
@@ -200,4 +200,4 @@ bool shadowRayOccluded(vec3 origin, vec3 direction, float dist) {
     return shadowPld.occluded;
 }
 
-#endif  // #ifndef VK_MINI_PATH_TRACER_CLOSEST_HIT_COMMON_H
+#endif  // #ifndef REINA_CLOSEST_HIT_COMMON_H

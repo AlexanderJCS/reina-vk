@@ -1,5 +1,5 @@
-#ifndef VK_MINI_PATH_TRACER_SHADER_COMMON_H
-#define VK_MINI_PATH_TRACER_SHADER_COMMON_H
+#ifndef REINA_SHADER_COMMON_H
+#define REINA_SHADER_COMMON_H
 
 struct PassableInfo {
     vec3 color;         // The reflectivity of the surface.
@@ -26,4 +26,4 @@ float stepAndOutputRNGFloat(inout uint rngState) {
 
 const float k_pi = 3.14159265;
 
-#endif  // #ifndef VK_MINI_PATH_TRACER_SHADER_COMMON_H
+#endif  // #ifndef REINA_SHADER_COMMON_H

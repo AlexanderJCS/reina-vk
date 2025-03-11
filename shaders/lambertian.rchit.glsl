@@ -1,6 +1,8 @@
 #version 460
 #extension GL_GOOGLE_include_directive : require
+
 #include "closestHitCommon.h.glsl"
+#include "nee.h.glsl"
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();

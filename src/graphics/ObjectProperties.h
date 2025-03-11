@@ -3,6 +3,7 @@
 
 #include <glm/vec3.hpp>
 
+// todo: put this in a polyglot file
 namespace reina::graphics {
     struct alignas(16) ObjectProperties {
         uint32_t indicesBytesOffset;
