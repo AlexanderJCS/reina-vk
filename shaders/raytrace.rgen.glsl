@@ -72,7 +72,8 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz * clamp(pld.emission.w, 0, pushConstants.indirectClamp);
-            vec3 combinedContribution = mix(indirect, (indirect + pld.directLight) * 0.5, float(pld.usedNEE));
+//            vec3 combinedContribution = indirect;
+            vec3 combinedContribution = pld.directLight;
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;

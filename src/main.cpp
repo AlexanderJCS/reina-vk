@@ -162,9 +162,10 @@ void run() {
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(10), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
             {models.getModelRange(0).indexOffset, glm::vec3(205/255.0f, 160/255.0f, 50/255.0f) * 1.1f, glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 0.0f, true, 0.2}
     };
+
     reina::core::Buffer objectPropertiesBuffer{
             logicalDevice, physicalDevice, objectProperties,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -316,7 +317,7 @@ void run() {
         clock.markCategory("Save");
 
         uint32_t samples = clock.getSampleCount();
-//        if ((samples > 24000 && samples < 24400) || (samples > 40000)) {
+//        if (samples == 64) {
         if (false) {
             postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
             postprocessingOutputImage.copyToBuffer(cmdBufferHandle, stagingBuffer.getHandle());

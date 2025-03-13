@@ -20,6 +20,12 @@ layout (binding = 8, set = 0) buffer AllInstancesCDFsBuffer{
     float allInstancesCDFs[];
 };
 
+struct RandomEmissivePointOutput {
+    vec3 point;
+    vec3 normal;
+    vec3 emission;
+};
+
 
 uint pickEmissiveInstance(inout uint rngState) {
     return 0;  // do this later
@@ -55,7 +61,7 @@ vec3 randomPointOnTriangle(vec3 v0, vec3 v1, vec3 v2, inout uint rngState) {
     return alpha * v0 + beta * v1 + gamma * v2;
 }
 
-vec3 randomEmissivePoint(inout uint rngState) {
+RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     uint instanceIdx = pickEmissiveInstance(rngState);
     uint emissiveTriangleIndex = pickEmissiveTriangle(rngState, instanceIdx);
 
@@ -74,7 +80,11 @@ vec3 randomEmissivePoint(inout uint rngState) {
     const vec3 v1 = vertices[i1].xyz;
     const vec3 v2 = vertices[i2].xyz;
 
-    return randomPointOnTriangle(v0, v1, v2, rngState);
+    vec3 point = randomPointOnTriangle(v0, v1, v2, rngState);
+    vec3 normal = normalize(cross(v1 - v0, v2 - v0));  // todo: add normal interpolation
+    vec3 emission = vec3(10);  // hard-coded for now
+
+    return RandomEmissivePointOutput(point, normal, emission);
 }
 
 #endif  // REINA_NEE_H

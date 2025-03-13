@@ -28,30 +28,22 @@ void main() {
     pld.skip = false;
     pld.insideDielectric = false;
     pld.usedNEE = true;
-
-    vec3 target = randomEmissivePoint(pld.rngState);
-    vec3 direction = normalize(target - pld.rayOrigin);
-    float dist = length(target - pld.rayOrigin);
-    float lightProb = 1;
-
     pld.directLight = vec3(0);
+
+    RandomEmissivePointOutput target = randomEmissivePoint(pld.rngState);
+    vec3 direction = normalize(target.point - pld.rayOrigin);
+    float dist = length(target.point - pld.rayOrigin);
+
     if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
-        // Calculate cosine of the angle between the surface normal and the light direction.
-        float cosTheta = max(dot(hitInfo.worldNormal, direction), 0.0);
+        vec3 lambertBRDF = props.albedo / k_pi;
+        float cosThetai = max(dot(hitInfo.worldNormal, direction), 0.0);
+        float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
 
-        // Constants:
-        // Define a light intensity (radiance) for the point light.
-        vec3 lightIntensity = vec3(1.0);
+        float probChoosingLight = 1;
+        float probChoosingPoint = 1 / 0.1786;  // 1 / area, hard-coded for now.
+        float lightPDF = probChoosingLight * probChoosingPoint;
 
-        // Compute direct lighting contribution:
-        // For a diffuse surface, the BRDF is albedo/PI, and we include
-        // the cosine term and inverse-square falloff.
-        vec3 directLight = (props.albedo / k_pi) *
-            lightIntensity * cosTheta / (dist * dist);
-
-        pld.directLight = directLight / lightProb;
-//        pld.color = vec3(dist) / 5;
-        pld.color = pld.directLight;
+        pld.directLight = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
     }
 
     if (pld.insideDielectric) {
