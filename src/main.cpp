@@ -162,7 +162,7 @@ void run() {
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(1, 1, 1, 13), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
             {models.getModelRange(0).indexOffset, glm::vec3(205/255.0f, 160/255.0f, 50/255.0f) * 1.1f, glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 0.0f, true, 0.2}
     };
     reina::core::Buffer objectPropertiesBuffer{

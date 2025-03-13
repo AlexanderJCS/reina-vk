@@ -29,7 +29,7 @@ void main() {
     pld.insideDielectric = false;
     pld.usedNEE = true;
 
-    vec3 target = vec3(0, 1.5, 0);
+    vec3 target = randomEmissivePoint(pld.rngState);
     vec3 direction = normalize(target - pld.rayOrigin);
     float dist = length(target - pld.rayOrigin);
     float lightProb = 1;
@@ -50,6 +50,8 @@ void main() {
             lightIntensity * cosTheta / (dist * dist);
 
         pld.directLight = directLight / lightProb;
+//        pld.color = vec3(dist) / 5;
+        pld.color = pld.directLight;
     }
 
     if (pld.insideDielectric) {
