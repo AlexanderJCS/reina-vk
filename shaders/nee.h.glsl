@@ -26,12 +26,10 @@ uint pickEmissiveInstance(inout uint rngState) {
 }
 
 
-uint pickEmissiveTriangle(inout uint rngState) {
-    uint emissiveInstanceIndex = pickEmissiveInstance(rngState);
-
+uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
     float u = stepAndOutputRNGFloat(rngState);
-    int lowerBound = int(emissiveInstancesData[emissiveInstanceIndex].cdfRangeStart);
-    int upperBound = int(emissiveInstancesData[emissiveInstanceIndex].cdfRangeEnd);
+    int lowerBound = int(emissiveInstancesData[instanceIdx].cdfRangeStart);
+    int upperBound = int(emissiveInstancesData[instanceIdx].cdfRangeEnd);
 
     while (lowerBound <= upperBound) {
         int mid = (lowerBound + upperBound) / 2;
@@ -59,7 +57,7 @@ vec3 randomPointOnTriangle(vec3 v0, vec3 v1, vec3 v2, inout uint rngState) {
 
 vec3 randomEmissivePoint(inout uint rngState) {
     uint instanceIdx = pickEmissiveInstance(rngState);
-    uint emissiveTriangleIndex = pickEmissiveTriangle(rngState);
+    uint emissiveTriangleIndex = pickEmissiveTriangle(rngState, instanceIdx);
 
     InstanceData emissiveInstance = emissiveInstancesData[instanceIdx];
 
@@ -67,9 +65,9 @@ vec3 randomEmissivePoint(inout uint rngState) {
     const uint indexOffset = emissiveInstance.indexOffset / 4;
 
     // get the indices of the vertices of the triangle
-    const uint i0 = indices[3 * 1 + indexOffset + 0];
-    const uint i1 = indices[3 * 1 + indexOffset + 1];
-    const uint i2 = indices[3 * 1 + indexOffset + 2];
+    const uint i0 = indices[3 * emissiveTriangleIndex + indexOffset + 0];
+    const uint i1 = indices[3 * emissiveTriangleIndex + indexOffset + 1];
+    const uint i2 = indices[3 * emissiveTriangleIndex + indexOffset + 2];
 
     // get the vertices of the triangle
     const vec3 v0 = vertices[i0].xyz;
