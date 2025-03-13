@@ -13,13 +13,15 @@ void main() {
         return;
     }
 
+    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
+
     #ifdef DEBUG_SHOW_NORMALS
         pld.color = hitInfo.worldNormal * 0.5 + 0.5;
     #else
-        pld.color = objectProperties[gl_InstanceCustomIndexEXT].albedo;
+        pld.color = props.albedo;
     #endif
 
-    pld.emission = objectProperties[gl_InstanceCustomIndexEXT].emission;
+    pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
     pld.rayDirection = diffuseReflection(hitInfo.worldNormal, pld.rngState);
     pld.rayHitSky = false;
@@ -27,7 +29,7 @@ void main() {
     pld.insideDielectric = false;
     pld.usedNEE = true;
 
-    vec3 target = randomEmissivePoint(pld.rngState);
+    vec3 target = vec3(0, 1.5, 0);
     vec3 direction = normalize(target - pld.rayOrigin);
     float dist = length(target - pld.rayOrigin);
     float lightProb = 1;
@@ -39,12 +41,12 @@ void main() {
 
         // Constants:
         // Define a light intensity (radiance) for the point light.
-        vec3 lightIntensity = vec3(1.0); // Adjust as needed.
+        vec3 lightIntensity = vec3(1.0);
 
         // Compute direct lighting contribution:
         // For a diffuse surface, the BRDF is albedo/PI, and we include
         // the cosine term and inverse-square falloff.
-        vec3 directLight = (objectProperties[gl_InstanceCustomIndexEXT].albedo / k_pi) *
+        vec3 directLight = (props.albedo / k_pi) *
             lightIntensity * cosTheta / (dist * dist);
 
         pld.directLight = directLight / lightProb;

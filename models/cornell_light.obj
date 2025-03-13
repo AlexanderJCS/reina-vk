@@ -1,6 +1,3 @@
-# Blender 4.0.2
-# www.blender.org
-mtllib cornell_light.mtl
 o CornellBox-Original.001
 v -0.050000 0.000000 0.570000
 v 0.130000 0.000000 0.000000

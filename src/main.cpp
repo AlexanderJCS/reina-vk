@@ -154,7 +154,7 @@ void run() {
         logicalDevice, physicalDevice,
         {
                 {box, false, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
-                {light, true, models.getModelRange(2), models.getObjData(2), 0, 0, baseTransform}
+                {light, true, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform}
             },
     };
 
