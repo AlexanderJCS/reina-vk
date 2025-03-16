@@ -47,10 +47,7 @@ uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
         }
     }
 
-    float upperBoundDist = abs(allInstancesCDFs[upperBound] - u);
-    float lowerBoundDist = abs(allInstancesCDFs[lowerBound] - u);
-
-    return upperBoundDist < lowerBoundDist ? upperBound : lowerBound;
+    return lowerBound;
 }
 
 vec3 randomPointOnTriangle(inout uint rngState, vec3 v0, vec3 v1, vec3 v2) {
