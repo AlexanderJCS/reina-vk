@@ -31,13 +31,14 @@ void main() {
     pld.directLight = vec3(0);
 
     RandomEmissivePointOutput target = randomEmissivePoint(pld.rngState);
-    vec3 direction = normalize(target.point - pld.rayOrigin);
-    float dist = length(target.point - pld.rayOrigin);
+    vec3 toTarget = target.point - pld.rayOrigin;
+    float distSquaredToTarget = dot(toTarget, toTarget);
+    vec3 direction = toTarget / sqrt(distSquaredToTarget);
 
     if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
         vec3 lambertBRDF = props.albedo / k_pi;
         float cosThetai = max(dot(hitInfo.worldNormal, direction), 0.0);
-        float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
+        float geometryTerm = max(dot(target.normal, -direction), 0.0) / distSquaredToTarget;
 
         float probChoosingLight = 1;
         float probChoosingPoint = 1 / target.triArea;
