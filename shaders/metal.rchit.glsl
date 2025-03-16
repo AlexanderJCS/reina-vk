@@ -24,6 +24,7 @@ void main() {
     pld.skip = false;
     pld.insideDielectric = false;
     pld.usedNEE = false;
+    pld.directLight = vec3(0);
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

@@ -80,4 +80,5 @@ void main() {
     pld.rayHitSky = false;
     pld.skip = false;
     pld.usedNEE = false;
+    pld.directLight = vec3(0);
 }

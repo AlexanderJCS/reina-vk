@@ -62,6 +62,8 @@ vec3 randomPointOnTriangle(vec3 v0, vec3 v1, vec3 v2, inout uint rngState) {
 }
 
 RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
+    // todo: make this work when there is a matrix transform for the instance
+
     uint instanceIdx = pickEmissiveInstance(rngState);
     uint emissiveTriangleIndex = pickEmissiveTriangle(rngState, instanceIdx);
 
@@ -71,9 +73,9 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     const uint indexOffset = emissiveInstance.indexOffset / 4;
 
     // get the indices of the vertices of the triangle
-    const uint i0 = indices[3 * emissiveTriangleIndex + indexOffset + 0];
-    const uint i1 = indices[3 * emissiveTriangleIndex + indexOffset + 1];
-    const uint i2 = indices[3 * emissiveTriangleIndex + indexOffset + 2];
+    const uint i0 = indices[indexOffset + 0];
+    const uint i1 = indices[indexOffset + 1];
+    const uint i2 = indices[indexOffset + 2];
 
     // get the vertices of the triangle
     const vec3 v0 = vertices[i0].xyz;
@@ -82,9 +84,9 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
 
     vec3 point = randomPointOnTriangle(v0, v1, v2, rngState);
     vec3 normal = normalize(cross(v1 - v0, v2 - v0));  // todo: add normal interpolation
-    vec3 emission = vec3(10);  // hard-coded for now
+    vec3 emission = vec3(3.5);  // hard-coded for now
 
-    return RandomEmissivePointOutput(point, normal, emission);
+    return RandomEmissivePointOutput(v0, normal, emission);
 }
 
 #endif  // REINA_NEE_H
