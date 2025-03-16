@@ -38,6 +38,7 @@ vec3 traceSegments(Ray ray) {
     vec3 incomingLight = vec3(0.0);
 
     // BOUNCES_PER_SAMPLE defined in common.h
+    bool firstBounce = true;
     for (int tracedSegments = 0; tracedSegments < BOUNCES_PER_SAMPLE; tracedSegments++) {
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
@@ -60,6 +61,8 @@ vec3 traceSegments(Ray ray) {
             continue;
         }
 
+        firstBounce = false;
+
         #ifdef DEBUG_SHOW_NORMALS
             incomingLight += pld.color;
             break;
@@ -72,8 +75,8 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz * clamp(pld.emission.w, 0, pushConstants.indirectClamp);
-//            vec3 combinedContribution = indirect;
-            vec3 combinedContribution = indirect;
+            float weight = firstBounce ? 1 : 0.5;
+            vec3 combinedContribution = pld.usedNEE ? weight * (indirect + pld.directLight) : indirect;
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;

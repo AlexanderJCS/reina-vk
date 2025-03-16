@@ -34,7 +34,7 @@ void main() {
     vec3 direction = normalize(target.point - pld.rayOrigin);
     float dist = length(target.point - pld.rayOrigin);
 
-//    if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
+    if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
         vec3 lambertBRDF = props.albedo / k_pi;
         float cosThetai = max(dot(hitInfo.worldNormal, direction), 0.0);
         float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
@@ -44,7 +44,7 @@ void main() {
         float lightPDF = probChoosingLight * probChoosingPoint;
 
         pld.directLight = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
-//    }
+    }
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
