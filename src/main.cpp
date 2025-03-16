@@ -142,7 +142,7 @@ void run() {
 
     VkCommandBuffer cmdBufferHandle = commandBuffer.getHandle();
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light_triangle.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     reina::graphics::Blas subject{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};

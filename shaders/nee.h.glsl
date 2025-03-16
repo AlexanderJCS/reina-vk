@@ -24,6 +24,7 @@ struct RandomEmissivePointOutput {
     vec3 point;
     vec3 normal;
     vec3 emission;
+    float triArea;
 };
 
 
@@ -52,7 +53,7 @@ uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
     return upperBoundDist < lowerBoundDist ? upperBound : lowerBound;
 }
 
-vec3 randomPointOnTriangle(vec3 v0, vec3 v1, vec3 v2, inout uint rngState) {
+vec3 randomPointOnTriangle(inout uint rngState, vec3 v0, vec3 v1, vec3 v2) {
     // source: chapter 16 of Ray Tracing Gems (Shirley 2019)
     float beta = 1 - sqrt(stepAndOutputRNGFloat(rngState));
     float gamma = (1 - beta) * stepAndOutputRNGFloat(rngState);
@@ -64,8 +65,8 @@ vec3 randomPointOnTriangle(vec3 v0, vec3 v1, vec3 v2, inout uint rngState) {
 RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     // todo: make this work when there is a matrix transform for the instance
 
-    uint instanceIdx = pickEmissiveInstance(rngState);
-    uint emissiveTriangleIndex = pickEmissiveTriangle(rngState, instanceIdx);
+    uint instanceIdx = 0;
+    uint emissiveTriangleIndex = 0;
 
     InstanceData emissiveInstance = emissiveInstancesData[instanceIdx];
 
@@ -73,20 +74,22 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     const uint indexOffset = emissiveInstance.indexOffset / 4;
 
     // get the indices of the vertices of the triangle
-    const uint i0 = indices[indexOffset + 0];
-    const uint i1 = indices[indexOffset + 1];
-    const uint i2 = indices[indexOffset + 2];
+    const uint i0 = indices[3 * emissiveTriangleIndex + indexOffset + 0];
+    const uint i1 = indices[3 * emissiveTriangleIndex + indexOffset + 1];
+    const uint i2 = indices[3 * emissiveTriangleIndex + indexOffset + 2];
 
     // get the vertices of the triangle
     const vec3 v0 = vertices[i0].xyz;
     const vec3 v1 = vertices[i1].xyz;
     const vec3 v2 = vertices[i2].xyz;
 
-    vec3 point = randomPointOnTriangle(v0, v1, v2, rngState);
+    vec3 point = randomPointOnTriangle(rngState, v0, v1, v2);
     vec3 normal = normalize(cross(v1 - v0, v2 - v0));  // todo: add normal interpolation
-    vec3 emission = vec3(3.5);  // hard-coded for now
+    vec3 emission = vec3(12.25);  // hard-coded for now
 
-    return RandomEmissivePointOutput(v0, normal, emission);
+    float area = 0.5 * length(cross(v1 - v0, v2 - v0));
+
+    return RandomEmissivePointOutput(point, normal, emission, area);
 }
 
 #endif  // REINA_NEE_H

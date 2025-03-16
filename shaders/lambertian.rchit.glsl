@@ -40,7 +40,7 @@ void main() {
         float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
 
         float probChoosingLight = 1;
-        float probChoosingPoint = 1;  // 1 / area, hard-coded for now.
+        float probChoosingPoint = 1 / target.triArea;
         float lightPDF = probChoosingLight * probChoosingPoint;
 
         pld.directLight = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
