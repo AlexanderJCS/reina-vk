@@ -2,7 +2,6 @@
 #define REINA_NEE_H
 
 #include "shaderCommon.h.glsl"
-#include "closestHitCommon.h.glsl"
 
 struct InstanceData {
     mat4x4 transform;
