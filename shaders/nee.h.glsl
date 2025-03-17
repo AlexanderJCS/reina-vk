@@ -26,6 +26,11 @@ struct RandomEmissivePointOutput {
     float triArea;
 };
 
+struct ShadowPayload {
+    bool occluded;
+};
+
+layout(location = 1) rayPayloadEXT ShadowPayload shadowPld;
 
 uint pickEmissiveInstance(inout uint rngState) {
     return 0;  // do this later
@@ -86,6 +91,26 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     float area = 0.5 * length(cross(v1 - v0, v2 - v0));
 
     return RandomEmissivePointOutput(point, normal, emission, area);
+}
+
+bool shadowRayOccluded(vec3 origin, vec3 direction, float dist) {
+    shadowPld.occluded = true;
+
+    traceRayEXT(
+        tlas,                  // Top-level acceleration structure
+        gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT,
+        0xFF,                  // 8-bit instance mask, here saying "trace against all instances"
+        0,                     // SBT record offset
+        0,                     // SBT record stride for offset
+        1,                     // Miss index
+        origin,                // Ray origin
+        0,                     // Minimum t-value
+        direction,             // Ray direction
+        dist - 0.001,          // Maximum t-value
+        1                      // Location of payload
+    );
+
+    return shadowPld.occluded;
 }
 
 #endif  // REINA_NEE_H

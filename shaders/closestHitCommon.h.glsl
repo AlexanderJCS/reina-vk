@@ -29,12 +29,6 @@ layout (binding = 6, set = 0, scalar) buffer NormalsIndicesBuffer {
 layout(location = 0) rayPayloadInEXT PassableInfo pld;
 layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;
 
-struct ShadowPayload {
-    bool occluded;
-};
-
-layout(location = 1) rayPayloadEXT ShadowPayload shadowPld;
-
 struct ObjectProperties {
     uint indicesBytesOffset;
     vec3 albedo;
@@ -178,26 +172,6 @@ vec3 diffuseReflection(vec3 normal, inout uint rngState) {
     const vec3 direction = normal + vec3(r * cos(theta), r * sin(theta), u);
 
     return normalize(direction);
-}
-
-bool shadowRayOccluded(vec3 origin, vec3 direction, float dist) {
-    shadowPld.occluded = true;
-
-    traceRayEXT(
-        tlas,                  // Top-level acceleration structure
-        gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT,
-        0xFF,                  // 8-bit instance mask, here saying "trace against all instances"
-        0,                     // SBT record offset
-        0,                     // SBT record stride for offset
-        1,                     // Miss index
-        origin,                // Ray origin
-        0,                     // Minimum t-value
-        direction,             // Ray direction
-        dist - 0.001,          // Maximum t-value
-        1                      // Location of payload
-    );
-
-    return shadowPld.occluded;
 }
 
 #endif  // #ifndef REINA_CLOSEST_HIT_COMMON_H
