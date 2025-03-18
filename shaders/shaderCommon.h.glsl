@@ -28,7 +28,7 @@ struct HitPayload {
 };
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.
-float stepAndOutputRNGFloat(inout uint rngState) {
+float random(inout uint rngState) {
     // Condensed version of pcg_output_rxs_m_xs_32_32, with simple conversion to floating-point [0,1].
     rngState  = rngState * 747796405 + 1;
     uint word = ((rngState >> ((rngState >> 28) + 4)) ^ rngState) * 277803737;

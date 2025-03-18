@@ -147,7 +147,7 @@ void skip(HitInfo hitInfo) {
 vec3 randomUnitVec(inout uint rngState) {
     // todo: see if this method or sampling a sphere is faster. profile it
     while (true) {
-        vec3 vector = 2 * vec3(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState)) - vec3(1);
+        vec3 vector = 2 * vec3(random(rngState), random(rngState), random(rngState)) - vec3(1);
 
         float lenSquared = dot(vector, vector);
         if (0.0001 < lenSquared && lenSquared < 1) {
@@ -157,8 +157,8 @@ vec3 randomUnitVec(inout uint rngState) {
 }
 
 vec3 diffuseReflection(vec3 normal, inout uint rngState) {
-    const float theta = 2.0 * k_pi * stepAndOutputRNGFloat(rngState);  // Random in [0, 2pi]
-    const float u = 2.0 * stepAndOutputRNGFloat(rngState) - 1.0;   // Random in [-1, 1]
+    const float theta = 2.0 * k_pi * random(rngState);  // Random in [0, 2pi]
+    const float u = 2.0 * random(rngState) - 1.0;   // Random in [-1, 1]
     const float r = sqrt(1.0 - u * u);
     const vec3 direction = normal + vec3(r * cos(theta), r * sin(theta), u);
 

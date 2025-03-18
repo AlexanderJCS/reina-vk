@@ -38,7 +38,7 @@ uint pickEmissiveInstance(inout uint rngState) {
 
 
 uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
-    float u = stepAndOutputRNGFloat(rngState);
+    float u = random(rngState);
     int lowerBound = int(emissiveInstancesData[instanceIdx].cdfRangeStart);
     int upperBound = int(emissiveInstancesData[instanceIdx].cdfRangeEnd);
 
@@ -56,8 +56,8 @@ uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
 
 vec3 randomPointOnTriangle(inout uint rngState, vec3 v0, vec3 v1, vec3 v2) {
     // source: chapter 16 of Ray Tracing Gems (Shirley 2019)
-    float beta = 1 - sqrt(stepAndOutputRNGFloat(rngState));
-    float gamma = (1 - beta) * stepAndOutputRNGFloat(rngState);
+    float beta = 1 - sqrt(random(rngState));
+    float gamma = (1 - beta) * random(rngState);
     float alpha = 1 - beta - gamma;
 
     return alpha * v0 + beta * v1 + gamma * v2;

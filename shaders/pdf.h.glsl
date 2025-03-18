@@ -7,6 +7,6 @@ float balanceHeuristic(float pdf1, float pdf2) {
 }
 
 
-float pdfLambertian(vec3 normal, vec3 w0) {
-    return dot(normal, w0) / k_pi;
+float pdfLambertian(vec3 normal, vec3 omega) {
+    return max(dot(normal, omega), 0.0) / k_pi;
 }

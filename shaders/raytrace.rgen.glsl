@@ -2,6 +2,7 @@
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_debug_printf : require
 #include "shaderCommon.h.glsl"
 #include "../polyglot/common.h"
 
@@ -28,8 +29,8 @@ struct Ray {
 // at 0, standard deviation 1) 2D point.
 vec2 randomGaussian(inout uint rngState) {
     // Almost uniform in (0, 1] - make sure the value is never 0:
-    const float u1 = max(1e-5, stepAndOutputRNGFloat(rngState));
-    const float u2 = stepAndOutputRNGFloat(rngState);  // In [0, 1]
+    const float u1 = max(1e-5, random(rngState));
+    const float u2 = random(rngState);  // In [0, 1]
     const float r = sqrt(-2.0 * log(u1));
     const float theta = 2 * k_pi * u2;  // Random in [0, 2pi]
     return r * vec2(cos(theta), sin(theta));
@@ -105,7 +106,6 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz * clamp(pld.emission.w, 0, pushConstants.indirectClamp);
-            float weight = firstBounce ? 1 : 0.5;
             vec4 directLight = pld.materialID == 0 ? directLight(pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
 
             float pdfDirect = directLight.w;
@@ -116,6 +116,10 @@ vec3 traceSegments(Ray ray) {
             if (pld.materialID == 0) {
                 weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
                 weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
+//                weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
+//                weightIndirect = 1.0 - weightDirect;
+
+                debugPrintfEXT("weightDirect: %f, weightIndirect: %f\n", weightDirect, weightIndirect);
             } else {
                 weightDirect = 0.0;
                 weightIndirect = 1.0;

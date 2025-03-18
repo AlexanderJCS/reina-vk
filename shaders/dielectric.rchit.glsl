@@ -49,7 +49,7 @@ void main() {
 
     bool previouslyInsideDielectric = pld.insideDielectric;
 
-    if (cannotRefract || reflectivity > stepAndOutputRNGFloat(pld.rngState)) {
+    if (cannotRefract || reflectivity > random(pld.rngState)) {
         // specular reflection
         pld.rayDirection = reflect(unitDir, hitInfo.worldNormal);
         pld.color = vec3(1);
