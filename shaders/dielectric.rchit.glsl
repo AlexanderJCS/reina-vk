@@ -79,6 +79,6 @@ void main() {
     pld.emission = props.emission;
     pld.rayHitSky = false;
     pld.skip = false;
-    pld.usedNEE = false;
-    pld.directLight = vec3(0);
+    pld.materialID = 2;
+    pld.surfaceNormal = hitInfo.worldNormal;
 }

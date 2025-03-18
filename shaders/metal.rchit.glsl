@@ -23,8 +23,8 @@ void main() {
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;
-    pld.usedNEE = false;
-    pld.directLight = vec3(0);
+    pld.materialID = 1;
+    pld.surfaceNormal = hitInfo.worldNormal;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

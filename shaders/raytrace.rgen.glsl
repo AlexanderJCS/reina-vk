@@ -5,13 +5,15 @@
 #include "shaderCommon.h.glsl"
 #include "../polyglot/common.h"
 
+#include "nee.h.glsl"
+#include "pdf.h.glsl"
+
 // Binding BINDING_IMAGEDATA in set 0 is a storage image with four 32-bit floating-point channels,
 // defined using a uniform image2D variable.
 layout(binding = 0, set = 0, rgba32f) uniform image2D storageImage;
-layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;
 
 // Ray payloads are used to send information between shaders.
-layout(location = 0) rayPayloadEXT PassableInfo pld;
+layout(location = 0) rayPayloadEXT HitPayload pld;
 
 layout (push_constant) uniform PushConsts {
     PushConstantsStruct pushConstants;
@@ -31,6 +33,34 @@ vec2 randomGaussian(inout uint rngState) {
     const float r = sqrt(-2.0 * log(u1));
     const float theta = 2 * k_pi * u2;  // Random in [0, 2pi]
     return r * vec2(cos(theta), sin(theta));
+}
+
+/**
+ * Calculates the direct light contribution from a randomly chosen emissive point. Note: the 4th component of the
+ * returned vec4 is the PDF of choosing the output ray direction. The xyz components are already adjusted for the PDF
+ * of the light source.
+ */
+vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
+    RandomEmissivePointOutput target = randomEmissivePoint(rngState);
+    vec3 direction = normalize(target.point - rayOrigin);
+    float dist = length(target.point - rayOrigin);
+    float rayDirPDF = pdfLambertian(surfaceNormal, direction);
+
+    if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
+        vec3 lambertBRDF = albedo / k_pi;
+        float cosThetai = max(dot(surfaceNormal, direction), 0.0);
+        float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
+
+        float probChoosingLight = 1;
+        float probChoosingPoint = 1 / target.triArea;
+        float lightPDF = probChoosingLight * probChoosingPoint;
+
+        vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
+
+        return vec4(light, rayDirPDF);
+    }
+
+    return vec4(0, 0, 0, rayDirPDF);
 }
 
 vec3 traceSegments(Ray ray) {
@@ -76,7 +106,22 @@ vec3 traceSegments(Ray ray) {
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz * clamp(pld.emission.w, 0, pushConstants.indirectClamp);
             float weight = firstBounce ? 1 : 0.5;
-            vec3 combinedContribution = pld.usedNEE ? weight * (indirect + pld.directLight) : indirect;
+            vec4 directLight = pld.materialID == 0 ? directLight(pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
+
+            float pdfDirect = directLight.w;
+            float pdfIndirect = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
+
+            // todo: with the new balance heuristic everything is way too bright
+            float weightDirect, weightIndirect;
+            if (pld.materialID == 0) {
+                weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
+                weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
+            } else {
+                weightDirect = 0.0;
+                weightIndirect = 1.0;
+            }
+
+            vec3 combinedContribution = directLight.xyz * weightDirect + indirect * weightIndirect;
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;

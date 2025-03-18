@@ -10,14 +10,6 @@
 
 hitAttributeEXT vec2 attributes;
 
-layout(binding = 2, set = 0, scalar) buffer Vertices {
-    vec4 vertices[];
-};
-
-layout(binding = 3, set = 0, scalar) buffer Indices {
-    uint indices[];
-};
-
 layout (binding = 5, set = 0, scalar) buffer NormalsBuffer {
     vec4 normals[];
 };
@@ -26,8 +18,7 @@ layout (binding = 6, set = 0, scalar) buffer NormalsIndicesBuffer {
     uint normalsIndices[];
 };
 
-layout(location = 0) rayPayloadInEXT PassableInfo pld;
-layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;
+layout(location = 0) rayPayloadInEXT HitPayload pld;
 
 struct ObjectProperties {
     uint indicesBytesOffset;

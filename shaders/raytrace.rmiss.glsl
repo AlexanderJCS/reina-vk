@@ -5,7 +5,7 @@
 #include "shaderCommon.h.glsl"
 
 // The payload:
-layout(location = 0) rayPayloadInEXT PassableInfo pld;
+layout(location = 0) rayPayloadInEXT HitPayload pld;
 
 void main() {
     const float rayDirY = normalize(gl_WorldRayDirectionEXT).y;
