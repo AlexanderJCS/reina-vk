@@ -108,7 +108,7 @@ vec3 traceSegments(Ray ray) {
             float pdfDirect = direct.w;
             float pdfIndirect = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
 
-            // todo: with the new balance heuristic everything is way too bright
+            // todo: with the new balance heuristic everything is slightly too bright
             float weightDirect = 0.0;
             float weightIndirect = 1.0;
             if (pld.materialID == 0) {
