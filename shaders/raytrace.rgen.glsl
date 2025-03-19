@@ -45,23 +45,22 @@ vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rng
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
-    float rayDirPDF = pdfLambertian(surfaceNormal, direction);
+
+    float probChoosingLight = 1;
+    float probChoosingPoint = 1 / target.triArea;
+    float lightPDF = probChoosingLight * probChoosingPoint;
 
     if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
         vec3 lambertBRDF = albedo / k_pi;
         float cosThetai = max(dot(surfaceNormal, direction), 0.0);
         float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
 
-        float probChoosingLight = 1;
-        float probChoosingPoint = 1 / target.triArea;
-        float lightPDF = probChoosingLight * probChoosingPoint;
-
         vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
 
-        return vec4(light, rayDirPDF);
+        return vec4(light, lightPDF);
     }
 
-    return vec4(0, 0, 0, rayDirPDF);
+    return vec4(0, 0, 0, lightPDF);
 }
 
 vec3 traceSegments(Ray ray) {
@@ -92,8 +91,6 @@ vec3 traceSegments(Ray ray) {
             continue;
         }
 
-        firstBounce = false;
-
         #ifdef DEBUG_SHOW_NORMALS
             incomingLight += pld.color;
             break;
@@ -105,31 +102,32 @@ vec3 traceSegments(Ray ray) {
         }
 
         if (!pld.insideDielectric) {
-            vec3 indirect = pld.emission.xyz * clamp(pld.emission.w, 0, pushConstants.indirectClamp);
-            vec4 directLight = pld.materialID == 0 ? directLight(pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
+            vec3 indirect = pld.emission.xyz * pld.emission.w;
+            vec4 direct = pld.materialID == 0 ? directLight(pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
 
-            float pdfDirect = directLight.w;
+            float pdfDirect = direct.w;
             float pdfIndirect = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
 
             // todo: with the new balance heuristic everything is way too bright
-            float weightDirect, weightIndirect;
+            float weightDirect = 0.0;
+            float weightIndirect = 1.0;
             if (pld.materialID == 0) {
-                weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
-                weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
-//                weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
-//                weightIndirect = 1.0 - weightDirect;
-
-                debugPrintfEXT("weightDirect: %f, weightIndirect: %f\n", weightDirect, weightIndirect);
-            } else {
-                weightDirect = 0.0;
-                weightIndirect = 1.0;
+                if (firstBounce) {
+                    weightDirect = 1.0;
+                    weightIndirect = 1.0;
+                } else {
+                    weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
+                    weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
+                }
             }
 
-            vec3 combinedContribution = directLight.xyz * weightDirect + indirect * weightIndirect;
+            vec3 combinedContribution = direct.xyz * weightDirect + indirect * weightIndirect;
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;
         }
+
+        firstBounce = false;
     }
 
     return incomingLight;
