@@ -50,7 +50,7 @@ vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rng
     float probChoosingPoint = 1 / target.triArea;
     float lightPDF = probChoosingLight * probChoosingPoint;
 
-    if (!shadowRayOccluded(pld.rayOrigin, direction, dist)) {
+    if (!shadowRayOccluded(rayOrigin, direction, dist)) {
         vec3 lambertBRDF = albedo / k_pi;
         float cosThetai = max(dot(surfaceNormal, direction), 0.0);
         float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
@@ -108,16 +108,18 @@ vec3 traceSegments(Ray ray) {
             float pdfDirect = direct.w;
             float pdfIndirect = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
 
-            // todo: with the new balance heuristic everything is slightly too bright
             float weightDirect = 0.0;
             float weightIndirect = 1.0;
             if (pld.materialID == 0) {
                 if (firstBounce) {
                     weightDirect = 1.0;
                     weightIndirect = 1.0;
+                } else if (tracedSegments + 1 == BOUNCES_PER_SAMPLE) {  // last bounce
+                    weightDirect = 0.0;
+                    weightIndirect = 1.0;
                 } else {
                     weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
-                    weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
+                    weightIndirect = 1 - weightDirect;
                 }
             }
 
