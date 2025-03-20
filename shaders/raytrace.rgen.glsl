@@ -50,17 +50,17 @@ vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rng
     float probChoosingPoint = 1 / target.triArea;
     float lightPDF = probChoosingLight * probChoosingPoint;
 
-    if (!shadowRayOccluded(rayOrigin, direction, dist)) {
-        vec3 lambertBRDF = albedo / k_pi;
-        float cosThetai = max(dot(surfaceNormal, direction), 0.0);
-        float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
-
-        vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
-
-        return vec4(light, lightPDF);
+    if (shadowRayOccluded(rayOrigin, direction, dist)) {
+        return vec4(0, 0, 0, lightPDF);
     }
 
-    return vec4(0, 0, 0, lightPDF);
+    vec3 lambertBRDF = albedo / k_pi;
+    float cosThetai = max(dot(surfaceNormal, direction), 0.0);
+    float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
+
+    vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / lightPDF;
+
+    return vec4(light, lightPDF);
 }
 
 vec3 traceSegments(Ray ray) {
