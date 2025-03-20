@@ -15,6 +15,7 @@ namespace reina::graphics {
         [[nodiscard]] glm::mat4x4 getTransform() const;
         [[nodiscard]] uint32_t getObjectPropertiesID() const;
         [[nodiscard]] uint32_t getMaterialOffset() const;
+        [[nodiscard]] float getArea() const;
         [[nodiscard]] const std::vector<float>& getCDF() const;
         [[nodiscard]] bool isEmissive() const;
         [[nodiscard]] ModelRange getModelRange() const;
@@ -28,6 +29,7 @@ namespace reina::graphics {
         uint32_t materialOffset = 0;
         glm::mat4x4 transform = glm::mat4x4(1.0f);
         std::vector<float> cdf;
+        float area;
         bool emissive;
     };
 }

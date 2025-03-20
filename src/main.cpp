@@ -69,7 +69,8 @@ void run() {
                 reina::core::Binding{5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                 reina::core::Binding{6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                 reina::core::Binding{7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)},
-                reina::core::Binding{8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
+                reina::core::Binding{8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+                reina::core::Binding{9, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR}
         }
     };
 
@@ -140,7 +141,7 @@ void run() {
 
     VkCommandBuffer cmdBufferHandle = commandBuffer.getHandle();
 
-    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light_triangle.obj"}};
+    reina::graphics::Models models{logicalDevice, physicalDevice, {"../models/stanford_bunny.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     reina::graphics::Blas box{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     reina::graphics::Blas light{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     reina::graphics::Blas subject{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
@@ -207,11 +208,14 @@ void run() {
     VkDescriptorBufferInfo normalsIndicesInfo{.buffer = models.getOffsetNormalsIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
     rtDescriptorSet.writeBinding(logicalDevice, 6, nullptr, &normalsIndicesInfo, nullptr, nullptr);
 
-    VkDescriptorBufferInfo emissiveInstanceDataInfo{.buffer = instances.getEmissiveInstancesDataBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 7, nullptr, &emissiveInstanceDataInfo, nullptr, nullptr);
+    VkDescriptorBufferInfo emissiveMetadataBufferInfo{.buffer = instances.getEmissiveMetadataBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 7, nullptr, &emissiveMetadataBufferInfo, nullptr, nullptr);
 
-    VkDescriptorBufferInfo allInstancesCDFsBufferInfo{.buffer = instances.getAllInstancesCDFsBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 8, nullptr, &allInstancesCDFsBufferInfo, nullptr, nullptr);
+    VkDescriptorBufferInfo cdfTriangleBufferInfo{.buffer = instances.getCdfTrianglesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 8, nullptr, &cdfTriangleBufferInfo, nullptr, nullptr);
+
+    VkDescriptorBufferInfo cdfInstancesBufferInfo{.buffer = instances.getCdfInstancesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    rtDescriptorSet.writeBinding(logicalDevice, 9, nullptr, &cdfInstancesBufferInfo, nullptr, nullptr);
 
     VkDescriptorImageInfo rasterizationInputDescriptor{.sampler = fragmentImageSampler, .imageView = postprocessingOutputImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);

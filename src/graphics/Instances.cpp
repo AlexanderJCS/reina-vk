@@ -4,7 +4,7 @@
 
 reina::graphics::Instances::Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances) : instances(instances) {
     computeSamplingDataEmissives();
-    constructBuffers(logicalDevice, physicalDevice);
+    createBuffers(logicalDevice, physicalDevice);
 }
 
 static bool compareFloatVectors(const std::vector<float>& vec1, const std::vector<float>& vec2) {
@@ -49,7 +49,7 @@ std::unordered_map<size_t, size_t> reina::graphics::Instances::computeEmissiveDu
 
 void reina::graphics::Instances::computeSamplingDataEmissives() {
     if (instances.empty()) {
-        allInstancesCDFs = {};
+        cdfTriangles = {};
         emissiveInstancesData = {};
     }
 
@@ -62,7 +62,7 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
 
     std::unordered_map<size_t, size_t> duplicates = computeEmissiveDuplicates(emissiveInstanceIndices);
 
-    allInstancesCDFs = std::vector<float>(0);
+    cdfTriangles = std::vector<float>(0);
     emissiveInstancesData = std::vector<InstanceData>(emissiveInstanceIndices.size());
 
     for (int instanceIdxIdx = 0; instanceIdxIdx < emissiveInstanceIndices.size(); instanceIdxIdx++) {
@@ -75,6 +75,7 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
         instanceData.transform = instance.getTransform();
         instanceData.materialOffset = instance.getMaterialOffset();
         instanceData.indexOffset = instance.getModelRange().indexOffset;
+        instanceData.area = instance.getArea();
 
         if (isDuplicate) {
             const InstanceData& duplicateOf = emissiveInstancesData[duplicates.at(instanceIdx)];
@@ -85,46 +86,83 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
 
         const std::vector<float>& cdf = instance.getCDF();
 
-        instanceData.cdfRangeStart = allInstancesCDFs.size();
+        instanceData.cdfRangeStart = cdfTriangles.size();
         instanceData.cdfRangeEnd = instanceData.cdfRangeStart + cdf.size() - 1;
 
-        allInstancesCDFs.reserve(instance.getCDF().size());
-        allInstancesCDFs.insert(allInstancesCDFs.end(), cdf.begin(), cdf.end());
+        cdfTriangles.reserve(instance.getCDF().size());
+        cdfTriangles.insert(cdfTriangles.end(), cdf.begin(), cdf.end());
     }
+
+    cdfInstances = std::vector<float>(emissiveInstanceIndices.size());
+
+    float cumulativeArea = 0;
+    for (int i = 0; i < cdfInstances.size(); i++) {
+        int instanceIdx = emissiveInstanceIndices[i];
+        cdfInstances[i] = cumulativeArea;
+        cumulativeArea += instances[instanceIdx].getArea();
+    }
+
+    for (float& val : cdfInstances) {
+        val /= cumulativeArea;
+    }
+    instancesArea = cumulativeArea;
 }
 
 const std::vector<reina::graphics::Instance>& reina::graphics::Instances::getInstances() const {
     return instances;
 }
 
-void reina::graphics::Instances::constructBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice) {
+void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice) {
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
     VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    allInstancesCDFsBuffer = reina::core::Buffer{
-        logicalDevice, physicalDevice, allInstancesCDFs,
+    cdfTrianglesBuffer = reina::core::Buffer{
+            logicalDevice, physicalDevice, cdfTriangles,
+            usage, allocFlags, memFlags
+    };
+
+    std::vector<uint8_t> packedBuffer(sizeof(uint32_t) + sizeof(float) + cdfInstances.size() * sizeof(float));
+    const auto count = static_cast<uint32_t>(cdfInstances.size());
+
+    const auto* countBytes = reinterpret_cast<const uint8_t*>(&count);
+    packedBuffer.insert(packedBuffer.end(), countBytes, countBytes + sizeof(uint32_t));
+
+    const auto* areaBytes = reinterpret_cast<const uint8_t*>(&instancesArea);
+    packedBuffer.insert(packedBuffer.end(), areaBytes, areaBytes + sizeof(float));
+
+    const auto* floatBytes = reinterpret_cast<const uint8_t*>(cdfInstances.data());
+    packedBuffer.insert(packedBuffer.end(), floatBytes, floatBytes + cdfInstances.size() * sizeof(float));
+
+    cdfInstancesBuffer = reina::core::Buffer{
+        logicalDevice, physicalDevice, packedBuffer,
         usage, allocFlags, memFlags
     };
 
-    emissiveInstancesDataBuffer = reina::core::Buffer{
+    emissiveMetadataBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice, emissiveInstancesData,
         usage, allocFlags, memFlags
     };
 }
 
 void reina::graphics::Instances::destroy(VkDevice logicalDevice) {
-    if (allInstancesCDFsBuffer.has_value()) {
-        allInstancesCDFsBuffer->destroy(logicalDevice);
-    } if (emissiveInstancesDataBuffer.has_value()) {
-        emissiveInstancesDataBuffer->destroy(logicalDevice);
+    if (cdfTrianglesBuffer.has_value()) {
+        cdfTrianglesBuffer->destroy(logicalDevice);
+    } if (emissiveMetadataBuffer.has_value()) {
+        emissiveMetadataBuffer->destroy(logicalDevice);
+    } if (cdfInstancesBuffer.has_value()) {
+        cdfInstancesBuffer->destroy(logicalDevice);
     }
 }
 
-const reina::core::Buffer &reina::graphics::Instances::getEmissiveInstancesDataBuffer() const {
-    return emissiveInstancesDataBuffer.value();
+const reina::core::Buffer &reina::graphics::Instances::getEmissiveMetadataBuffer() const {
+    return emissiveMetadataBuffer.value();
 }
 
-const reina::core::Buffer &reina::graphics::Instances::getAllInstancesCDFsBuffer() const {
-    return allInstancesCDFsBuffer.value();
+const reina::core::Buffer &reina::graphics::Instances::getCdfTrianglesBuffer() const {
+    return cdfTrianglesBuffer.value();
+}
+
+const reina::core::Buffer &reina::graphics::Instances::getCdfInstancesBuffer() const {
+    return cdfInstancesBuffer.value();
 }

@@ -5,7 +5,7 @@
 reina::graphics::Instance::Instance(
         const reina::graphics::Blas& blas, bool emissive, ModelRange modelRange, const reina::graphics::ObjData& objData,
         uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform)
-        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), emissive(emissive), modelRange(modelRange) {
+        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), emissive(emissive), modelRange(modelRange), area(0) {
 
     if (emissive) {
         computeCDF(objData);
@@ -46,6 +46,8 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
     for (float& value : cdf) {
         value /= cumulativeArea;
     }
+
+    area = cumulativeArea;
 }
 
 const reina::graphics::Blas& reina::graphics::Instance::getBlas() const {
@@ -74,4 +76,8 @@ bool reina::graphics::Instance::isEmissive() const {
 
 reina::graphics::ModelRange reina::graphics::Instance::getModelRange() const {
     return modelRange;
+}
+
+float reina::graphics::Instance::getArea() const {
+    return area;
 }
