@@ -1,8 +1,6 @@
 #ifndef REINA_NEE_H
 #define REINA_NEE_H
 
-#extension GL_EXT_debug_printf : require
-
 #include "shaderCommon.h.glsl"
 
 struct InstanceData {
@@ -25,7 +23,7 @@ layout (binding = 8, set = 0) buffer CDFTrianglesBuffer {
 
 layout (binding = 9, set = 0) buffer CDFInstancesBuffer {
     uint numInstances;
-    float totalArea;
+    float allInstancesArea;
     float cdfInstances[];
 };
 
@@ -47,7 +45,7 @@ uint pickEmissiveInstance(inout uint rngState) {
     int lowerBound = 0;
     int upperBound = int(numInstances) - 1;
 
-    while (lowerBound <= upperBound) {
+    while (lowerBound < upperBound) {
         int mid = (lowerBound + upperBound) / 2;
         if (cdfInstances[mid] < u) {
             lowerBound = mid + 1;
@@ -65,7 +63,7 @@ uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
     int lowerBound = int(emissiveMetadata[instanceIdx].cdfRangeStart);
     int upperBound = int(emissiveMetadata[instanceIdx].cdfRangeEnd);
 
-    while (lowerBound <= upperBound) {
+    while (lowerBound < upperBound) {
         int mid = (lowerBound + upperBound) / 2;
         if (cdfTriangles[mid] < u) {
             lowerBound = mid + 1;
@@ -113,8 +111,7 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     vec3 normal = normalize(cross(v1 - v0, v2 - v0));
     vec3 emission = vec3(12.25);  // hard-coded for now
 
-    float probability = 1 / totalArea;
-    debugPrintfEXT("%f\n", totalArea);
+    float probability = 1 / 0.1786;
     return RandomEmissivePointOutput(point, normal, emission, probability);
 }
 

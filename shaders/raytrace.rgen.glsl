@@ -173,8 +173,6 @@ void main() {
     // State of the random number generator with an initial seed
     pld.rngState = uint((pushConstants.sampleBatch * resolution.y + pixel.y) * resolution.x + pixel.x);
 
-    const float fovVerticalSlope = 1.0 / 5;
-
     int actualSamples = 0;
     vec3 summedPixelColor = vec3(0.0);
 

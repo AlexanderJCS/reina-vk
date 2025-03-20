@@ -1,6 +1,7 @@
 #include "Instances.h"
 
 #include <unordered_map>
+#include <cstring>
 
 reina::graphics::Instances::Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances) : instances(instances) {
     computeSamplingDataEmissives();
@@ -122,17 +123,17 @@ void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysica
             usage, allocFlags, memFlags
     };
 
-    std::vector<uint8_t> packedBuffer(sizeof(uint32_t) + sizeof(float) + cdfInstances.size() * sizeof(float));
-    const auto count = static_cast<uint32_t>(cdfInstances.size());
+    std::vector<uint8_t> packedBuffer;
 
-    const auto* countBytes = reinterpret_cast<const uint8_t*>(&count);
-    packedBuffer.insert(packedBuffer.end(), countBytes, countBytes + sizeof(uint32_t));
+    auto count = static_cast<uint32_t>(cdfInstances.size());
+    auto* countPtr = reinterpret_cast<uint8_t*>(&count);
+    packedBuffer.insert(packedBuffer.end(), countPtr, countPtr + sizeof(uint32_t));
 
-    const auto* areaBytes = reinterpret_cast<const uint8_t*>(&instancesArea);
-    packedBuffer.insert(packedBuffer.end(), areaBytes, areaBytes + sizeof(float));
+    auto* areaPtr = reinterpret_cast<uint8_t*>(&instancesArea);
+    packedBuffer.insert(packedBuffer.end(), areaPtr, areaPtr + sizeof(float));
 
-    const auto* floatBytes = reinterpret_cast<const uint8_t*>(cdfInstances.data());
-    packedBuffer.insert(packedBuffer.end(), floatBytes, floatBytes + cdfInstances.size() * sizeof(float));
+    auto* cdfDataPtr = reinterpret_cast<uint8_t*>(cdfInstances.data());
+    packedBuffer.insert(packedBuffer.end(), cdfDataPtr, cdfDataPtr + cdfInstances.size() * sizeof(float));
 
     cdfInstancesBuffer = reina::core::Buffer{
         logicalDevice, physicalDevice, packedBuffer,
