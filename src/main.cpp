@@ -154,7 +154,7 @@ void run() {
         {
                 {box, false, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
                 {light, true, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
-                {subject, false, models.getModelRange(0), models.getObjData(0), 2, 1, subjectTransform}
+                {subject, false, models.getModelRange(0), models.getObjData(0), 2, 2, subjectTransform}
             },
     };
 
@@ -163,7 +163,7 @@ void run() {
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(3.5), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 0.1f, true, 0.7}
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, 1.4f, true, 0.7}
     };
 
     reina::core::Buffer objectPropertiesBuffer{

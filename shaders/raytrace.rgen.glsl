@@ -65,6 +65,7 @@ vec3 traceSegments(Ray ray) {
 
     // BOUNCES_PER_SAMPLE defined in common.h
     bool firstBounce = true;
+    bool prevSkip = false;
     for (int tracedSegments = 0; tracedSegments < BOUNCES_PER_SAMPLE; tracedSegments++) {
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
@@ -106,8 +107,11 @@ vec3 traceSegments(Ray ray) {
 
             float weightDirect = 0.0;
             float weightIndirect = 1.0;
-            if (pld.materialID == 0) {
-                if (firstBounce) {
+
+            bool skipPdfRay = bool(pld.materialID != 0);
+
+            if (!skipPdfRay) {
+                if (firstBounce || prevSkip) {
                     weightDirect = 1.0;
                     weightIndirect = 1.0;
                 } else if (tracedSegments + 1 == BOUNCES_PER_SAMPLE) {  // last bounce
@@ -119,6 +123,7 @@ vec3 traceSegments(Ray ray) {
                 }
             }
 
+            prevSkip = skipPdfRay;
             vec3 combinedContribution = direct.rgb * weightDirect + indirect * weightIndirect;
 
             incomingLight += combinedContribution * accumulatedRayColor;
