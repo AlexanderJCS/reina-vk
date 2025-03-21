@@ -112,7 +112,7 @@ vec3 traceSegments(Ray ray) {
                     weightIndirect = 1.0;
                 } else if (tracedSegments + 1 == BOUNCES_PER_SAMPLE) {  // last bounce
                     weightDirect = 0.0;
-                    weightIndirect = 1.0;
+                    weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
                 } else {
                     weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
                     weightIndirect = 1 - weightDirect;
