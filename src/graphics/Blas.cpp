@@ -141,7 +141,7 @@ void reina::graphics::Blas::destroy(VkDevice logicalDevice) {
 }
 
 VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
-    reina::core::CmdBuffer cmdBuffer{logicalDevice, cmdPool, false};
+    reina::core::CmdBuffer cmdBuffer{logicalDevice, cmdPool, true};
     VkCommandBuffer cmdBufferHandle = cmdBuffer.getHandle();
 
     // create query pool
