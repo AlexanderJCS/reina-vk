@@ -119,7 +119,7 @@ vec3 traceSegments(Ray ray) {
                 }
             }
 
-            vec3 combinedContribution = direct.xyz * weightDirect + indirect * weightIndirect;
+            vec3 combinedContribution = direct.rgb * weightDirect + indirect * weightIndirect;
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;
