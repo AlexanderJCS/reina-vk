@@ -184,47 +184,47 @@ void run() {
 
     // render
     VkDescriptorImageInfo descriptorImageInfo{.imageView = rtImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-    rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo, nullptr, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 0, &descriptorImageInfo);
 
     VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
             .accelerationStructureCount = 1,
             .pAccelerationStructures = &tlas.accelerationStructure
     };
-    rtDescriptorSet.writeBinding(logicalDevice, 1, nullptr, nullptr, nullptr, &descriptorAccStructure);
+    rtDescriptorSet.writeBinding(logicalDevice, 1, &descriptorAccStructure);
 
     VkDescriptorBufferInfo verticesInfo{.buffer = models.getVerticesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 2, nullptr, &verticesInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 2, &verticesInfo);
 
     VkDescriptorBufferInfo indicesInfo{.buffer = models.getOffsetIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 3, nullptr, &indicesInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 3, &indicesInfo);
 
     VkDescriptorBufferInfo objPropertiesInfo{.buffer = objectPropertiesBuffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 4, nullptr, &objPropertiesInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 4, &objPropertiesInfo);
 
     VkDescriptorBufferInfo normalsInfo{.buffer = models.getNormalsBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 5, nullptr, &normalsInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 5, &normalsInfo);
 
     VkDescriptorBufferInfo normalsIndicesInfo{.buffer = models.getOffsetNormalsIndicesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 6, nullptr, &normalsIndicesInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 6, &normalsIndicesInfo);
 
     VkDescriptorBufferInfo emissiveMetadataBufferInfo{.buffer = instances.getEmissiveMetadataBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 7, nullptr, &emissiveMetadataBufferInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 7, &emissiveMetadataBufferInfo);
 
     VkDescriptorBufferInfo cdfTriangleBufferInfo{.buffer = instances.getCdfTrianglesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 8, nullptr, &cdfTriangleBufferInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 8, &cdfTriangleBufferInfo);
 
     VkDescriptorBufferInfo cdfInstancesBufferInfo{.buffer = instances.getCdfInstancesBuffer().getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-    rtDescriptorSet.writeBinding(logicalDevice, 9, nullptr, &cdfInstancesBufferInfo, nullptr, nullptr);
+    rtDescriptorSet.writeBinding(logicalDevice, 9, &cdfInstancesBufferInfo);
 
     VkDescriptorImageInfo rasterizationInputDescriptor{.sampler = fragmentImageSampler, .imageView = postprocessingOutputImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-    rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor, nullptr, nullptr, nullptr);
+    rasterizationDescriptorSet.writeBinding(logicalDevice, 0, &rasterizationInputDescriptor);
 
     VkDescriptorImageInfo postprocessingInputDescriptor{.imageView = rtImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, &postprocessingInputDescriptor, nullptr, nullptr, nullptr);
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, &postprocessingInputDescriptor);
 
     VkDescriptorImageInfo postprocessingOutputDescriptor{.imageView = postprocessingOutputImage.getImageView(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 1, &postprocessingOutputDescriptor, nullptr, nullptr, nullptr);
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 1, &postprocessingOutputDescriptor);
 
     reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {

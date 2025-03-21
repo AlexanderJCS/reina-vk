@@ -125,13 +125,8 @@ void reina::core::DescriptorSet::bind(VkCommandBuffer cmdBuffer, VkPipelineBindP
     );
 }
 
-void reina::core::DescriptorSet::writeBinding(
-        VkDevice logicalDevice, int bindingPoint,
-        VkDescriptorImageInfo* imageInfo,
-        VkDescriptorBufferInfo* bufferInfo,
-        VkBufferView* bufferView,
-        void* next
-        ) {
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo *imageInfo,
+                                         VkDescriptorBufferInfo *bufferInfo, void *next) {
 
     for (const Binding& binding : bindings) {
         if (binding.bindingPoint != bindingPoint) {
@@ -147,10 +142,22 @@ void reina::core::DescriptorSet::writeBinding(
         descriptorWrite.descriptorCount = 1;
         descriptorWrite.pImageInfo = imageInfo;
         descriptorWrite.pBufferInfo = bufferInfo;
-        descriptorWrite.pTexelBufferView = bufferView;
+        descriptorWrite.pTexelBufferView = nullptr;
         descriptorWrite.pNext = next;
 
         vkUpdateDescriptorSets(logicalDevice, 1, &descriptorWrite, 0, nullptr);
         break;
     }
+}
+
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorBufferInfo* bufferInfo) {
+    writeBinding(logicalDevice, bindingPoint, nullptr, bufferInfo, nullptr);
+}
+
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo* imageInfo) {
+    writeBinding(logicalDevice, bindingPoint, imageInfo, nullptr, nullptr);
+}
+
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkWriteDescriptorSetAccelerationStructureKHR* accStructureInfo) {
+    writeBinding(logicalDevice, bindingPoint, nullptr, nullptr, accStructureInfo);
 }

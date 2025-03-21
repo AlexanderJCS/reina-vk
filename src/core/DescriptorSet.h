@@ -25,12 +25,17 @@ namespace reina::core {
 
         [[nodiscard]] static bool hasDuplicateBindingPoints(const std::vector<Binding>& bindings);
 
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo *imageInfo,
+                          VkDescriptorBufferInfo *bufferInfo, void *next);
+
     public:
         DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings);
 
         void bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout);
-        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo* imageInfo,
-                          VkDescriptorBufferInfo* bufferInfo, VkBufferView* bufferView, void* next);
+
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorBufferInfo* bufferInfo);
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo* imageInfo);
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkWriteDescriptorSetAccelerationStructureKHR* accStructureInfo);
 
         void destroy(VkDevice device);
 
