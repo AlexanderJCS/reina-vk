@@ -13,12 +13,13 @@ Render of the Stanford bunny model with 24,000 samples per pixel. It has approxi
 ## Features
 
 * Path tracing of the following materials:
-  * Lambertian
+  * Lambertian (diffuse)
   * Metal
   * Dielectric
 * Lighting
+  * BRDF sampling and next event estimation (NEE) weighted with multiple importance sampling (MIS+NEE)
 * OBJ model loading
-  * Vertex normal interpolation for smooth shading (this is how the bunny looks so smooth)
+  * Vertex normal interpolation for smooth shading
 * Post-processing
   * Tone mapping
 
