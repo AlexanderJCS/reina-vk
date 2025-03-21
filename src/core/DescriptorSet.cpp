@@ -1,7 +1,8 @@
 #include "DescriptorSet.h"
 
 #include <stdexcept>
-#include <iostream>
+
+#include "../tools/vktools.h"
 
 VkDescriptorSetLayoutBinding reina::core::Binding::toLayoutBinding() const {
     return VkDescriptorSetLayoutBinding{
@@ -145,19 +146,32 @@ void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindin
         descriptorWrite.pTexelBufferView = nullptr;
         descriptorWrite.pNext = next;
 
+        // Ensure valid VkSampler for sampler or combined image sampler descriptor types
+        if ((binding.type == VK_DESCRIPTOR_TYPE_SAMPLER || binding.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) && (imageInfo == nullptr || imageInfo->sampler == VK_NULL_HANDLE)) {
+            throw std::runtime_error("Invalid VkSampler for sampler or combined image sampler descriptor type");
+        }
+
         vkUpdateDescriptorSets(logicalDevice, 1, &descriptorWrite, 0, nullptr);
         break;
     }
 }
 
-void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorBufferInfo* bufferInfo) {
-    writeBinding(logicalDevice, bindingPoint, nullptr, bufferInfo, nullptr);
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, const reina::core::Buffer& buffer) {
+    VkDescriptorBufferInfo bufferInfo{.buffer = buffer.getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    writeBinding(logicalDevice, bindingPoint, nullptr, &bufferInfo, nullptr);
 }
 
-void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo* imageInfo) {
-    writeBinding(logicalDevice, bindingPoint, imageInfo, nullptr, nullptr);
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, const reina::graphics::Image& image, VkImageLayout imageLayout, VkSampler sampler) {
+    VkDescriptorImageInfo imageInfo{.sampler = sampler, .imageView = image.getImageView(), .imageLayout = imageLayout};
+    writeBinding(logicalDevice, bindingPoint, &imageInfo, nullptr, nullptr);
 }
 
-void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, VkWriteDescriptorSetAccelerationStructureKHR* accStructureInfo) {
-    writeBinding(logicalDevice, bindingPoint, nullptr, nullptr, accStructureInfo);
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint, const vktools::AccStructureInfo& accStruct) {
+    VkWriteDescriptorSetAccelerationStructureKHR descriptorAccStructure{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            .accelerationStructureCount = 1,
+            .pAccelerationStructures = &accStruct.accelerationStructure
+    };
+
+    writeBinding(logicalDevice, bindingPoint, nullptr, nullptr, &descriptorAccStructure);
 }

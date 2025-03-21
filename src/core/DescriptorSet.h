@@ -5,6 +5,13 @@
 
 #include <vector>
 #include <optional>
+#include "Buffer.h"
+#include "../graphics/Image.h"
+
+// forward declare
+namespace vktools {
+    struct AccStructureInfo;
+}
 
 namespace reina::core {
     struct Binding {
@@ -33,9 +40,9 @@ namespace reina::core {
 
         void bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout);
 
-        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorBufferInfo* bufferInfo);
-        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo* imageInfo);
-        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkWriteDescriptorSetAccelerationStructureKHR* accStructureInfo);
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, const reina::core::Buffer& buffer);
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, const reina::graphics::Image& image, VkImageLayout imageLayout, VkSampler sampler);
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, const vktools::AccStructureInfo& accStruct);
 
         void destroy(VkDevice device);
 

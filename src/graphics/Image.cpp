@@ -72,11 +72,11 @@ void reina::graphics::Image::createImageView(VkDevice logicalDevice, VkFormat im
     }
 }
 
-VkImage reina::graphics::Image::getImage() {
+VkImage reina::graphics::Image::getImage() const {
     return image;
 }
 
-VkImageView reina::graphics::Image::getImageView() {
+VkImageView reina::graphics::Image::getImageView() const {
     return imageView;
 }
 

@@ -8,8 +8,8 @@ namespace reina::graphics {
     public:
         Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps);
 
-        [[nodiscard]] VkImage getImage();
-        [[nodiscard]] VkImageView getImageView();
+        [[nodiscard]] VkImage getImage() const;
+        [[nodiscard]] VkImageView getImageView() const;
 
         void transition(VkCommandBuffer cmdBuffer, VkImageLayout newLayout, VkAccessFlags newAccessMask, VkPipelineStageFlags newPipelineStages);
         void copyToBuffer(VkCommandBuffer cmdBuffer, VkBuffer dstBuffer);
