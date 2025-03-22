@@ -17,7 +17,9 @@ Render of the Stanford bunny model with 24,000 samples per pixel. It has approxi
 * Path tracing of the following materials:
   * Lambertian (diffuse)
   * Metal
-  * Dielectric
+  * Transparent dielectric (glass-like)
+    * Beer's law for absorption
+    * Fresnel reflection and refraction
 * Lighting
   * BRDF sampling and next event estimation (NEE) weighted with multiple importance sampling (MIS+NEE)
 * OBJ model loading
