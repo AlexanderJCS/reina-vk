@@ -10,6 +10,7 @@
 namespace reina::graphics {
     class Camera {
     public:
+        Camera() = default;
         Camera(const reina::window::Window& renderWindow, float fov, float aspectRatio, glm::vec3 pos, glm::vec3 cameraFront);
 
         /**

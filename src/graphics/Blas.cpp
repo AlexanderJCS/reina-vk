@@ -68,7 +68,7 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
 
     VkAccelerationStructureCreateInfoKHR createInfo{
             .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
-            .buffer = blasBuffer.value().getHandle(),
+            .buffer = blasBuffer.getHandle(),
             .size = buildSizes.accelerationStructureSize,
             .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
     };
@@ -124,8 +124,8 @@ VkAccelerationStructureKHR reina::graphics::Blas::getHandle() const {
     return blas;
 }
 
-const reina::core::Buffer &reina::graphics::Blas::getBuffer() const {
-    return blasBuffer.value();
+const reina::core::Buffer& reina::graphics::Blas::getBuffer() const {
+    return blasBuffer;
 }
 
 void reina::graphics::Blas::destroy(VkDevice logicalDevice) {
@@ -137,7 +137,7 @@ void reina::graphics::Blas::destroy(VkDevice logicalDevice) {
     }
 
     vkDestroyAccelerationStructureKHR(logicalDevice, blas, nullptr);
-    blasBuffer.value().destroy(logicalDevice);
+    blasBuffer.destroy(logicalDevice);
 }
 
 VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
@@ -215,4 +215,8 @@ VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDe
     blasBuffer = compactBlasBuffer;
 
     return compactSize;
+}
+
+reina::graphics::Blas::Blas() {
+
 }

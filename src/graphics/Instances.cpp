@@ -147,23 +147,19 @@ void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysica
 }
 
 void reina::graphics::Instances::destroy(VkDevice logicalDevice) {
-    if (cdfTrianglesBuffer.has_value()) {
-        cdfTrianglesBuffer->destroy(logicalDevice);
-    } if (emissiveMetadataBuffer.has_value()) {
-        emissiveMetadataBuffer->destroy(logicalDevice);
-    } if (cdfInstancesBuffer.has_value()) {
-        cdfInstancesBuffer->destroy(logicalDevice);
-    }
+    cdfTrianglesBuffer.destroy(logicalDevice);
+    emissiveMetadataBuffer.destroy(logicalDevice);
+    cdfInstancesBuffer.destroy(logicalDevice);
 }
 
-const reina::core::Buffer &reina::graphics::Instances::getEmissiveMetadataBuffer() const {
-    return emissiveMetadataBuffer.value();
+const reina::core::Buffer& reina::graphics::Instances::getEmissiveMetadataBuffer() const {
+    return emissiveMetadataBuffer;
 }
 
-const reina::core::Buffer &reina::graphics::Instances::getCdfTrianglesBuffer() const {
-    return cdfTrianglesBuffer.value();
+const reina::core::Buffer& reina::graphics::Instances::getCdfTrianglesBuffer() const {
+    return cdfTrianglesBuffer;
 }
 
-const reina::core::Buffer &reina::graphics::Instances::getCdfInstancesBuffer() const {
-    return cdfInstancesBuffer.value();
+const reina::core::Buffer& reina::graphics::Instances::getCdfInstancesBuffer() const {
+    return cdfInstancesBuffer;
 }

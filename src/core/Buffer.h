@@ -7,6 +7,7 @@
 namespace reina::core {
     class Buffer {
     public:
+        Buffer() = default;
         Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags);
 
         template<typename T>
@@ -40,7 +41,7 @@ namespace reina::core {
     private:
         VkBuffer buffer = VK_NULL_HANDLE;
         VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
-        VkDeviceSize size;
+        VkDeviceSize size = 0;
     };
 }
 

@@ -8,6 +8,7 @@
 namespace reina::core {
     class PushConstants {
     public:
+        PushConstants() = default;
         PushConstants(const PushConstantsStruct& defaultValues, VkShaderStageFlags stageFlags);
 
         [[nodiscard]] PushConstantsStruct& getPushConstants();

@@ -26,6 +26,7 @@ namespace reina::graphics {
 
     class Models {
     public:
+        Models() = default;
         Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths);
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
@@ -48,16 +49,16 @@ namespace reina::graphics {
         [[nodiscard]] static ObjData getObjData(const std::string& filepath);
 
         std::vector<ObjData> modelObjData;
-        std::optional<reina::core::Buffer> verticesBuffer;
-        std::optional<reina::core::Buffer> offsetIndicesBuffer;
-        std::optional<reina::core::Buffer> nonOffsetIndicesBuffer;
-        std::optional<reina::core::Buffer> normalsBuffer;
-        std::optional<reina::core::Buffer> offsetNormalsIndicesBuffer;
+        reina::core::Buffer verticesBuffer;
+        reina::core::Buffer offsetIndicesBuffer;
+        reina::core::Buffer nonOffsetIndicesBuffer;
+        reina::core::Buffer normalsBuffer;
+        reina::core::Buffer offsetNormalsIndicesBuffer;
 
-        size_t verticesBufferSize;
-        size_t indicesBuffersSize;
-        size_t normalsBufferSize;
-        size_t normalsIndicesBufferSize;
+        size_t verticesBufferSize = 0;
+        size_t indicesBuffersSize = 0;
+        size_t normalsBufferSize = 0;
+        size_t normalsIndicesBufferSize = 0;
 
         std::vector<ModelRange> modelRanges;
     };

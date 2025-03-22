@@ -24,18 +24,8 @@ namespace reina::core {
     };
 
     class DescriptorSet {
-    private:
-        std::vector<Binding> bindings;
-        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-        VkDescriptorPool pool = VK_NULL_HANDLE;
-        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
-
-        [[nodiscard]] static bool hasDuplicateBindingPoints(const std::vector<Binding>& bindings);
-
-        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo *imageInfo,
-                          VkDescriptorBufferInfo *bufferInfo, void *next);
-
     public:
+        DescriptorSet() = default;
         DescriptorSet(VkDevice logicalDevice, const std::vector<Binding>& bindings);
 
         void bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout);
@@ -49,6 +39,17 @@ namespace reina::core {
         [[nodiscard]] VkDescriptorSetLayout getLayout() const;
         [[nodiscard]] VkDescriptorPool getPool() const;
         [[nodiscard]] VkDescriptorSet getDescriptorSet() const;
+
+    private:
+        std::vector<Binding> bindings{};
+        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+        VkDescriptorPool pool = VK_NULL_HANDLE;
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+
+        [[nodiscard]] static bool hasDuplicateBindingPoints(const std::vector<Binding>& bindings);
+
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, VkDescriptorImageInfo *imageInfo,
+                          VkDescriptorBufferInfo *bufferInfo, void *next);
     };
 }
 

@@ -9,6 +9,7 @@
 namespace reina::graphics {
     class Shader {
     public:
+        Shader() = default;
         Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage, std::string entryPoint = "main");
 
         void destroy(VkDevice logicalDevice);
@@ -17,7 +18,7 @@ namespace reina::graphics {
 
     private:
         VkShaderModule shaderModule = VK_NULL_HANDLE;
-        VkShaderStageFlagBits shaderStage;
+        VkShaderStageFlagBits shaderStage = static_cast<VkShaderStageFlagBits>(0);
         std::string entryPoint;
 
         static std::vector<char> readFile(const std::string& filepath);

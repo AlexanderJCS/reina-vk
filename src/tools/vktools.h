@@ -65,7 +65,7 @@ namespace vktools {
     };
 
     struct AccStructureInfo {
-        VkAccelerationStructureKHR accelerationStructure;
+        VkAccelerationStructureKHR accelerationStructure = VK_NULL_HANDLE;
         reina::core::Buffer buffer;
     };
 

@@ -7,6 +7,7 @@
 namespace reina::core {
     class CmdBuffer {
     public:
+        CmdBuffer() = default;
         CmdBuffer(VkDevice logicalDevice, VkCommandPool cmdPool, bool oneTime, bool fenceCreateSignaled = false);
 
         [[nodiscard]] VkCommandBuffer getHandle() const;
@@ -17,10 +18,10 @@ namespace reina::core {
         void endWaitSubmit(VkDevice logicalDevice, VkQueue queue, const std::optional<VkSubmitInfo>& submitInfo = std::nullopt);
         void destroy(VkDevice logicalDevice);
     private:
-        VkCommandPool createdCmdPool;
-        VkCommandBuffer cmdBuffer;
-        VkFence fence;
-        bool oneTime;
+        VkCommandPool createdCmdPool = VK_NULL_HANDLE;
+        VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+        VkFence fence = VK_NULL_HANDLE;
+        bool oneTime = true;
     };
 }
 

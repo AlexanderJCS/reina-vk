@@ -12,6 +12,7 @@
 namespace reina::graphics {
     class Blas {
     public:
+        Blas();
         Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const reina::graphics::ModelRange& modelRange, bool shouldCompact);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
@@ -31,7 +32,7 @@ namespace reina::graphics {
          */
         VkDeviceSize compact(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
 
-        std::optional<reina::core::Buffer> blasBuffer;
+        reina::core::Buffer blasBuffer;
         VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
     };
 }

@@ -6,10 +6,11 @@
 namespace reina::window {
     class Window {
     private:
-        GLFWwindow* glfwWindow;
-        int width{}, height{};
+        GLFWwindow* glfwWindow = nullptr;
+        int width = 0, height = 0;
 
     public:
+        Window() = default;
         Window(int width, int height);
 
         [[nodiscard]] int getWidth() const;

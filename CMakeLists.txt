@@ -61,7 +61,9 @@ add_executable(reina_vk src/main.cpp
         src/graphics/Image.h
         src/graphics/Image.cpp
         src/graphics/Instances.cpp
-        src/graphics/Instances.h)
+        src/graphics/Instances.h
+        src/Reina.cpp
+        src/Reina.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 

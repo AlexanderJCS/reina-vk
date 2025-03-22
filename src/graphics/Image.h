@@ -6,6 +6,7 @@
 namespace reina::graphics {
     class Image {
     public:
+        Image() = default;
         Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps);
 
         [[nodiscard]] VkImage getImage() const;
@@ -19,11 +20,11 @@ namespace reina::graphics {
         void createImage(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
         void createImageView(VkDevice logicalDevice, VkFormat imageFormat);
 
-        uint32_t width, height;
+        uint32_t width = 0, height = 0;
 
-        VkImage image;
-        VkDeviceMemory imageMemory;
-        VkImageView imageView;
+        VkImage image = VK_NULL_HANDLE;
+        VkDeviceMemory imageMemory = VK_NULL_HANDLE;
+        VkImageView imageView = VK_NULL_HANDLE;
 
         VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkAccessFlags accessMask = static_cast<VkAccessFlags>(0);

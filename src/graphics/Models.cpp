@@ -161,15 +161,15 @@ size_t reina::graphics::Models::getIndicesBuffersSize() const {
 }
 
 const reina::core::Buffer& reina::graphics::Models::getVerticesBuffer() const {
-    return verticesBuffer.value();
+    return verticesBuffer;
 }
 
 const reina::core::Buffer& reina::graphics::Models::getOffsetIndicesBuffer() const {
-    return offsetIndicesBuffer.value();
+    return offsetIndicesBuffer;
 }
 
 const reina::core::Buffer& reina::graphics::Models::getNonOffsetIndicesBuffer() const {
-    return nonOffsetIndicesBuffer.value();
+    return nonOffsetIndicesBuffer;
 }
 
 const reina::graphics::ObjData& reina::graphics::Models::getObjData(int index) const {
@@ -190,17 +190,11 @@ reina::graphics::ModelRange reina::graphics::Models::getModelRange(int index) co
 }
 
 void reina::graphics::Models::destroy(VkDevice logicalDevice) {
-    if (verticesBuffer.has_value()) {
-        verticesBuffer.value().destroy(logicalDevice);
-    } if (offsetIndicesBuffer.has_value()) {
-        offsetIndicesBuffer.value().destroy(logicalDevice);
-    } if (nonOffsetIndicesBuffer.has_value()) {
-        nonOffsetIndicesBuffer.value().destroy(logicalDevice);
-    } if (offsetNormalsIndicesBuffer.has_value()) {
-        offsetNormalsIndicesBuffer.value().destroy(logicalDevice);
-    } if (normalsBuffer.has_value()) {
-        normalsBuffer.value().destroy(logicalDevice);
-    }
+    verticesBuffer.destroy(logicalDevice);
+    offsetIndicesBuffer.destroy(logicalDevice);
+    nonOffsetIndicesBuffer.destroy(logicalDevice);
+    offsetNormalsIndicesBuffer.destroy(logicalDevice);
+    normalsBuffer.destroy(logicalDevice);
 }
 
 size_t reina::graphics::Models::getNormalsBufferSize() const {
@@ -211,10 +205,10 @@ size_t reina::graphics::Models::getNormalsIndicesBufferSize() const {
     return normalsIndicesBufferSize;
 }
 
-const reina::core::Buffer &reina::graphics::Models::getNormalsBuffer() const {
-    return normalsBuffer.value();
+const reina::core::Buffer& reina::graphics::Models::getNormalsBuffer() const {
+    return normalsBuffer;
 }
 
-const reina::core::Buffer &reina::graphics::Models::getOffsetNormalsIndicesBuffer() const {
-    return offsetNormalsIndicesBuffer.value();
+const reina::core::Buffer& reina::graphics::Models::getOffsetNormalsIndicesBuffer() const {
+    return offsetNormalsIndicesBuffer;
 }

@@ -25,6 +25,7 @@ namespace reina::graphics {
 
     class Instances {
     public:
+        Instances() = default;
         explicit Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances);
 
         [[nodiscard]] const std::vector<Instance>& getInstances() const;
@@ -55,16 +56,16 @@ namespace reina::graphics {
          */
         void computeSamplingDataEmissives();
 
-        float instancesArea;
+        float instancesArea = 0;
 
         std::vector<Instance> instances;
         std::vector<float> cdfTriangles;
         std::vector<float> cdfInstances;
         std::vector<InstanceData> emissiveInstancesData;
 
-        std::optional<reina::core::Buffer> emissiveMetadataBuffer;
-        std::optional<reina::core::Buffer> cdfTrianglesBuffer;
-        std::optional<reina::core::Buffer> cdfInstancesBuffer;
+        reina::core::Buffer emissiveMetadataBuffer;
+        reina::core::Buffer cdfTrianglesBuffer;
+        reina::core::Buffer cdfInstancesBuffer;
     };
 }
 
