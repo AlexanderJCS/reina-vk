@@ -3,20 +3,65 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-reina::graphics::Camera::Camera(const reina::window::Window& renderWindow, float fov, float aspectRatio, glm::vec3 pos, glm::vec3 cameraFront)
-    : cameraPos(pos), cameraFront(cameraFront) {
+reina::graphics::Camera::Camera(const reina::window::Window& window, float fov, float aspectRatio, glm::vec3 pos, glm::vec3 cameraFront)
+        : renderWindow(&window), cameraPos(pos), cameraFront(cameraFront) {
 
-    lastMousePos = glm::vec2(static_cast<double>(renderWindow.getWidth()) / 2, static_cast<double>(renderWindow.getHeight()) / 2);
+    std::cout << "created\n";
 
+    lastMousePos = glm::vec2(static_cast<float>(window.getWidth()) / 2.f, static_cast<float>(window.getHeight()) / 2.f);
     inverseProjection = glm::inverse(glm::perspective(fov, aspectRatio, 0.1f, 100.0f));
     inverseView = glm::inverse(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));
 
-    glfwSetWindowUserPointer(renderWindow.getGlfwWindow(), this);  // I feel like this is bad design, but it works
-    glfwSetCursorPosCallback(renderWindow.getGlfwWindow(), mouseCallback);
-    glfwSetKeyCallback(renderWindow.getGlfwWindow(), keyCallback);
+    // Register this Camera instance with the GLFW window
+    GLFWwindow* glfwWin = window.getGlfwWindow();
+    glfwSetWindowUserPointer(glfwWin, this);
+    glfwSetCursorPosCallback(glfwWin, mouseCallback);
+    glfwSetKeyCallback(glfwWin, keyCallback);
 
     pitch = static_cast<float>(glm::degrees(asin(cameraFront.y)));
     yaw = static_cast<float>(glm::degrees(atan2(cameraFront.z, cameraFront.x)));
+}
+
+reina::graphics::Camera::Camera(const Camera& other)
+        : renderWindow(other.renderWindow),
+          ignoreNextMouseInput(other.ignoreNextMouseInput),
+          input(other.input),
+          lastMousePos(other.lastMousePos),
+          pitch(other.pitch),
+          yaw(other.yaw),
+          changed(other.changed),
+          cameraPos(other.cameraPos),
+          cameraFront(other.cameraFront),
+          cameraUp(other.cameraUp),
+          inverseView(other.inverseView),
+          inverseProjection(other.inverseProjection)
+{
+    // Update the GLFW window's user pointer to point to this new copy.
+    if (renderWindow) {
+        glfwSetWindowUserPointer(renderWindow->getGlfwWindow(), this);
+    }
+}
+
+reina::graphics::Camera& reina::graphics::Camera::operator=(const Camera& other) {
+    if (this != &other) {
+        renderWindow = other.renderWindow;
+        ignoreNextMouseInput = other.ignoreNextMouseInput;
+        input = other.input;
+        lastMousePos = other.lastMousePos;
+        pitch = other.pitch;
+        yaw = other.yaw;
+        changed = other.changed;
+        cameraPos = other.cameraPos;
+        cameraFront = other.cameraFront;
+        cameraUp = other.cameraUp;
+        inverseView = other.inverseView;
+        inverseProjection = other.inverseProjection;
+
+        if (renderWindow) {
+            glfwSetWindowUserPointer(renderWindow->getGlfwWindow(), this);
+        }
+    }
+    return *this;
 }
 
 void reina::graphics::Camera::processInput(const reina::window::Window& window, double timeDelta) {

@@ -261,6 +261,7 @@ void Reina::destroy() {
 }
 
 void Reina::renderLoop() {
+    std::cout << "render loop start\n";
     VkCommandBuffer cmdBufferHandle = commandBuffer.getHandle();
 
     rtDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
@@ -295,7 +296,7 @@ void Reina::renderLoop() {
         bool firstFrame = clock.getFrameCount() == 0;
 
         if (!firstFrame) {
-            std::cout << clock.summary() << "\n";
+//            std::cout << clock.summary() << "\n";
         }
 
         clock.markCategory("Ray Tracing");

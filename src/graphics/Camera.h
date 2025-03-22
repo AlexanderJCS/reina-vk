@@ -12,6 +12,8 @@ namespace reina::graphics {
     public:
         Camera() = default;
         Camera(const reina::window::Window& renderWindow, float fov, float aspectRatio, glm::vec3 pos, glm::vec3 cameraFront);
+        Camera(const Camera& other);
+        Camera& operator=(const Camera& other);
 
         /**
          * Process input. Returns if the camera position changed. Important for "clearing" the screen and starting the
@@ -34,6 +36,7 @@ namespace reina::graphics {
         void refresh();
 
     private:
+        const reina::window::Window* renderWindow = nullptr;
         bool ignoreNextMouseInput = false;
         bool input = false;
         glm::vec2 lastMousePos = glm::vec2(-1, -1);
