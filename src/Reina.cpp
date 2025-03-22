@@ -295,7 +295,7 @@ void Reina::renderLoop() {
         bool firstFrame = clock.getFrameCount() == 0;
 
         if (!firstFrame) {
-//            std::cout << clock.summary() << "\n";
+            std::cout << clock.summary() << "\n";
         }
 
         clock.markCategory("Ray Tracing");
@@ -312,6 +312,8 @@ void Reina::renderLoop() {
         pushConstants.push(cmdBufferHandle, rtPipelineInfo.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
 
+        // todo: there's no reason for the shader stage regions to be in the loop
+        // todo: shader stage regions should be where you define the shader stages
         VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
         VkDeviceAddress sbtStartAddress = sbtBuffer.getDeviceAddress(logicalDevice);
 
