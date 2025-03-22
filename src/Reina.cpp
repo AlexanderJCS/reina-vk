@@ -10,6 +10,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <iostream>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
 
@@ -199,13 +200,9 @@ Reina::Reina() {
 }
 
 
-void Reina::destroy() {
+Reina::~Reina() {
     auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
             vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
-
-    if (!vkDestroyAccelerationStructureKHR) {
-        throw std::runtime_error("Destroy acceleration structure function cannot be found");
-    }
 
     for (VkFramebuffer framebuffer : framebuffers) {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);

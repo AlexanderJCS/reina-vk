@@ -16,7 +16,7 @@ class Reina {
 public:
     Reina();
     void renderLoop();
-    void destroy();
+    ~Reina();
 
 private:
     uint32_t renderWidth, renderHeight;
