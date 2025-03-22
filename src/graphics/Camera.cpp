@@ -6,8 +6,6 @@
 reina::graphics::Camera::Camera(const reina::window::Window& window, float fov, float aspectRatio, glm::vec3 pos, glm::vec3 cameraFront)
         : renderWindow(&window), cameraPos(pos), cameraFront(cameraFront) {
 
-    std::cout << "created\n";
-
     lastMousePos = glm::vec2(static_cast<float>(window.getWidth()) / 2.f, static_cast<float>(window.getHeight()) / 2.f);
     inverseProjection = glm::inverse(glm::perspective(fov, aspectRatio, 0.1f, 100.0f));
     inverseView = glm::inverse(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));

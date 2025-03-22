@@ -261,7 +261,6 @@ void Reina::destroy() {
 }
 
 void Reina::renderLoop() {
-    std::cout << "render loop start\n";
     VkCommandBuffer cmdBufferHandle = commandBuffer.getHandle();
 
     rtDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
