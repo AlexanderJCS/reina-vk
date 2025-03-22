@@ -20,7 +20,7 @@ namespace reina::core {
         }
 
         template<typename T>
-        std::vector<T> copyData(VkDevice logicalDevice, VkDeviceSize size) {
+        std::vector<T> copyData(VkDevice logicalDevice) {
             void* data;
             vkMapMemory(logicalDevice, getDeviceMemory(), 0, size, 0, &data);
 
@@ -40,6 +40,7 @@ namespace reina::core {
     private:
         VkBuffer buffer = VK_NULL_HANDLE;
         VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
+        VkDeviceSize size;
     };
 }
 

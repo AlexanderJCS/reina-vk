@@ -4,7 +4,7 @@
 #include "../tools/vktools.h"
 
 reina::core::Buffer::Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkDeviceSize dataSize, VkBufferUsageFlags usage,
-                            VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags) {
+                            VkMemoryAllocateFlags allocFlags, VkMemoryPropertyFlags memFlags): size(dataSize) {
 
     VkBufferCreateInfo createInfo{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,

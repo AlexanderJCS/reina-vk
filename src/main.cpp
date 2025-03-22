@@ -26,6 +26,38 @@
 #include "graphics/Instances.h"
 
 
+void save(VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, reina::graphics::Image& img, reina::core::Buffer& stagingBuffer, uint32_t width, uint32_t height) {
+    reina::core::CmdBuffer saveCmdBuffer{logicalDevice, cmdPool, false};
+
+    img.transition(saveCmdBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    img.copyToBuffer(saveCmdBuffer.getHandle(), stagingBuffer.getHandle());
+    saveCmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);
+
+    std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice);
+
+    std::string filename = "../output.png";
+    int success = stbi_write_png(
+            filename.c_str(),
+            static_cast<int>(width),
+            static_cast<int>(height),
+            4,
+            pixels.data(),
+            static_cast<int>(width) * 4
+    );
+
+    if (!success) {
+        saveCmdBuffer.destroy(logicalDevice);
+        throw std::runtime_error("Could not save PNG");
+    }
+
+    saveCmdBuffer.begin();
+    img.transition(saveCmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    saveCmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);
+
+    saveCmdBuffer.destroy(logicalDevice);
+}
+
+
 void run() {
     // init
     const uint32_t renderWidth = 1080;
@@ -173,7 +205,7 @@ void run() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
     };
 
-    VkDeviceSize imageSize = renderWidth * renderHeight * 4; // RGBA8
+    VkDeviceSize imageSize = renderWidth * renderHeight * 4;  // RGBA8
 
     reina::core::Buffer stagingBuffer{
         logicalDevice, physicalDevice, imageSize,
@@ -293,27 +325,9 @@ void run() {
         clock.markCategory("Save");
 
         uint32_t samples = clock.getSampleCount();
-//        if (samples == 64) {
-        if (false) {
-            postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-            postprocessingOutputImage.copyToBuffer(cmdBufferHandle, stagingBuffer.getHandle());
-            std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice, imageSize);
-
-            std::string filename = "../output.png";
-            int success = stbi_write_png(
-                    filename.c_str(),
-                    static_cast<int>(renderWidth),
-                    static_cast<int>(renderHeight),
-                    4,
-                    pixels.data(),
-                    static_cast<int>(renderWidth) * 4
-            );
-
-            if (!success) {
-                throw std::runtime_error("Could not save PNG");
-            }
-
-            postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        if (samples == 1024) {
+//        if (false) {
+            save(logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
         }
 
         // render

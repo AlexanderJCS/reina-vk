@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include "../tools/vktools.h"
+#include "../core/CmdBuffer.h"
 
 reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
         : width(width), height(height), image(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE), imageMemory(VK_NULL_HANDLE) {
