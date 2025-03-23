@@ -4,13 +4,13 @@ Reina is a Vulkan ray tracer and the successor to [Reina OpenGL](https://www.git
 
 ## Renders
 
-Render of the Stanford dragon model with 24,000 samples per pixel. It has approximately 1 million triangles and took 25 minutes to render.
+Render of the Stanford dragon model with 1,200 samples per pixel. It has approximately 1 million triangles and took 30 seconds to render.
 
-<img src="renders/dragon5.png" width="500" alt="Render of the Stanford Dragon model">
+<img src="renders/dragon6.png" width="500" alt="Render of the Stanford Dragon model">
 
-Render of the Stanford bunny model with 24,000 samples per pixel. It has approximately 70,000 triangles and took 5 minutes to render.
+Render of the Stanford bunny model with 6,000 samples per pixel. It has approximately 70,000 triangles and took 34 seconds to render.
 
-<img src="renders/bunny2.png" width="500" alt="Render of the Stanford Bunny model">
+<img src="renders/bunny4.png" width="500" alt="Render of the Stanford Bunny model">
 
 ## Features
 
