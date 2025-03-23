@@ -4,7 +4,7 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_debug_printf : require
 #include "shaderCommon.h.glsl"
-#include "../polyglot/common.h"
+#include "../../polyglot/common.h"
 
 #include "nee.h.glsl"
 #include "pdf.h.glsl"

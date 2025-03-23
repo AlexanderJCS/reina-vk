@@ -99,12 +99,12 @@ Reina::Reina() {
 
     sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     shaders = {
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
     rtPipelineInfo = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
@@ -129,7 +129,7 @@ Reina::Reina() {
                     reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT}   // output image
             }
     };
-    postprocessingShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+    postprocessingShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing/tonemap/postprocessing.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
     postprocessingPipeline = vktools::createComputePipeline(logicalDevice, postprocessingDescriptorSet, postprocessingShader);
 
     rasterizationDescriptorSet = reina::core::DescriptorSet{
@@ -139,8 +139,8 @@ Reina::Reina() {
             }
     };
 
-    reina::graphics::Shader vertexShader = reina::graphics::Shader(logicalDevice, "../shaders/display.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    reina::graphics::Shader fragmentShader = reina::graphics::Shader(logicalDevice, "../shaders/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+    reina::graphics::Shader vertexShader = reina::graphics::Shader(logicalDevice, "../shaders/raster/display.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    reina::graphics::Shader fragmentShader = reina::graphics::Shader(logicalDevice, "../shaders/raster/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     renderPass = vktools::createRenderPass(logicalDevice, swapchainObjects.swapchainImageFormat);
     rasterizationPipelineInfo = vktools::createRasterizationPipeline(logicalDevice, rasterizationDescriptorSet, renderPass, vertexShader, fragmentShader);
@@ -372,8 +372,8 @@ void Reina::renderLoop() {
         clock.markCategory("Save");
 
         uint32_t samples = clock.getSampleCount();
-        if (samples == 1024) {
-//        if (false) {
+//        if (samples == 1024) {
+        if (false) {
             save(logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
         }
 
