@@ -107,8 +107,8 @@ Reina::Reina() {
             reina::graphics::Shader(logicalDevice, "../shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
-    rtPipelineInfo = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
-    sbtBuffer = vktools::createSbt(logicalDevice, physicalDevice, rtPipelineInfo.pipeline, sbtSpacing, shaders.size());
+    rtPipeline = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
+    sbtBuffer = vktools::createSbt(logicalDevice, physicalDevice, rtPipeline.pipeline, sbtSpacing, shaders.size());
 
     for (reina::graphics::Shader& shader : shaders) {
         shader.destroy(logicalDevice);
@@ -143,7 +143,7 @@ Reina::Reina() {
     reina::graphics::Shader fragmentShader = reina::graphics::Shader(logicalDevice, "../shaders/raster/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     renderPass = vktools::createRenderPass(logicalDevice, swapchainObjects.swapchainImageFormat);
-    rasterizationPipelineInfo = vktools::createRasterizationPipeline(logicalDevice, rasterizationDescriptorSet, renderPass, vertexShader, fragmentShader);
+    rasterPipeline = vktools::createRasterizationPipeline(logicalDevice, rasterizationDescriptorSet, renderPass, vertexShader, fragmentShader);
 
     framebuffers = vktools::createSwapchainFramebuffers(logicalDevice, renderPass, swapchainObjects.swapchainExtent, swapchainImageViews);
 
@@ -197,6 +197,25 @@ Reina::Reina() {
             static_cast<VkMemoryAllocateFlags>(0),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
+
+    blurXDescriptorSet = reina::core::DescriptorSet{
+        logicalDevice, {
+            reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
+            reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT}
+        }
+    };
+
+    blurXShader = reina::graphics::Shader(
+            logicalDevice, "../shaders/postprocessing/bloom/blurX.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
+            );
+
+    blurXPipeline = vktools::createComputePipeline(logicalDevice, blurXDescriptorSet, blurXShader);
+
+    blurXImage = reina::graphics::Image{
+        logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
 }
 
 
@@ -208,6 +227,9 @@ Reina::~Reina() {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
     }
 
+    blurXImage.destroy(logicalDevice);
+    blurXShader.destroy(logicalDevice);
+    blurXDescriptorSet.destroy(logicalDevice);
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
     subject.destroy(logicalDevice);
@@ -231,12 +253,14 @@ Reina::~Reina() {
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     models.destroy(logicalDevice);
-    vkDestroyPipeline(logicalDevice, rtPipelineInfo.pipeline, nullptr);
-    vkDestroyPipeline(logicalDevice, rasterizationPipelineInfo.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, rtPipeline.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, rasterPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, postprocessingPipeline.pipeline, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, rtPipelineInfo.pipelineLayout, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, rasterizationPipelineInfo.pipelineLayout, nullptr);
+    vkDestroyPipeline(logicalDevice, blurXPipeline.pipeline, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, rtPipeline.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, rasterPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, postprocessingPipeline.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, blurXPipeline.pipelineLayout, nullptr);
 
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 
@@ -271,10 +295,14 @@ void Reina::renderLoop() {
     rtDescriptorSet.writeBinding(logicalDevice, 8, instances.getCdfTrianglesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());
 
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurXDescriptorSet.writeBinding(logicalDevice, 1, blurXImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, blurXImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     postprocessingDescriptorSet.writeBinding(logicalDevice, 1, postprocessingOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, postprocessingOutputImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);
+
 
     reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {
@@ -303,10 +331,10 @@ void Reina::renderLoop() {
 
         rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
-        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipeline);
-        rtDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipelineInfo.pipelineLayout);
+        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipeline);
+        rtDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipelineLayout);
 
-        pushConstants.push(cmdBufferHandle, rtPipelineInfo.pipelineLayout);
+        pushConstants.push(cmdBufferHandle, rtPipeline.pipelineLayout);
         pushConstants.getPushConstants().sampleBatch++;
 
         // todo: there's no reason for the shader stage regions to be in the loop
@@ -347,17 +375,30 @@ void Reina::renderLoop() {
                 1
         );
 
-        // everything below here is swapchain stuff
-        clock.markCategory("Post Processing");
 
-        // transition to the same and synchronize
-        rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-        // apply postprocessing
-        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        clock.markCategory("Bloom");
 
         const int workgroupWidth = 32;
         const int workgroupHeight = 8;
+
+        rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        blurXImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        blurXDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipelineLayout);
+        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipeline);
+        vkCmdDispatch(
+                cmdBufferHandle,
+                (renderWidth + workgroupWidth - 1) / workgroupWidth,
+                (renderHeight + workgroupHeight - 1) / workgroupHeight,
+                1
+        );
+
+        clock.markCategory("Tone Mapping");
+
+        blurXImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        // apply postprocessing
+        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         postprocessingDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
         vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
@@ -407,9 +448,9 @@ void Reina::renderLoop() {
             };
 
             vkCmdBeginRenderPass(cmdBufferHandle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            rasterizationDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipelineLayout);
+            rasterizationDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipelineLayout);
 
-            vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterizationPipelineInfo.pipeline);
+            vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipeline);
 
             VkViewport viewport{
                     .x = 0,

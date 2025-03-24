@@ -9,3 +9,6 @@ glslc -fshader-stage=vert --target-env=vulkan1.3 ./raster/display.vert.glsl -o .
 glslc -fshader-stage=frag --target-env=vulkan1.3 ./raster/display.frag.glsl -o ./raster/display.frag.spv
 
 glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/tonemap/postprocessing.comp.glsl -o ./postprocessing/tonemap/postprocessing.comp.spv
+
+glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/bloom/blurX.comp.glsl -o ./postprocessing/bloom/blurX.comp.spv
+glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/bloom/blurY.comp.glsl -o ./postprocessing/bloom/blurY.comp.spv
