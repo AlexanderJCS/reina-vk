@@ -12,3 +12,4 @@ glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/tonemap/postpr
 
 glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/bloom/blurX.comp.glsl -o ./postprocessing/bloom/blurX.comp.spv
 glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/bloom/blurY.comp.glsl -o ./postprocessing/bloom/blurY.comp.spv
+glslc -fshader-stage=comp --target-env=vulkan1.3 ./postprocessing/bloom/combine.comp.glsl -o ./postprocessing/bloom/combine.comp.spv

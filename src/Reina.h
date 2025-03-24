@@ -31,7 +31,6 @@ private:
     VkInstance instance;
     VkDevice logicalDevice;
     std::vector<VkFramebuffer> framebuffers;
-    reina::graphics::Image blurXImage;
     reina::graphics::Blas light;
     reina::graphics::Blas box;
     reina::graphics::Blas subject;
@@ -54,9 +53,21 @@ private:
     vktools::PipelineInfo rtPipeline;
     vktools::PipelineInfo rasterPipeline;
     vktools::PipelineInfo postprocessingPipeline;
+    reina::graphics::Image pingImage;
+    reina::graphics::Image pongImage;
+
     reina::graphics::Shader blurXShader;
     reina::core::DescriptorSet blurXDescriptorSet;
     vktools::PipelineInfo blurXPipeline;
+
+    reina::graphics::Shader blurYShader;
+    reina::core::DescriptorSet blurYDescriptorSet;
+    vktools::PipelineInfo blurYPipeline;
+
+    reina::graphics::Shader combineShader;
+    reina::core::DescriptorSet combineDescriptorSet;
+    vktools::PipelineInfo combinePipeline;
+
     VkCommandPool commandPool;
     std::vector<VkImageView> swapchainImageViews;
     vktools::SwapchainObjects swapchainObjects;

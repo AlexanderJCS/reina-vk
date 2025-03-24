@@ -198,6 +198,18 @@ Reina::Reina() {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
 
+    pingImage = reina::graphics::Image{
+            logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R32G32B32A32_SFLOAT,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
+
+    pongImage = reina::graphics::Image{
+            logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R32G32B32A32_SFLOAT,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    };
+
     blurXDescriptorSet = reina::core::DescriptorSet{
         logicalDevice, {
             reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
@@ -211,11 +223,32 @@ Reina::Reina() {
 
     blurXPipeline = vktools::createComputePipeline(logicalDevice, blurXDescriptorSet, blurXShader);
 
-    blurXImage = reina::graphics::Image{
-        logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R32G32B32A32_SFLOAT,
-        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    blurYDescriptorSet = reina::core::DescriptorSet{
+            logicalDevice, {
+                    reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
+                    reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT}
+            }
     };
+
+    blurYShader = reina::graphics::Shader(
+            logicalDevice, "../shaders/postprocessing/bloom/blurY.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
+    );
+
+    blurYPipeline = vktools::createComputePipeline(logicalDevice, blurYDescriptorSet, blurYShader);
+
+    combineShader = reina::graphics::Shader(
+            logicalDevice, "../shaders/postprocessing/bloom/combine.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
+            );
+
+    combineDescriptorSet = reina::core::DescriptorSet{
+        logicalDevice, {
+                    reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
+                    reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
+                    reina::core::Binding{2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
+        }
+    };
+
+    combinePipeline = vktools::createComputePipeline(logicalDevice, combineDescriptorSet, combineShader);
 }
 
 
@@ -227,9 +260,14 @@ Reina::~Reina() {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
     }
 
-    blurXImage.destroy(logicalDevice);
+    pingImage.destroy(logicalDevice);
     blurXShader.destroy(logicalDevice);
     blurXDescriptorSet.destroy(logicalDevice);
+    pongImage.destroy(logicalDevice);
+    blurYShader.destroy(logicalDevice);
+    blurYDescriptorSet.destroy(logicalDevice);
+    combineShader.destroy(logicalDevice);
+    combineDescriptorSet.destroy(logicalDevice);
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
     subject.destroy(logicalDevice);
@@ -257,10 +295,14 @@ Reina::~Reina() {
     vkDestroyPipeline(logicalDevice, rasterPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, postprocessingPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, blurXPipeline.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, blurYPipeline.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, combinePipeline.pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rtPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rasterPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, postprocessingPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, blurXPipeline.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, blurYPipeline.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, combinePipeline.pipelineLayout, nullptr);
 
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 
@@ -296,9 +338,16 @@ void Reina::renderLoop() {
     rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());
 
     blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    blurXDescriptorSet.writeBinding(logicalDevice, 1, blurXImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurXDescriptorSet.writeBinding(logicalDevice, 1, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, blurXImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurYDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurYDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    combineDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    combineDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    combineDescriptorSet.writeBinding(logicalDevice, 2, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     postprocessingDescriptorSet.writeBinding(logicalDevice, 1, postprocessingOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
     rasterizationDescriptorSet.writeBinding(logicalDevice, 0, postprocessingOutputImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);
@@ -382,7 +431,7 @@ void Reina::renderLoop() {
         const int workgroupHeight = 8;
 
         rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        blurXImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         blurXDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipelineLayout);
         vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipeline);
@@ -393,9 +442,33 @@ void Reina::renderLoop() {
                 1
         );
 
+        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        pongImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        blurYDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipelineLayout);
+        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipeline);
+        vkCmdDispatch(
+                cmdBufferHandle,
+                (renderWidth + workgroupWidth - 1) / workgroupWidth,
+                (renderHeight + workgroupHeight - 1) / workgroupHeight,
+                1
+        );
+
+        pongImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        combineDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipelineLayout);
+        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipeline);
+        vkCmdDispatch(
+                cmdBufferHandle,
+                (renderWidth + workgroupWidth - 1) / workgroupWidth,
+                (renderHeight + workgroupHeight - 1) / workgroupHeight,
+                1
+        );
+
         clock.markCategory("Tone Mapping");
 
-        blurXImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         // apply postprocessing
         postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);

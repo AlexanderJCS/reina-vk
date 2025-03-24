@@ -7,18 +7,17 @@ float gauss(float x, float sigma) {
     return (1.0 / (sigma * sqrt(2.0 * M_PI))) * exp(-x * x / (2.0 * sigma * sigma));
 }
 
-const int KERNEL_SIZE = 5;
+const int KERNEL_SIZE = 25;
 
-void blurAxis(ivec2 axis) {
+void blurAxis(ivec2 axis, bool threshold) {
     ivec2 imageSize = imageSize(inImage);
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
-    if (pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y || pixelCoord.x < 0 || pixelCoord.y < 0) {
+    if (pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y) {
         return;
     }
 
     vec3 color = vec3(0);
-    float weightSum = 0;
 
     for (int i = -KERNEL_SIZE; i <= KERNEL_SIZE; i++) {
         ivec2 coord = pixelCoord + i * axis;
@@ -26,12 +25,17 @@ void blurAxis(ivec2 axis) {
             continue;
         }
 
-        vec4 pixel = imageLoad(inImage, pixelCoord + i * axis);
-        float weight = gauss(float(i), 3.0);
+        vec4 pixel = imageLoad(inImage, coord);
+        float luminosity = dot(pixel.rgb, vec3(0.299, 0.587, 0.114));
+
+        // If threshold is enabled and the pixel is below threshold, skip it entirely.
+        if (threshold && luminosity < 1.0) {
+            continue;
+        }
+
+        float weight = gauss(float(i), 12.0);
         color += pixel.rgb * weight;
-        weightSum += weight;
     }
 
-    color /= weightSum;
     imageStore(outImage, pixelCoord, vec4(color, 1));
 }
