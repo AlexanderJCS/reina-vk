@@ -48,7 +48,7 @@ void save(VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, 
 
 Reina::Reina() {
     // init
-    renderWidth = 1080;
+    renderWidth = 1080;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
     renderHeight = 1350;
     const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
