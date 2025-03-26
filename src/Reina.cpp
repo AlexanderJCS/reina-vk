@@ -154,8 +154,8 @@ Reina::Reina() {
 
     commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
 
-    commandBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
-    commandBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
+    cmdBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
+    cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
     models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/ico_sphere_highres.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
@@ -249,8 +249,289 @@ Reina::Reina() {
     };
 
     combinePipeline = vktools::createComputePipeline(logicalDevice, combineDescriptorSet, combineShader);
+
+    writeCmdBuffers();
 }
 
+
+void Reina::renderLoop() {
+    VkCommandBuffer cmdBufferHandle = cmdBuffer.getHandle();
+
+    reina::tools::Clock clock;
+    while (!renderWindow.shouldClose()) {
+        // camera
+        camera.processInput(renderWindow, clock.getTimeDelta());
+        if (camera.hasChanged()) {
+            camera.refresh();
+            PushConstantsStruct& pushConstantsStruct = pushConstants.getPushConstants();
+            pushConstantsStruct.invView = camera.getInverseView();
+            pushConstantsStruct.invProjection = camera.getInverseProjection();
+            pushConstantsStruct.sampleBatch = 0;  // reset the image
+        }
+
+        // clock
+        bool firstFrame = clock.getFrameCount() == 0;
+
+        if (!firstFrame) {
+            std::cout << clock.summary() << "\n";
+        }
+
+        clock.markCategory("Ray Tracing");
+
+        // render ray traced image
+        cmdBuffer.wait(logicalDevice);
+        cmdBuffer.begin();
+
+        traceRays();
+
+        clock.markCategory("Bloom");
+
+        applyBloom();
+
+        clock.markCategory("Tone Mapping");
+
+        applyTonemapping();
+
+        // save
+        clock.markCategory("Save");
+
+        uint32_t samples = clock.getSampleCount();
+//        if (samples == 1024) {
+        if (false) {
+            save(logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
+        }
+
+        // render
+        clock.markCategory("Display");
+
+        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+        uint32_t imageIndex = -1;
+        if (!renderWindow.isMinimized()) {
+            draw(imageIndex);
+        }
+
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
+
+        VkSubmitInfo submitInfo{
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .waitSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
+                .pWaitSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.imageAvailableSemaphore,
+                .pWaitDstStageMask = waitStages,
+                .signalSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
+                .pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.renderFinishedSemaphore
+        };
+
+        cmdBuffer.endSubmit(logicalDevice, graphicsQueue, submitInfo);
+
+        // Present the swapchain image
+        if (!renderWindow.isMinimized()) {
+            present(imageIndex);
+        }
+
+        clock.markFrame();
+        glfwPollEvents();
+    }
+
+    vkDeviceWaitIdle(logicalDevice);
+}
+
+void Reina::writeCmdBuffers() {
+    rtDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    rtDescriptorSet.writeBinding(logicalDevice, 1, tlas);
+    rtDescriptorSet.writeBinding(logicalDevice, 2, models.getVerticesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 3, models.getOffsetIndicesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 4, objectPropertiesBuffer);
+    rtDescriptorSet.writeBinding(logicalDevice, 5, models.getNormalsBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 6, models.getOffsetNormalsIndicesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 7, instances.getEmissiveMetadataBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 8, instances.getCdfTrianglesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());
+
+    blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurXDescriptorSet.writeBinding(logicalDevice, 1, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    blurYDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    blurYDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    combineDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    combineDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    combineDescriptorSet.writeBinding(logicalDevice, 2, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    postprocessingDescriptorSet.writeBinding(logicalDevice, 1, postprocessingOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+
+    rasterizationDescriptorSet.writeBinding(logicalDevice, 0, postprocessingOutputImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);
+}
+
+void Reina::traceRays() {
+    rtImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipeline);
+    rtDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipelineLayout);
+
+    pushConstants.push(cmdBuffer.getHandle(), rtPipeline.pipelineLayout);
+    pushConstants.getPushConstants().sampleBatch++;
+
+    // todo: there's no reason for the shader stage regions to be in the loop. this should be defined in createRtPipeline
+    VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
+    VkDeviceAddress sbtStartAddress = sbtBuffer.getDeviceAddress(logicalDevice);
+
+    sbtRayGenRegion.deviceAddress = sbtStartAddress;
+    sbtRayGenRegion.stride = sbtSpacing.stride;
+    sbtRayGenRegion.size = sbtSpacing.stride;
+
+    sbtMissRegion = sbtRayGenRegion;
+    sbtMissRegion.deviceAddress = sbtStartAddress + sbtSpacing.stride;
+    sbtMissRegion.size = sbtSpacing.stride * 2;
+
+    sbtHitRegion = sbtRayGenRegion;
+    sbtHitRegion.deviceAddress = sbtStartAddress + 3 * sbtSpacing.stride;
+    sbtHitRegion.size = sbtSpacing.stride * (shaders.size() - 3);  // assuming shaders vector includes 3 non-rchit shaders
+
+    sbtCallableRegion = sbtRayGenRegion;
+    sbtCallableRegion.size = 0;
+
+    auto vkCmdTraceRaysKHR = reinterpret_cast<PFN_vkCmdTraceRaysKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkCmdTraceRaysKHR"));
+
+    if (!vkCmdTraceRaysKHR) {
+        throw std::runtime_error("Failed to load vkCmdTraceRaysKHR");
+    }
+
+    vkCmdTraceRaysKHR(
+            cmdBuffer.getHandle(),
+            &sbtRayGenRegion,
+            &sbtMissRegion,
+            &sbtHitRegion,
+            &sbtCallableRegion,
+            renderWidth,
+            renderHeight,
+            1
+    );
+}
+
+void Reina::applyBloom() {
+    const int workgroupWidth = 32;
+    const int workgroupHeight = 8;
+
+    rtImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    blurXDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipelineLayout);
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipeline);
+    vkCmdDispatch(
+            cmdBuffer.getHandle(),
+            (renderWidth + workgroupWidth - 1) / workgroupWidth,
+            (renderHeight + workgroupHeight - 1) / workgroupHeight,
+            1
+    );
+
+    pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    pongImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    blurYDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipelineLayout);
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipeline);
+    vkCmdDispatch(
+            cmdBuffer.getHandle(),
+            (renderWidth + workgroupWidth - 1) / workgroupWidth,
+            (renderHeight + workgroupHeight - 1) / workgroupHeight,
+            1
+    );
+
+    pongImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    combineDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipelineLayout);
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipeline);
+    vkCmdDispatch(
+            cmdBuffer.getHandle(),
+            (renderWidth + workgroupWidth - 1) / workgroupWidth,
+            (renderHeight + workgroupHeight - 1) / workgroupHeight,
+            1
+    );
+}
+
+void Reina::applyTonemapping() {
+    const int workgroupWidth = 32;
+    const int workgroupHeight = 8;
+
+    pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    // apply postprocessing
+    postprocessingOutputImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    postprocessingDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
+    vkCmdDispatch(
+            cmdBuffer.getHandle(),
+            (renderWidth + workgroupWidth - 1) / workgroupWidth,
+            (renderHeight + workgroupHeight - 1) / workgroupHeight,
+            1
+    );
+}
+
+void Reina::draw(uint32_t& imageIndex) {
+    VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("Swapchain is either out of date or suboptimal");
+    } else if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to acquire swapchain image");
+    }
+
+    VkClearValue clearColor = {{0, 0, 0, 1}};
+
+    VkRenderPassBeginInfo renderPassBeginInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = renderPass,
+            .framebuffer = framebuffers[imageIndex],
+            .renderArea = {
+                    .offset = {0, 0},
+                    .extent = swapchainObjects.swapchainExtent
+            },
+            .clearValueCount = 1,
+            .pClearValues = &clearColor
+    };
+
+    vkCmdBeginRenderPass(cmdBuffer.getHandle(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    rasterizationDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipelineLayout);
+
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipeline);
+
+    VkViewport viewport{
+            .x = 0,
+            .y = 0,
+            .width = static_cast<float>(swapchainObjects.swapchainExtent.width),
+            .height = static_cast<float>(swapchainObjects.swapchainExtent.height),
+            .minDepth = 0,
+            .maxDepth = 1
+    };
+    vkCmdSetViewport(cmdBuffer.getHandle(), 0, 1, &viewport);
+
+    VkRect2D scissor{
+            .offset = {0, 0},
+            .extent = swapchainObjects.swapchainExtent
+    };
+
+    vkCmdSetScissor(cmdBuffer.getHandle(), 0, 1, &scissor);
+    vkCmdDraw(cmdBuffer.getHandle(), 6, 1, 0, 0);
+    vkCmdEndRenderPass(cmdBuffer.getHandle());
+}
+
+void Reina::present(uint32_t imageIndex) {
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &syncObjects.renderFinishedSemaphore;
+
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapchainObjects.swapchain;
+    presentInfo.pImageIndices = &imageIndex;
+
+    vkQueuePresentKHR(presentQueue, &presentInfo);
+}
 
 Reina::~Reina() {
     auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
@@ -281,7 +562,7 @@ Reina::~Reina() {
     stagingBuffer.destroy(logicalDevice);
 
     vkDestroySampler(logicalDevice, fragmentImageSampler, nullptr);
-    commandBuffer.destroy(logicalDevice);
+    cmdBuffer.destroy(logicalDevice);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);
@@ -321,261 +602,4 @@ Reina::~Reina() {
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
     renderWindow.destroy();
-}
-
-void Reina::renderLoop() {
-    VkCommandBuffer cmdBufferHandle = commandBuffer.getHandle();
-
-    rtDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    rtDescriptorSet.writeBinding(logicalDevice, 1, tlas);
-    rtDescriptorSet.writeBinding(logicalDevice, 2, models.getVerticesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 3, models.getOffsetIndicesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 4, objectPropertiesBuffer);
-    rtDescriptorSet.writeBinding(logicalDevice, 5, models.getNormalsBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 6, models.getOffsetNormalsIndicesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 7, instances.getEmissiveMetadataBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 8, instances.getCdfTrianglesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());
-
-    blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    blurXDescriptorSet.writeBinding(logicalDevice, 1, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-
-    blurYDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    blurYDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-
-    combineDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    combineDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    combineDescriptorSet.writeBinding(logicalDevice, 2, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 1, postprocessingOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-
-    rasterizationDescriptorSet.writeBinding(logicalDevice, 0, postprocessingOutputImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);
-
-
-    reina::tools::Clock clock;
-    while (!renderWindow.shouldClose()) {
-        // camera
-        camera.processInput(renderWindow, clock.getTimeDelta());
-        if (camera.hasChanged()) {
-            camera.refresh();
-            PushConstantsStruct& pushConstantsStruct = pushConstants.getPushConstants();
-            pushConstantsStruct.invView = camera.getInverseView();
-            pushConstantsStruct.invProjection = camera.getInverseProjection();
-            pushConstantsStruct.sampleBatch = 0;  // reset the image
-        }
-
-        // clock
-        bool firstFrame = clock.getFrameCount() == 0;
-
-        if (!firstFrame) {
-            std::cout << clock.summary() << "\n";
-        }
-
-        clock.markCategory("Ray Tracing");
-
-        // render ray traced image
-        commandBuffer.wait(logicalDevice);
-        commandBuffer.begin();
-
-        rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-
-        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipeline);
-        rtDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipelineLayout);
-
-        pushConstants.push(cmdBufferHandle, rtPipeline.pipelineLayout);
-        pushConstants.getPushConstants().sampleBatch++;
-
-        // todo: there's no reason for the shader stage regions to be in the loop
-        // todo: shader stage regions should be where you define the shader stages
-        VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
-        VkDeviceAddress sbtStartAddress = sbtBuffer.getDeviceAddress(logicalDevice);
-
-        sbtRayGenRegion.deviceAddress = sbtStartAddress;
-        sbtRayGenRegion.stride = sbtSpacing.stride;
-        sbtRayGenRegion.size = sbtSpacing.stride;
-
-        sbtMissRegion = sbtRayGenRegion;
-        sbtMissRegion.deviceAddress = sbtStartAddress + sbtSpacing.stride;
-        sbtMissRegion.size = sbtSpacing.stride * 2;
-
-        sbtHitRegion = sbtRayGenRegion;
-        sbtHitRegion.deviceAddress = sbtStartAddress + 3 * sbtSpacing.stride;
-        sbtHitRegion.size = sbtSpacing.stride * (shaders.size() - 3);  // assuming shaders vector includes 3 non-rchit shaders
-
-        sbtCallableRegion = sbtRayGenRegion;
-        sbtCallableRegion.size = 0;
-
-        auto vkCmdTraceRaysKHR = reinterpret_cast<PFN_vkCmdTraceRaysKHR>(
-                vkGetDeviceProcAddr(logicalDevice, "vkCmdTraceRaysKHR"));
-
-        if (!vkCmdTraceRaysKHR) {
-            throw std::runtime_error("Failed to load vkCmdTraceRaysKHR");
-        }
-
-        vkCmdTraceRaysKHR(
-                cmdBufferHandle,
-                &sbtRayGenRegion,
-                &sbtMissRegion,
-                &sbtHitRegion,
-                &sbtCallableRegion,
-                renderWidth,
-                renderHeight,
-                1
-        );
-
-
-        clock.markCategory("Bloom");
-
-        const int workgroupWidth = 32;
-        const int workgroupHeight = 8;
-
-        rtImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        blurXDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipelineLayout);
-        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipeline);
-        vkCmdDispatch(
-                cmdBufferHandle,
-                (renderWidth + workgroupWidth - 1) / workgroupWidth,
-                (renderHeight + workgroupHeight - 1) / workgroupHeight,
-                1
-        );
-
-        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        pongImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        blurYDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipelineLayout);
-        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipeline);
-        vkCmdDispatch(
-                cmdBufferHandle,
-                (renderWidth + workgroupWidth - 1) / workgroupWidth,
-                (renderHeight + workgroupHeight - 1) / workgroupHeight,
-                1
-        );
-
-        pongImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        combineDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipelineLayout);
-        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipeline);
-        vkCmdDispatch(
-                cmdBufferHandle,
-                (renderWidth + workgroupWidth - 1) / workgroupWidth,
-                (renderHeight + workgroupHeight - 1) / workgroupHeight,
-                1
-        );
-
-        clock.markCategory("Tone Mapping");
-
-        pingImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        // apply postprocessing
-        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        postprocessingDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
-        vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
-        vkCmdDispatch(
-                cmdBufferHandle,
-                (renderWidth + workgroupWidth - 1) / workgroupWidth,
-                (renderHeight + workgroupHeight - 1) / workgroupHeight,
-                1
-        );
-
-        // save
-        clock.markCategory("Save");
-
-        uint32_t samples = clock.getSampleCount();
-//        if (samples == 1024) {
-        if (false) {
-            save(logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
-        }
-
-        // render
-        clock.markCategory("Display");
-
-        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-        uint32_t imageIndex = -1;
-        if (!renderWindow.isMinimized()) {
-            VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchainObjects.swapchain, UINT64_MAX, syncObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-                throw std::runtime_error("Swapchain is either out of date or suboptimal");
-            } else if (result != VK_SUCCESS) {
-                throw std::runtime_error("Failed to acquire swapchain image");
-            }
-
-            VkClearValue clearColor = {{0, 0, 0, 1}};
-
-            VkRenderPassBeginInfo renderPassBeginInfo{
-                    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                    .renderPass = renderPass,
-                    .framebuffer = framebuffers[imageIndex],
-                    .renderArea = {
-                            .offset = {0, 0},
-                            .extent = swapchainObjects.swapchainExtent
-                    },
-                    .clearValueCount = 1,
-                    .pClearValues = &clearColor
-            };
-
-            vkCmdBeginRenderPass(cmdBufferHandle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            rasterizationDescriptorSet.bind(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipelineLayout);
-
-            vkCmdBindPipeline(cmdBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipeline);
-
-            VkViewport viewport{
-                    .x = 0,
-                    .y = 0,
-                    .width = static_cast<float>(swapchainObjects.swapchainExtent.width),
-                    .height = static_cast<float>(swapchainObjects.swapchainExtent.height),
-                    .minDepth = 0,
-                    .maxDepth = 1
-            };
-            vkCmdSetViewport(cmdBufferHandle, 0, 1, &viewport);
-
-            VkRect2D scissor{
-                    .offset = {0, 0},
-                    .extent = swapchainObjects.swapchainExtent
-            };
-
-            vkCmdSetScissor(cmdBufferHandle, 0, 1, &scissor);
-            vkCmdDraw(cmdBufferHandle, 6, 1, 0, 0);
-            vkCmdEndRenderPass(cmdBufferHandle);
-        }
-
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-
-        VkSubmitInfo submitInfo{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .waitSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
-                .pWaitSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.imageAvailableSemaphore,
-                .pWaitDstStageMask = waitStages,
-                .signalSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
-                .pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.renderFinishedSemaphore
-        };
-
-        commandBuffer.endSubmit(logicalDevice, graphicsQueue, submitInfo);
-
-        // Present the swapchain image
-        if (!renderWindow.isMinimized()) {
-            VkPresentInfoKHR presentInfo{};
-            presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-            presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores = &syncObjects.renderFinishedSemaphore;
-
-            presentInfo.swapchainCount = 1;
-            presentInfo.pSwapchains = &swapchainObjects.swapchain;
-            presentInfo.pImageIndices = &imageIndex;
-
-            vkQueuePresentKHR(presentQueue, &presentInfo);
-        }
-
-        clock.markFrame();
-        glfwPollEvents();
-    }
-
-    vkDeviceWaitIdle(logicalDevice);
 }

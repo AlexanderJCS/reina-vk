@@ -19,6 +19,13 @@ public:
     ~Reina();
 
 private:
+    void writeCmdBuffers();
+    void traceRays();
+    void applyBloom();
+    void applyTonemapping();
+    void draw(uint32_t& imageIndex);
+    void present(uint32_t imageIndex);
+
     uint32_t renderWidth, renderHeight;
     int windowWidth, windowHeight;
     VkQueue graphicsQueue;
@@ -41,7 +48,7 @@ private:
     reina::graphics::Image rtImage;
     reina::graphics::Instances instances;
     reina::core::Buffer stagingBuffer;
-    reina::core::CmdBuffer commandBuffer;
+    reina::core::CmdBuffer cmdBuffer;
     reina::core::DescriptorSet rtDescriptorSet;
     reina::core::DescriptorSet postprocessingDescriptorSet;
     reina::core::DescriptorSet rasterizationDescriptorSet;
