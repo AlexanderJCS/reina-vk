@@ -1,0 +1,19 @@
+[scene]
+scene_filepath = "../scenes/scene.fbx"  # todo: implement fbx loading
+
+[sampling]
+samples_per_pixel = 32
+max_bounces = 8
+
+[saving]
+save_on_samples = [100, 1000, 10000, 100000, 1000000]  # list of integers, integer, or null
+save_on_time = 60.0  # float, list of floats, or null. unit: seconds
+
+[postprocessing]
+[postprocessing.bloom]
+radius = 6.0  # percent width of the image. standard deviation of gaussian blur
+threshold = 1  # threshold at which to apply bloom
+intensity = 0.025  # [0, 1], but recommended to be less than 0.05
+
+[postprocessing.tonemap]
+exposure = 1.0  # exposure value todo: implement this
