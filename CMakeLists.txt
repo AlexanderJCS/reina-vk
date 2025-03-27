@@ -71,7 +71,8 @@ add_executable(reina_vk src/main.cpp
         src/Reina.cpp
         src/Reina.h
         src/tools/SaveManager.cpp
-        src/tools/SaveManager.h)
+        src/tools/SaveManager.h
+        polyglot/bloom.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 

@@ -1,9 +1,11 @@
 layout(binding = 0, rgba32f) readonly uniform image2D inImage;
 layout(binding = 1, rgba32f) writeonly uniform image2D outImage;
 
-const float RADIUS = 12.0;  // 6.0% of the screen width
-const float LUMINOSITY_THRESHOLD = 2;
-const float M_PI = 3.14159265;
+#include "../../../polyglot/bloom.h"
+
+layout (push_constant) uniform PushConsts {
+    BloomPushConsts pushConstants;
+};
 
 float gauss(float x, float sigma) {
     // non-normalized Gaussian distribution
@@ -18,14 +20,14 @@ void blurAxis(ivec2 axis, bool applyThreshold) {
         return;
     }
 
-    const float radiusPx = (axis.x == 1 ? imageSize.x : imageSize.y) * RADIUS / 100.0;
+    const float radiusPx = (axis.x == 1 ? imageSize.x : imageSize.y) * pushConstants.radius / 100.0;
     const int kernelSize = int(radiusPx * 3 + 0.5);
 
     vec3 color = vec3(0);
 
     float weightSum = 0;
     for (int i = -kernelSize; i <= kernelSize; i++) {
-        float weight = gauss(float(i), RADIUS);
+        float weight = gauss(float(i), pushConstants.radius);
         weightSum += weight;
 
         ivec2 coord = pixelCoord + i * axis;
@@ -37,7 +39,7 @@ void blurAxis(ivec2 axis, bool applyThreshold) {
         float luminosity = dot(pixel.rgb, vec3(0.299, 0.587, 0.114));
 
         // If threshold is enabled and the pixel is below threshold, skip it entirely.
-        if (applyThreshold && luminosity < LUMINOSITY_THRESHOLD) {
+        if (applyThreshold && luminosity < pushConstants.threshold) {
             continue;
         }
 

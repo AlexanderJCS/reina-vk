@@ -17,9 +17,9 @@ namespace reina::core {
             }
 
             pushConstantRange = {
-                    .stageFlags = stageFlags,
-                    .offset = 0,
-                    .size = sizeof(T)
+                .stageFlags = stageFlags,
+                .offset = 0,
+                .size = sizeof(T)
             };
         }
 

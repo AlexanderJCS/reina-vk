@@ -95,6 +95,37 @@ namespace vktools {
         }
     }
 
+    template <typename T>
+    PipelineInfo createComputePipeline(VkDevice logicalDevice, const::reina::core::DescriptorSet& descriptorSet, const reina::graphics::Shader& shader, const reina::core::PushConstants<T>& pushConstants) {
+        VkDescriptorSetLayout descriptorLayout = descriptorSet.getLayout();
+        VkPushConstantRange range = pushConstants.getRange();
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                .setLayoutCount = 1,
+                .pSetLayouts = &descriptorLayout,
+                .pushConstantRangeCount = 1,
+                .pPushConstantRanges = &range
+        };
+
+        VkPipelineLayout pipelineLayout;
+        if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create pipeline layout");
+        }
+
+        VkComputePipelineCreateInfo pipelineCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                .stage = shader.pipelineShaderStageCreateInfo(),
+                .layout = pipelineLayout
+        };
+
+        VkPipeline computePipeline;
+        if (vkCreateComputePipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &computePipeline) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create compute pipeline");
+        }
+
+        return {computePipeline, pipelineLayout};
+    }
+
     PipelineInfo createComputePipeline(VkDevice logicalDevice, const::reina::core::DescriptorSet& descriptorSet, const reina::graphics::Shader& shader);
 
     std::vector<VkFramebuffer> createSwapchainFramebuffers(VkDevice logicalDevice, VkRenderPass renderPass, VkExtent2D extent, const std::vector<VkImageView>& swapchainImageViews);
@@ -108,7 +139,6 @@ namespace vktools {
     PipelineInfo createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants<RtPushConsts>& pushConstants);
 
     VkSampler createSampler(VkDevice logicalDevice);
-    VkImageView createImageView(VkDevice logicalDevice, VkImage image, VkFormat imageFormat);
 
     VkCommandPool createCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface);
     std::vector<VkImageView> createSwapchainImageViews(VkDevice logicalDevice, VkFormat swapchainImageFormat, std::vector<VkImage> swapchainImages);

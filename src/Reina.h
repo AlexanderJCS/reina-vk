@@ -13,6 +13,9 @@
 #include "graphics/Camera.h"
 #include "tools/SaveManager.h"
 
+#include "../polyglot/common.h"
+#include "../polyglot/bloom.h"
+
 class Reina {
 public:
     Reina();
@@ -33,7 +36,8 @@ private:
     VkQueue presentQueue;
     std::vector<reina::graphics::Shader> shaders;
     vktools::SbtSpacing sbtSpacing;
-    reina::core::PushConstants<RtPushConsts> pushConstants;
+    reina::core::PushConstants<RtPushConsts> rtPushConsts;
+    reina::core::PushConstants<BloomPushConsts> bloomPushConsts;
     reina::graphics::Camera camera;
     reina::window::Window renderWindow;
     VkInstance instance;

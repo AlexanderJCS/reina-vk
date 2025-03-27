@@ -798,30 +798,6 @@ VkSampler vktools::createSampler(VkDevice logicalDevice) {
     return sampler;
 }
 
-VkImageView vktools::createImageView(VkDevice logicalDevice, VkImage image, VkFormat imageFormat) {
-    VkImageViewCreateInfo imageViewCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = imageFormat,  // must match format of the image
-            // swizzle identity by default
-            .subresourceRange = {
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-            }
-    };
-
-    VkImageView imageView;
-    if (vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create image view");
-    }
-
-    return imageView;
-}
-
 VkCommandPool vktools::createCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface) {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(surface, physicalDevice);
 

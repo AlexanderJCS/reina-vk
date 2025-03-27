@@ -107,7 +107,7 @@ Reina::Reina() {
             .samplesPerPixel = config.at_path("sampling.samples_per_pixel").value<uint32_t>().value(),
             .maxBounces = config.at_path("sampling.max_bounces").value<uint32_t>().value()
     };
-    pushConstants = reina::core::PushConstants{defaultPushConstants, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+    rtPushConsts = reina::core::PushConstants{defaultPushConstants, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     shaders = {
@@ -119,7 +119,7 @@ Reina::Reina() {
             reina::graphics::Shader(logicalDevice, "../shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
-    rtPipeline = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, pushConstants);
+    rtPipeline = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, rtPushConsts);
     sbtBuffer = vktools::createSbt(logicalDevice, physicalDevice, rtPipeline.pipeline, sbtSpacing, shaders.size());
 
     for (reina::graphics::Shader& shader : shaders) {
@@ -222,6 +222,15 @@ Reina::Reina() {
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     };
 
+    bloomPushConsts = reina::core::PushConstants{
+        BloomPushConsts{
+            config.at_path("postprocessing.bloom.radius").value<float>().value(),
+            config.at_path("postprocessing.bloom.threshold").value<float>().value(),
+            config.at_path("postprocessing.bloom.intensity").value<float>().value(),
+        },
+        VK_SHADER_STAGE_COMPUTE_BIT
+    };
+
     blurXDescriptorSet = reina::core::DescriptorSet{
         logicalDevice, {
             reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},
@@ -233,7 +242,7 @@ Reina::Reina() {
             logicalDevice, "../shaders/postprocessing/bloom/blurX.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
             );
 
-    blurXPipeline = vktools::createComputePipeline(logicalDevice, blurXDescriptorSet, blurXShader);
+    blurXPipeline = vktools::createComputePipeline(logicalDevice, blurXDescriptorSet, blurXShader, bloomPushConsts);
 
     blurYDescriptorSet = reina::core::DescriptorSet{
             logicalDevice, {
@@ -246,7 +255,7 @@ Reina::Reina() {
             logicalDevice, "../shaders/postprocessing/bloom/blurY.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
     );
 
-    blurYPipeline = vktools::createComputePipeline(logicalDevice, blurYDescriptorSet, blurYShader);
+    blurYPipeline = vktools::createComputePipeline(logicalDevice, blurYDescriptorSet, blurYShader, bloomPushConsts);
 
     combineShader = reina::graphics::Shader(
             logicalDevice, "../shaders/postprocessing/bloom/combine.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
@@ -260,7 +269,7 @@ Reina::Reina() {
         }
     };
 
-    combinePipeline = vktools::createComputePipeline(logicalDevice, combineDescriptorSet, combineShader);
+    combinePipeline = vktools::createComputePipeline(logicalDevice, combineDescriptorSet, combineShader, bloomPushConsts);
 
     saveManager = reina::tools::SaveManager{config};
 
@@ -277,7 +286,7 @@ void Reina::renderLoop() {
         camera.processInput(renderWindow, clock.getTimeDelta());
         if (camera.hasChanged()) {
             camera.refresh();
-            RtPushConsts& pushConstantsStruct = pushConstants.getPushConstants();
+            RtPushConsts& pushConstantsStruct = rtPushConsts.getPushConstants();
             pushConstantsStruct.invView = camera.getInverseView();
             pushConstantsStruct.invProjection = camera.getInverseProjection();
             pushConstantsStruct.sampleBatch = 0;  // reset the image
@@ -385,8 +394,8 @@ void Reina::traceRays() {
     vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipeline);
     rtDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline.pipelineLayout);
 
-    pushConstants.push(cmdBuffer.getHandle(), rtPipeline.pipelineLayout);
-    pushConstants.getPushConstants().sampleBatch++;
+    rtPushConsts.push(cmdBuffer.getHandle(), rtPipeline.pipelineLayout);
+    rtPushConsts.getPushConstants().sampleBatch++;
 
     // todo: there's no reason for the shader stage regions to be in the loop. this should be defined in createRtPipeline
     VkStridedDeviceAddressRegionKHR sbtRayGenRegion, sbtMissRegion, sbtHitRegion, sbtCallableRegion;
@@ -434,6 +443,8 @@ void Reina::applyBloom() {
     pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
     blurXDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipelineLayout);
+    bloomPushConsts.push(cmdBuffer.getHandle(), blurXPipeline.pipelineLayout);
+
     vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurXPipeline.pipeline);
     vkCmdDispatch(
             cmdBuffer.getHandle(),
@@ -446,6 +457,8 @@ void Reina::applyBloom() {
     pongImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
     blurYDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipelineLayout);
+    bloomPushConsts.push(cmdBuffer.getHandle(), blurYPipeline.pipelineLayout);
+
     vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, blurYPipeline.pipeline);
     vkCmdDispatch(
             cmdBuffer.getHandle(),
@@ -458,6 +471,8 @@ void Reina::applyBloom() {
     pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
     combineDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipelineLayout);
+    bloomPushConsts.push(cmdBuffer.getHandle(), combinePipeline.pipelineLayout);
+
     vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, combinePipeline.pipeline);
     vkCmdDispatch(
             cmdBuffer.getHandle(),
