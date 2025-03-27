@@ -33,7 +33,7 @@ private:
     VkQueue presentQueue;
     std::vector<reina::graphics::Shader> shaders;
     vktools::SbtSpacing sbtSpacing;
-    reina::core::PushConstants<PushConstantsStruct> pushConstants;
+    reina::core::PushConstants<RtPushConsts> pushConstants;
     reina::graphics::Camera camera;
     reina::window::Window renderWindow;
     VkInstance instance;

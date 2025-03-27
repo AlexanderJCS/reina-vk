@@ -686,7 +686,7 @@ reina::core::Buffer vktools::createSbt(VkDevice logicalDevice, VkPhysicalDevice 
     return sbtBuffer;
 }
 
-vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants<PushConstantsStruct>& pushConstants) {
+vktools::PipelineInfo vktools::createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants<RtPushConsts>& pushConstants) {
     if (shaders.size() < 2) {
         throw std::runtime_error("Must have minimally two shaders: raygen (index 0) and ray miss (index 1). Any following shaders are hit shaders");
     }

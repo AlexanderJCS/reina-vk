@@ -14,7 +14,7 @@
 // define this to show normals on non-dielectric surfaces
 //#define DEBUG_SHOW_NORMALS
 
-struct PushConstantsStruct {
+struct RtPushConsts {
     mat4 invView;
     mat4 invProjection;
     uint sampleBatch;

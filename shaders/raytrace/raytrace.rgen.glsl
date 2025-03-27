@@ -17,7 +17,7 @@ layout(binding = 0, set = 0, rgba32f) uniform image2D storageImage;
 layout(location = 0) rayPayloadEXT HitPayload pld;
 
 layout (push_constant) uniform PushConsts {
-    PushConstantsStruct pushConstants;
+    RtPushConsts pushConstants;
 };
 
 struct Ray {
