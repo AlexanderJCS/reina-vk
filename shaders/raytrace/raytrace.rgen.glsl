@@ -63,10 +63,9 @@ vec3 traceSegments(Ray ray) {
     vec3 accumulatedRayColor = vec3(1.0);
     vec3 incomingLight = vec3(0.0);
 
-    // BOUNCES_PER_SAMPLE defined in common.h
     bool firstBounce = true;
     bool prevSkip = false;
-    for (int tracedSegments = 0; tracedSegments < BOUNCES_PER_SAMPLE; tracedSegments++) {
+    for (int tracedSegments = 0; tracedSegments < pushConstants.maxBounces; tracedSegments++) {
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
             gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
@@ -114,7 +113,7 @@ vec3 traceSegments(Ray ray) {
                 if (firstBounce || prevSkip) {
                     weightDirect = 1.0;
                     weightIndirect = 1.0;
-                } else if (tracedSegments + 1 == BOUNCES_PER_SAMPLE) {  // last bounce
+                } else if (tracedSegments + 1 == pushConstants.maxBounces) {  // last bounce
                     weightDirect = 0.0;
                     weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
                 } else {
@@ -181,8 +180,7 @@ void main() {
     int actualSamples = 0;
     vec3 summedPixelColor = vec3(0.0);
 
-    // SAMPLES_PER_PIXEL defined in common.h polyglot file
-    for (int sampleIdx = 0; sampleIdx < SAMPLES_PER_PIXEL; sampleIdx++) {
+    for (int sampleIdx = 0; sampleIdx < pushConstants.samplesPerPixel; sampleIdx++) {
         Ray startingRay = getStartingRay(vec2(pixel), vec2(resolution), pushConstants.invView, pushConstants.invProjection);
         vec3 color = clamp(traceSegments(startingRay), vec3(0), vec3(pushConstants.directClamp));
 

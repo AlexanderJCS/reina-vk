@@ -95,7 +95,18 @@ Reina::Reina() {
     glm::vec3 pos = glm::vec3(0, 1.3f, 8.4f);
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     camera = reina::graphics::Camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
-    pushConstants = reina::core::PushConstants{PushConstantsStruct{camera.getInverseView(), camera.getInverseProjection(), 0, 100, 10}, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
+
+
+    PushConstantsStruct defaultPushConstants = {
+            .invView = camera.getInverseView(),
+            .invProjection = camera.getInverseProjection(),
+            .sampleBatch = 0,
+            .directClamp = 100,
+            .indirectClamp = 10,
+            .samplesPerPixel = 32,
+            .maxBounces = 12
+    };
+    pushConstants = reina::core::PushConstants{defaultPushConstants, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
     sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     shaders = {
@@ -257,7 +268,7 @@ Reina::Reina() {
 void Reina::renderLoop() {
     VkCommandBuffer cmdBufferHandle = cmdBuffer.getHandle();
 
-    reina::tools::Clock clock;
+    reina::tools::Clock clock{32};
     while (!renderWindow.shouldClose()) {
         // camera
         camera.processInput(renderWindow, clock.getTimeDelta());

@@ -9,9 +9,9 @@ reina::core::PushConstants::PushConstants(const PushConstantsStruct& defaultValu
     }
 
     pushConstantRange = {
-            .stageFlags = stageFlags,
-            .offset = 0,
-            .size = sizeof(PushConstantsStruct)
+        .stageFlags = stageFlags,
+        .offset = 0,
+        .size = sizeof(PushConstantsStruct)
     };
 }
 

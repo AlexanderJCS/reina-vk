@@ -21,7 +21,7 @@ namespace reina::tools {
      */
     class Clock {
     public:
-        Clock();
+        explicit Clock(uint32_t spp);
 
         [[nodiscard]] static double getTime();
         [[nodiscard]] double getTimeFromCreation() const;
@@ -39,6 +39,7 @@ namespace reina::tools {
 
         std::string summary();
     private:
+        uint32_t samplesPerPixel;
         double creationTime;
         double secondToLastFrameTime = 0;
         double lastFrameTime = 0;
