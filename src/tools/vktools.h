@@ -105,7 +105,7 @@ namespace vktools {
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     reina::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, uint32_t shaderGroups);
-    PipelineInfo createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants& pushConstants);
+    PipelineInfo createRtPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, const std::vector<reina::graphics::Shader>& shaders, const reina::core::PushConstants<PushConstantsStruct>& pushConstants);
 
     VkSampler createSampler(VkDevice logicalDevice);
     VkImageView createImageView(VkDevice logicalDevice, VkImage image, VkFormat imageFormat);

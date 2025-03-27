@@ -47,7 +47,6 @@ add_executable(reina_vk src/main.cpp
         src/core/DescriptorSet.cpp
         src/core/DescriptorSet.h
         polyglot/common.h
-        src/core/PushConstants.cpp
         src/core/PushConstants.h
         src/core/Buffer.cpp
         src/core/Buffer.h
