@@ -70,7 +70,9 @@ add_executable(reina_vk src/main.cpp
         src/graphics/Instances.cpp
         src/graphics/Instances.h
         src/Reina.cpp
-        src/Reina.h)
+        src/Reina.h
+        src/tools/SaveManager.cpp
+        src/tools/SaveManager.h)
 
 target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 

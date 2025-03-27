@@ -15,7 +15,7 @@
 #include <toml.hpp>
 
 
-void save(VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, reina::graphics::Image& img, reina::core::Buffer& stagingBuffer, uint32_t width, uint32_t height) {
+void save(const std::string& filename, VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, reina::graphics::Image& img, reina::core::Buffer& stagingBuffer, uint32_t width, uint32_t height) {
     reina::core::CmdBuffer saveCmdBuffer{logicalDevice, cmdPool, false};
 
     img.transition(saveCmdBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -24,9 +24,8 @@ void save(VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, 
 
     std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice);
 
-    std::string filename = "../output.png";
     int success = stbi_write_png(
-            filename.c_str(),
+            ("../" + filename).c_str(),
             static_cast<int>(width),
             static_cast<int>(height),
             4,
@@ -263,6 +262,8 @@ Reina::Reina() {
 
     combinePipeline = vktools::createComputePipeline(logicalDevice, combineDescriptorSet, combineShader);
 
+    saveManager = reina::tools::SaveManager{config};
+
     writeCmdBuffers();
 }
 
@@ -309,9 +310,10 @@ void Reina::renderLoop() {
         clock.markCategory("Save");
 
         uint32_t samples = clock.getSampleCount();
-//        if (samples == 1024) {
-        if (false) {
-            save(logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
+
+        reina::tools::SaveInfo saveInfo = saveManager.shouldSave(samples, clock.getAge());
+        if (saveInfo.shouldSave) {
+            save(saveInfo.filename, logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
         }
 
         // render

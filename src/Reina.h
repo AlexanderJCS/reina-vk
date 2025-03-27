@@ -11,6 +11,7 @@
 #include "core/CmdBuffer.h"
 #include "window/Window.h"
 #include "graphics/Camera.h"
+#include "tools/SaveManager.h"
 
 class Reina {
 public:
@@ -80,6 +81,8 @@ private:
     vktools::SwapchainObjects swapchainObjects;
     std::optional<VkDebugUtilsMessengerEXT> debugMessenger;
     VkSurfaceKHR surface;
+
+    reina::tools::SaveManager saveManager;
 };
 
 

@@ -20,7 +20,7 @@ double reina::tools::Clock::getTime() {
     return glfwGetTime();
 }
 
-double reina::tools::Clock::getTimeFromCreation() const {
+double reina::tools::Clock::getAge() const {
     return getTime() - creationTime;
 }
 
@@ -57,7 +57,7 @@ void reina::tools::Clock::markCategory(const std::string& category) {
 
 std::string reina::tools::Clock::summary() {
     std::ostringstream oss;
-    oss << "Timer age: " << getTimeFromCreation() << "s\n";
+    oss << "Timer age: " << getAge() << "s\n";
     oss << "Samples: " << getSampleCount() << "\n";
     oss << "Average frame time: " << frameTime.averageTime * 1000 << "ms\n";
     oss << "Average time per spp: " << frameTime.averageTime * 1000 / samplesPerPixel << "ms\n";

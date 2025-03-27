@@ -24,7 +24,7 @@ namespace reina::tools {
         explicit Clock(uint32_t spp);
 
         [[nodiscard]] static double getTime();
-        [[nodiscard]] double getTimeFromCreation() const;
+        [[nodiscard]] double getAge() const;
 
         void markFrame();
         void markCategory(const std::string& category);
