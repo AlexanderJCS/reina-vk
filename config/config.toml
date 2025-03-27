@@ -5,6 +5,9 @@ scene_filepath = "../scenes/scene.fbx"  # todo: implement fbx loading
 samples_per_pixel = 32
 max_bounces = 8
 
+direct_clamp = 100
+indirect_clamp = 10
+
 [saving]
 save_on_samples = [100, 1000, 10000, 100000, 1000000]  # list of integers, integer, or null
 save_on_time = 60.0  # float, list of floats, or null. unit: seconds

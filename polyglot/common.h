@@ -18,8 +18,8 @@ struct PushConstantsStruct {
     mat4 invView;
     mat4 invProjection;
     uint sampleBatch;
-    uint directClamp;
-    uint indirectClamp;
+    float directClamp;
+    float indirectClamp;
     uint samplesPerPixel;
     uint maxBounces;
 };

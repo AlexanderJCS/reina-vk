@@ -29,6 +29,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tinyobjloader)
 
+FetchContent_Declare(
+        tomlplusplus
+        GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+        GIT_TAG        v3.4.0
+)
+FetchContent_MakeAvailable(tomlplusplus)
+
 add_executable(reina_vk src/main.cpp
         src/tools/consts.h
         src/tools/vktools.cpp
@@ -70,3 +77,4 @@ target_link_libraries(reina_vk Vulkan::Vulkan glfw)
 target_include_directories(reina_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_include_directories(reina_vk PRIVATE ${stb_SOURCE_DIR})
 target_include_directories(reina_vk PRIVATE ${tinyobjloader_SOURCE_DIR})
+target_include_directories(reina_vk PRIVATE ${tomlplusplus_SOURCE_DIR})

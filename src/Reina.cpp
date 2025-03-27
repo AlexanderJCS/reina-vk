@@ -12,6 +12,7 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#include <toml.hpp>
 
 
 void save(VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, reina::graphics::Image& img, reina::core::Buffer& stagingBuffer, uint32_t width, uint32_t height) {
@@ -47,6 +48,8 @@ void save(VkDevice logicalDevice, VkQueue graphicsQueue, VkCommandPool cmdPool, 
 
 
 Reina::Reina() {
+    auto config = toml::parse_file("../config/config.toml");
+
     // init
     renderWidth = 1080;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
     renderHeight = 1350;
@@ -96,15 +99,14 @@ Reina::Reina() {
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     camera = reina::graphics::Camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
 
-
     PushConstantsStruct defaultPushConstants = {
             .invView = camera.getInverseView(),
             .invProjection = camera.getInverseProjection(),
             .sampleBatch = 0,
-            .directClamp = 100,
-            .indirectClamp = 10,
-            .samplesPerPixel = 32,
-            .maxBounces = 12
+            .directClamp = config.at_path("sampling.direct_clamp").value<float>().value(),
+            .indirectClamp = config.at_path("sampling.indirect_clamp").value<float>().value(),
+            .samplesPerPixel = config.at_path("sampling.samples_per_pixel").value<uint32_t>().value(),
+            .maxBounces = config.at_path("sampling.max_bounces").value<uint32_t>().value()
     };
     pushConstants = reina::core::PushConstants{defaultPushConstants, VK_SHADER_STAGE_RAYGEN_BIT_KHR};
 
