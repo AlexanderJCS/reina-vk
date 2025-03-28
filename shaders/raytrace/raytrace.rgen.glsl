@@ -136,27 +136,48 @@ vec3 traceSegments(Ray ray) {
     return incomingLight;
 }
 
+vec2 randomInUnitDisk(uint rngState) {
+    vec2 p;
+    do {
+        p = 2.0 * vec2(random(rngState), random(rngState)) - 1.0;
+    } while (dot(p, p) >= 1.0);
+    return p;
+}
+
+vec2 randomInUnitHexagon(uint rngState) {
+    vec2 p;
+    const float sqrt3 = 1.73205080757;  // approximate value of sqrt(3)
+    do {
+        // Generate x in [-1, 1]
+        p.x = 2.0 * random(rngState) - 1.0;
+        // Generate y in [-sqrt3/2, sqrt3/2]
+        p.y = (random(rngState) - 0.5) * sqrt3;
+    } while (abs(p.y) > (sqrt3 * 0.5) || (sqrt3 * abs(p.x) + abs(p.y)) > sqrt3);
+    return p;
+}
+
 Ray getStartingRay(
     vec2 pixel,
     vec2 resolution,
     mat4 invView,
     mat4 invProjection
 ) {
-    // Random pixel center for antialiasing
-    vec2 randomPixelCenter = pixel + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);
+    const float focusDist = 2;
+    const float dofMultiplier = 0.01;
+
+    vec2 randomPixelCenter = pixel + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);  // For antialiasing
 
     vec2 ndc = vec2(
         (randomPixelCenter.x / resolution.x) * 2.0 - 1.0,
-        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down
+        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down.
     );
 
     vec4 clipPos = vec4(ndc, -1.0, 1.0);
 
-    // Unproject from clip space to view (camera) space using the inverse projection matrix.
+    // Unproject from clip space to view space using the inverse projection matrix
     vec4 viewPos = vec4(invProjection * clipPos);
-    viewPos /= viewPos.w;  // Perspective divide
+    viewPos /= viewPos.w;  // Perspective divide.
 
-    // Ray direction in view space (camera space origin is at (0,0,0)).
     vec3 viewDir = normalize(viewPos.xyz);
 
     // Transform the view-space direction to world space using the inverse view matrix.
@@ -164,8 +185,23 @@ Ray getStartingRay(
     vec4 worldDir4 = vec4(invView * vec4(viewDir, 0.0));
     vec3 rayDirection = normalize(worldDir4.xyz);
 
-    return Ray(invView[3].xyz, rayDirection);
+    vec3 origin = invView[3].xyz;
+    vec3 focalPoint = origin + rayDirection * focusDist;
+    vec2 lensOffset = randomInUnitHexagon(pld.rngState) * dofMultiplier;
+
+    vec3 right = normalize(invView[0].xyz);
+    vec3 up = normalize(invView[1].xyz);
+
+    // Offset the origin by the lens offset.
+    vec3 offset = right * lensOffset.x + up * lensOffset.y;
+    vec3 newOrigin = origin + offset;
+
+    // Recompute the ray direction so that the ray goes through the focal point.
+    vec3 newDirection = normalize(focalPoint - newOrigin);
+
+    return Ray(newOrigin, newDirection);
 }
+
 
 void main() {
     const ivec2 resolution = imageSize(storageImage);
