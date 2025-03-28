@@ -9,7 +9,7 @@
 namespace reina::graphics {
     class Instance {
     public:
-        Instance(const Blas& blas, bool emissive, ModelRange modelRange, const ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform = glm::mat4x4(1.0f));
+        Instance(const Blas& blas, glm::vec3 emission, ModelRange modelRange, const ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform = glm::mat4x4(1.0f));
 
         [[nodiscard]] const Blas& getBlas() const;
         [[nodiscard]] glm::mat4x4 getTransform() const;
@@ -18,6 +18,7 @@ namespace reina::graphics {
         [[nodiscard]] float getArea() const;
         [[nodiscard]] const std::vector<float>& getCDF() const;
         [[nodiscard]] bool isEmissive() const;
+        [[nodiscard]] glm::vec3 getEmission() const;
         [[nodiscard]] ModelRange getModelRange() const;
 
     private:
@@ -30,7 +31,7 @@ namespace reina::graphics {
         glm::mat4x4 transform = glm::mat4x4(1.0f);
         std::vector<float> cdf;
         float area;
-        bool emissive;
+        glm::vec3 emission;
     };
 }
 

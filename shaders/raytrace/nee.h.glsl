@@ -10,7 +10,7 @@ struct InstanceData {
     uint cdfRangeEnd;
     uint indexOffset;
     float area;
-    vec3 padding;
+    vec3 emission;
 };
 
 layout (binding = 7, set = 0, scalar) buffer EmissiveMetadataBuffer {
@@ -109,10 +109,9 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
 
     vec3 point = randomPointOnTriangle(rngState, v0, v1, v2);
     vec3 normal = normalize(cross(v1 - v0, v2 - v0));
-    vec3 emission = vec3(12.25);  // hard-coded for now
 
     float probability = 1 / 0.1786;
-    return RandomEmissivePointOutput(point, normal, emission, probability);
+    return RandomEmissivePointOutput(point, normal, instanceMetadata.emission, probability);
 }
 
 bool shadowRayOccluded(vec3 origin, vec3 direction, float dist) {

@@ -3,11 +3,11 @@
 #include "Models.h"
 
 reina::graphics::Instance::Instance(
-        const reina::graphics::Blas& blas, bool emissive, ModelRange modelRange, const reina::graphics::ObjData& objData,
+        const reina::graphics::Blas& blas, glm::vec3 emission, ModelRange modelRange, const reina::graphics::ObjData& objData,
         uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform)
-        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), emissive(emissive), modelRange(modelRange), area(0) {
+        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission) {
 
-    if (emissive) {
+    if (isEmissive()) {
         computeCDF(objData);
     }
 }
@@ -71,7 +71,7 @@ const std::vector<float> &reina::graphics::Instance::getCDF() const {
 }
 
 bool reina::graphics::Instance::isEmissive() const {
-    return emissive;
+    return glm::dot(emission, emission) > 0.00001f * 0.00001f;
 }
 
 reina::graphics::ModelRange reina::graphics::Instance::getModelRange() const {
@@ -80,4 +80,8 @@ reina::graphics::ModelRange reina::graphics::Instance::getModelRange() const {
 
 float reina::graphics::Instance::getArea() const {
     return area;
+}
+
+glm::vec3 reina::graphics::Instance::getEmission() const {
+    return emission;
 }
