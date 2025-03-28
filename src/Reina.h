@@ -51,22 +51,22 @@ private:
     vktools::AccStructureInfo tlas;
     reina::core::Buffer sbtBuffer;
     reina::core::Buffer objectPropertiesBuffer;
-    reina::graphics::Image postprocessingOutputImage;
+    reina::graphics::Image tonemapOutputImage;
     reina::graphics::Image rtImage;
     reina::graphics::Instances instances;
     reina::core::Buffer stagingBuffer;
     reina::core::CmdBuffer cmdBuffer;
     reina::core::DescriptorSet rtDescriptorSet;
-    reina::core::DescriptorSet postprocessingDescriptorSet;
-    reina::core::DescriptorSet rasterizationDescriptorSet;
-    reina::graphics::Shader postprocessingShader;
+    reina::core::DescriptorSet tonemapDescriptorSet;
+    reina::core::DescriptorSet rasterDescriptorSet;
+    reina::graphics::Shader tonemapShader;
     reina::graphics::Models models;
     vktools::SyncObjects syncObjects;
     VkSampler fragmentImageSampler;
     VkRenderPass renderPass;
     vktools::PipelineInfo rtPipeline;
     vktools::PipelineInfo rasterPipeline;
-    vktools::PipelineInfo postprocessingPipeline;
+    vktools::PipelineInfo tonemapPipeline;
     reina::graphics::Image pingImage;
     reina::graphics::Image pongImage;
 

@@ -126,7 +126,7 @@ Reina::Reina() {
         shader.destroy(logicalDevice);
     }
 
-    postprocessingOutputImage = reina::graphics::Image{
+    tonemapOutputImage = reina::graphics::Image{
             logicalDevice, physicalDevice, renderWidth, renderHeight, VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
@@ -139,17 +139,17 @@ Reina::Reina() {
         VK_SHADER_STAGE_COMPUTE_BIT
     };
 
-    postprocessingDescriptorSet = reina::core::DescriptorSet{
+    tonemapDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
             {
                     reina::core::Binding{0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT},  // input image
                     reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT}   // output image
             }
     };
-    postprocessingShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing/tonemap/postprocessing.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
-    postprocessingPipeline = vktools::createComputePipeline(logicalDevice, postprocessingDescriptorSet, postprocessingShader, tonemapPushConsts);
+    tonemapShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing/tonemap/tonemapping.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+    tonemapPipeline = vktools::createComputePipeline(logicalDevice, tonemapDescriptorSet, tonemapShader, tonemapPushConsts);
 
-    rasterizationDescriptorSet = reina::core::DescriptorSet{
+    rasterDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
             {
                     reina::core::Binding{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT}
@@ -160,7 +160,7 @@ Reina::Reina() {
     reina::graphics::Shader fragmentShader = reina::graphics::Shader(logicalDevice, "../shaders/raster/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     renderPass = vktools::createRenderPass(logicalDevice, swapchainObjects.swapchainImageFormat);
-    rasterPipeline = vktools::createRasterizationPipeline(logicalDevice, rasterizationDescriptorSet, renderPass, vertexShader, fragmentShader);
+    rasterPipeline = vktools::createRasterizationPipeline(logicalDevice, rasterDescriptorSet, renderPass, vertexShader, fragmentShader);
 
     framebuffers = vktools::createSwapchainFramebuffers(logicalDevice, renderPass, swapchainObjects.swapchainExtent, swapchainImageViews);
 
@@ -325,13 +325,13 @@ void Reina::renderLoop() {
 
         reina::tools::SaveInfo saveInfo = saveManager.shouldSave(samples, clock.getAge());
         if (saveInfo.shouldSave) {
-            save(saveInfo.filename, logicalDevice, graphicsQueue, commandPool, postprocessingOutputImage, stagingBuffer, renderWidth, renderHeight);
+            save(saveInfo.filename, logicalDevice, graphicsQueue, commandPool, tonemapOutputImage, stagingBuffer, renderWidth, renderHeight);
         }
 
         // render
         clock.markCategory("Display");
 
-        postprocessingOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+        tonemapOutputImage.transition(cmdBufferHandle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
         uint32_t imageIndex = -1;
         if (!renderWindow.isMinimized()) {
@@ -385,10 +385,10 @@ void Reina::writeCmdBuffers() {
     combineDescriptorSet.writeBinding(logicalDevice, 1, pongImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     combineDescriptorSet.writeBinding(logicalDevice, 2, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    postprocessingDescriptorSet.writeBinding(logicalDevice, 1, postprocessingOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    tonemapDescriptorSet.writeBinding(logicalDevice, 0, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+    tonemapDescriptorSet.writeBinding(logicalDevice, 1, tonemapOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
-    rasterizationDescriptorSet.writeBinding(logicalDevice, 0, postprocessingOutputImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);
+    rasterDescriptorSet.writeBinding(logicalDevice, 0, tonemapOutputImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);
 }
 
 void Reina::traceRays() {
@@ -491,13 +491,12 @@ void Reina::applyTonemapping() {
 
     pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-    // apply postprocessing
-    postprocessingOutputImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    tonemapOutputImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-    postprocessingDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
-    tonemapPushConsts.push(cmdBuffer.getHandle(), postprocessingPipeline.pipelineLayout);
+    tonemapDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, tonemapPipeline.pipelineLayout);
+    tonemapPushConsts.push(cmdBuffer.getHandle(), tonemapPipeline.pipelineLayout);
 
-    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
+    vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, tonemapPipeline.pipeline);
     vkCmdDispatch(
             cmdBuffer.getHandle(),
             (renderWidth + workgroupWidth - 1) / workgroupWidth,
@@ -530,7 +529,7 @@ void Reina::draw(uint32_t& imageIndex) {
     };
 
     vkCmdBeginRenderPass(cmdBuffer.getHandle(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    rasterizationDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipelineLayout);
+    rasterDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipelineLayout);
 
     vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, rasterPipeline.pipeline);
 
@@ -590,7 +589,7 @@ Reina::~Reina() {
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);
-    postprocessingOutputImage.destroy(logicalDevice);
+    tonemapOutputImage.destroy(logicalDevice);
     rtImage.destroy(logicalDevice);
     instances.destroy(logicalDevice);
 
@@ -601,21 +600,21 @@ Reina::~Reina() {
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
     vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);
-    postprocessingDescriptorSet.destroy(logicalDevice);
-    postprocessingShader.destroy(logicalDevice);
-    rasterizationDescriptorSet.destroy(logicalDevice);
+    tonemapDescriptorSet.destroy(logicalDevice);
+    tonemapShader.destroy(logicalDevice);
+    rasterDescriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
     models.destroy(logicalDevice);
     vkDestroyPipeline(logicalDevice, rtPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, rasterPipeline.pipeline, nullptr);
-    vkDestroyPipeline(logicalDevice, postprocessingPipeline.pipeline, nullptr);
+    vkDestroyPipeline(logicalDevice, tonemapPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, blurXPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, blurYPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, combinePipeline.pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rtPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, rasterPipeline.pipelineLayout, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, postprocessingPipeline.pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, tonemapPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, blurXPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, blurYPipeline.pipelineLayout, nullptr);
     vkDestroyPipelineLayout(logicalDevice, combinePipeline.pipelineLayout, nullptr);
