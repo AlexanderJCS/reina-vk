@@ -1,7 +1,7 @@
 layout(binding = 0, rgba32f) readonly uniform image2D inImage;
 layout(binding = 1, rgba32f) writeonly uniform image2D outImage;
 
-#include "../../../polyglot/bloom.h"
+#include "bloom.h"
 
 layout (push_constant) uniform PushConsts {
     BloomPushConsts pushConstants;

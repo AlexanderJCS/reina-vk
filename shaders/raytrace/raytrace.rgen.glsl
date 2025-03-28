@@ -3,11 +3,12 @@
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_debug_printf : require
-#include "shaderCommon.h.glsl"
-#include "../../polyglot/common.h"
 
+#include "shaderCommon.h.glsl"
 #include "nee.h.glsl"
 #include "pdf.h.glsl"
+
+#include "common.h"
 
 // Binding BINDING_IMAGEDATA in set 0 is a storage image with four 32-bit floating-point channels,
 // defined using a uniform image2D variable.

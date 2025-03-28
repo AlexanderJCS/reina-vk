@@ -6,7 +6,7 @@
 #include "shaderCommon.h.glsl"
 
 // include this primarily for DEBUG_SHOW_NORMALS
-#include "../../polyglot/common.h"
+#include "common.h"
 
 hitAttributeEXT vec2 attributes;
 

@@ -134,6 +134,11 @@ Reina::Reina() {
 
     fragmentImageSampler = vktools::createSampler(logicalDevice);
 
+    tonemapPushConsts = reina::core::PushConstants{
+        TonemappingPushConsts{config.at_path("postprocessing.tonemap.exposure").value<float>().value()},
+        VK_SHADER_STAGE_COMPUTE_BIT
+    };
+
     postprocessingDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
             {
@@ -142,7 +147,7 @@ Reina::Reina() {
             }
     };
     postprocessingShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing/tonemap/postprocessing.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
-    postprocessingPipeline = vktools::createComputePipeline(logicalDevice, postprocessingDescriptorSet, postprocessingShader);
+    postprocessingPipeline = vktools::createComputePipeline(logicalDevice, postprocessingDescriptorSet, postprocessingShader, tonemapPushConsts);
 
     rasterizationDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
@@ -308,11 +313,9 @@ void Reina::renderLoop() {
         traceRays();
 
         clock.markCategory("Bloom");
-
         applyBloom();
 
         clock.markCategory("Tone Mapping");
-
         applyTonemapping();
 
         // save
@@ -492,6 +495,8 @@ void Reina::applyTonemapping() {
     postprocessingOutputImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
     postprocessingDescriptorSet.bind(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipelineLayout);
+    tonemapPushConsts.push(cmdBuffer.getHandle(), postprocessingPipeline.pipelineLayout);
+
     vkCmdBindPipeline(cmdBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, postprocessingPipeline.pipeline);
     vkCmdDispatch(
             cmdBuffer.getHandle(),

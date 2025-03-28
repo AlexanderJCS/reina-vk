@@ -15,6 +15,7 @@
 
 #include "../polyglot/common.h"
 #include "../polyglot/bloom.h"
+#include "../polyglot/tonemapping.h"
 
 class Reina {
 public:
@@ -38,6 +39,7 @@ private:
     vktools::SbtSpacing sbtSpacing;
     reina::core::PushConstants<RtPushConsts> rtPushConsts;
     reina::core::PushConstants<BloomPushConsts> bloomPushConsts;
+    reina::core::PushConstants<TonemappingPushConsts> tonemapPushConsts;
     reina::graphics::Camera camera;
     reina::window::Window renderWindow;
     VkInstance instance;
