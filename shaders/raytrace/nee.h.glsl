@@ -2,6 +2,11 @@
 #define REINA_NEE_H
 
 #include "shaderCommon.h.glsl"
+#include "common.h"
+
+layout (push_constant) uniform PushConsts {
+    RtPushConsts pushConstants;
+};
 
 struct InstanceData {
     mat4x4 transform;
@@ -9,8 +14,8 @@ struct InstanceData {
     uint cdfRangeStart;
     uint cdfRangeEnd;
     uint indexOffset;
-    float area;
     vec3 emission;
+    float padding;
 };
 
 layout (binding = 7, set = 0, scalar) buffer EmissiveMetadataBuffer {
@@ -47,16 +52,15 @@ uint pickEmissiveInstance(inout uint rngState) {
 
     while (lowerBound < upperBound) {
         int mid = (lowerBound + upperBound) / 2;
-        if (cdfInstances[mid] < u) {
-            lowerBound = mid + 1;
+        if (u <= cdfInstances[mid]) {
+            upperBound = mid;
         } else {
-            upperBound = mid - 1;
+            lowerBound = mid + 1;
         }
     }
 
     return lowerBound;
 }
-
 
 uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
     float u = random(rngState);
@@ -65,10 +69,10 @@ uint pickEmissiveTriangle(inout uint rngState, uint instanceIdx) {
 
     while (lowerBound < upperBound) {
         int mid = (lowerBound + upperBound) / 2;
-        if (cdfTriangles[mid] < u) {
-            lowerBound = mid + 1;
+        if (u <= cdfTriangles[mid]) {
+            upperBound = mid;
         } else {
-            upperBound = mid - 1;
+            lowerBound = mid + 1;
         }
     }
 
@@ -110,7 +114,7 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     vec3 point = randomPointOnTriangle(rngState, v0, v1, v2);
     vec3 normal = normalize(cross(v1 - v0, v2 - v0));
 
-    float probability = 1 / 0.1786;
+    float probability = 1 / pushConstants.totalEmissiveArea;
     return RandomEmissivePointOutput(point, normal, instanceMetadata.emission, probability);
 }
 

@@ -17,9 +17,10 @@ layout(binding = 0, set = 0, rgba32f) uniform image2D storageImage;
 // Ray payloads are used to send information between shaders.
 layout(location = 0) rayPayloadEXT HitPayload pld;
 
-layout (push_constant) uniform PushConsts {
-    RtPushConsts pushConstants;
-};
+// already defined in nee.h.glsl - probably not best practice, but it works
+//layout (push_constant) uniform PushConsts {
+//    RtPushConsts pushConstants;
+//};
 
 struct Ray {
     vec3 origin;
@@ -162,7 +163,7 @@ Ray getStartingRay(
     mat4 invView,
     mat4 invProjection
 ) {
-    const float focusDist = 2;
+    const float focusDist = 7;
     const float dofMultiplier = 0.01;
 
     vec2 randomPixelCenter = pixel + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);  // For antialiasing

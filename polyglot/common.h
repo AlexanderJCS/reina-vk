@@ -18,6 +18,7 @@ struct RtPushConsts {
     mat4 invView;
     mat4 invProjection;
     uint sampleBatch;
+    float totalEmissiveArea;
     float directClamp;
     float indirectClamp;
     uint samplesPerPixel;

@@ -19,8 +19,8 @@ namespace reina::graphics {
         uint32_t cdfRangeStart;
         uint32_t cdfRangeEnd;
         uint32_t indexOffset;
-        float area;
         glm::vec3 emission;
+        float padding;
     };
 
     class Instances {
@@ -33,6 +33,7 @@ namespace reina::graphics {
         [[nodiscard]] const reina::core::Buffer& getEmissiveMetadataBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getCdfTrianglesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getCdfInstancesBuffer() const;
+        [[nodiscard]] float getEmissiveInstancesArea() const;
 
         void destroy(VkDevice logicalDevice);
 
@@ -56,7 +57,7 @@ namespace reina::graphics {
          */
         void computeSamplingDataEmissives();
 
-        float instancesArea = 0;
+        float emissiveInstancesArea = 0;
 
         std::vector<Instance> instances;
         std::vector<float> cdfTriangles;

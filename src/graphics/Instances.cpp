@@ -76,7 +76,6 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
         instanceData.transform = instance.getTransform();
         instanceData.materialOffset = instance.getMaterialOffset();
         instanceData.indexOffset = instance.getModelRange().indexOffset;
-        instanceData.area = instance.getArea();
         instanceData.emission = instance.getEmission();
 
         if (isDuplicate) {
@@ -100,14 +99,14 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
     float cumulativeArea = 0;
     for (int i = 0; i < cdfInstances.size(); i++) {
         int instanceIdx = emissiveInstanceIndices[i];
-        cdfInstances[i] = cumulativeArea;
         cumulativeArea += instances[instanceIdx].getArea();
+        cdfInstances[i] = cumulativeArea;
     }
 
     for (float& val : cdfInstances) {
         val /= cumulativeArea;
     }
-    instancesArea = cumulativeArea;
+    emissiveInstancesArea = cumulativeArea;
 }
 
 const std::vector<reina::graphics::Instance>& reina::graphics::Instances::getInstances() const {
@@ -130,7 +129,7 @@ void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysica
     auto* countPtr = reinterpret_cast<uint8_t*>(&count);
     packedBuffer.insert(packedBuffer.end(), countPtr, countPtr + sizeof(uint32_t));
 
-    auto* areaPtr = reinterpret_cast<uint8_t*>(&instancesArea);
+    auto* areaPtr = reinterpret_cast<uint8_t*>(&emissiveInstancesArea);
     packedBuffer.insert(packedBuffer.end(), areaPtr, areaPtr + sizeof(float));
 
     auto* cdfDataPtr = reinterpret_cast<uint8_t*>(cdfInstances.data());
@@ -163,4 +162,8 @@ const reina::core::Buffer& reina::graphics::Instances::getCdfTrianglesBuffer() c
 
 const reina::core::Buffer& reina::graphics::Instances::getCdfInstancesBuffer() const {
     return cdfInstancesBuffer;
+}
+
+float reina::graphics::Instances::getEmissiveInstancesArea() const {
+    return emissiveInstancesArea;
 }
