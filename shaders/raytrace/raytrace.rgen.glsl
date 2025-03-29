@@ -163,9 +163,6 @@ Ray getStartingRay(
     mat4 invView,
     mat4 invProjection
 ) {
-    const float focusDist = 7;
-    const float dofMultiplier = 0.01;
-
     vec2 randomPixelCenter = pixel + vec2(0.5) + 0.375 * randomGaussian(pld.rngState);  // For antialiasing
 
     vec2 ndc = vec2(
@@ -187,8 +184,8 @@ Ray getStartingRay(
     vec3 rayDirection = normalize(worldDir4.xyz);
 
     vec3 origin = invView[3].xyz;
-    vec3 focalPoint = origin + rayDirection * focusDist;
-    vec2 lensOffset = randomInUnitHexagon(pld.rngState) * dofMultiplier;
+    vec3 focalPoint = origin + rayDirection * pushConstants.focusDist;
+    vec2 lensOffset = randomInUnitHexagon(pld.rngState) * pushConstants.defocusMultiplier;
 
     vec3 right = normalize(invView[0].xyz);
     vec3 up = normalize(invView[1].xyz);

@@ -102,6 +102,9 @@ Reina::Reina() {
             .invView = camera.getInverseView(),
             .invProjection = camera.getInverseProjection(),
             .sampleBatch = 0,
+            .totalEmissiveArea = 0,
+            .focusDist = config.at_path("camera.dof.focus_dist").value<float>().value(),
+            .defocusMultiplier = config.at_path("camera.dof.defocus_multiplier").value<float>().value() / 100,  // divide by 100 to provide human-scale values in config file
             .directClamp = config.at_path("sampling.direct_clamp").value<float>().value(),
             .indirectClamp = config.at_path("sampling.indirect_clamp").value<float>().value(),
             .samplesPerPixel = config.at_path("sampling.samples_per_pixel").value<uint32_t>().value(),
@@ -184,8 +187,8 @@ Reina::Reina() {
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(3.5), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(1), models.getModelRange(0).normalsIndexOffset, 1.4f, true, 0.7}
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(2.5), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(7), models.getModelRange(0).normalsIndexOffset, 1.4f, true, 0.7}
     };
 
     instances = reina::graphics::Instances{
