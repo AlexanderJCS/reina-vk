@@ -1,7 +1,7 @@
 [camera]
 [camera.dof]
 focus_dist = 7.0
-defocus_multiplier = 0.0  # higher = more defocus
+defocus_multiplier = 0.5  # higher = more defocus
 
 [sampling]
 samples_per_pixel = 32
