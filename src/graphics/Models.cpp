@@ -66,7 +66,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
             .firstNormal = static_cast<uint32_t>(normalsOffset / 4),
             .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
             .normalsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
-            .texIndexOffset = static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
+            .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
             .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .normalsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .texIndexCount = static_cast<uint32_t>(objectData.texIndices.size() / 3),
@@ -88,7 +88,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         }
 
         for (uint32_t idx : objectData.texIndices) {
-            allTexIndicesOffset[texIndexOffset++] = idx + (texOffset / 4);
+            allTexIndicesOffset[texIndexOffset++] = idx == 4294967295 ? idx : idx + (texOffset / 4);
         }
 
         vertexOffset += objectData.vertices.size();

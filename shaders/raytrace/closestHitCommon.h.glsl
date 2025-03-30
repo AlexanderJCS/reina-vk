@@ -49,6 +49,7 @@ struct HitInfo {
     vec3 worldPosition;
     vec3 worldNormal;
     vec3 color;
+    vec2 uv;
     bool frontFace;
 };
 
@@ -94,6 +95,22 @@ HitInfo getObjectHitInfo() {
         const vec3 n2 = normals[n2Index].xyz;
 
         objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
+    }
+
+    if (props.texIndicesBytesOffset == 4294967295) {
+        // no tex coords for this model
+        result.uv = vec2(0);
+    } else {
+        const uint texIndexOffset = props.texIndicesBytesOffset / 4;
+        const uint t0Index = texIndices[3 * primitiveID + texIndexOffset + 0];
+        const uint t1Index = texIndices[3 * primitiveID + texIndexOffset + 1];
+        const uint t2Index = texIndices[3 * primitiveID + texIndexOffset + 2];
+
+        const vec2 t0 = texCoords[t0Index].xy;
+        const vec2 t1 = texCoords[t1Index].xy;
+        const vec2 t2 = texCoords[t2Index].xy;
+
+        result.uv = t0 * barycentrics.x + t1 * barycentrics.y + t2 * barycentrics.z;
     }
 
     // Transform normals from object space to world space. These use the transpose of the inverse matrix,

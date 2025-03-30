@@ -179,18 +179,18 @@ Reina::Reina() {
     cmdBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/ico_sphere_highres.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.01f));
+    glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.2f));
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0, 0.01, false, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(2.5), models.getModelRange(2).normalsIndexOffset, 0, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(7), models.getModelRange(0).normalsIndexOffset, 0, 1.4f, true, 0.7}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(2.5), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(7), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7}
     };
 
     instances = reina::graphics::Instances{
