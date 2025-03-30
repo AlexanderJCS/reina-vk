@@ -13,8 +13,10 @@ namespace reina::graphics {
         uint32_t firstNormal;
         uint32_t indexOffset;
         uint32_t normalsIndexOffset;
+        uint32_t texIndexOffset;
         uint32_t indexCount;
         uint32_t normalsIndexCount;
+        uint32_t texIndexCount;
     };
 
     struct ObjData {
@@ -22,6 +24,8 @@ namespace reina::graphics {
         std::vector<uint32_t> indices;
         std::vector<float> normals;
         std::vector<uint32_t> normalsIndices;
+        std::vector<float> texCoords;
+        std::vector<uint32_t> texIndices;
     };
 
     class Models {
@@ -33,12 +37,16 @@ namespace reina::graphics {
         [[nodiscard]] size_t getIndicesBuffersSize() const;
         [[nodiscard]] size_t getNormalsBufferSize() const;
         [[nodiscard]] size_t getNormalsIndicesBufferSize() const;
+        [[nodiscard]] size_t getTexCoordsBufferSize() const;
+        [[nodiscard]] size_t getTexIndicesBufferSize() const;
 
         [[nodiscard]] const reina::core::Buffer& getVerticesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getOffsetIndicesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getNonOffsetIndicesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getNormalsBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getOffsetNormalsIndicesBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getTexCoordsBuffer() const;
+        [[nodiscard]] const reina::core::Buffer& getOffsetTexIndicesBuffer() const;
 
         [[nodiscard]] const ObjData& getObjData(int index) const;
         [[nodiscard]] ModelRange getModelRange(int index) const;
@@ -54,11 +62,15 @@ namespace reina::graphics {
         reina::core::Buffer nonOffsetIndicesBuffer;
         reina::core::Buffer normalsBuffer;
         reina::core::Buffer offsetNormalsIndicesBuffer;
+        reina::core::Buffer texCoordsBuffer;
+        reina::core::Buffer offsetTexIndicesBuffer;
 
         size_t verticesBufferSize = 0;
         size_t indicesBuffersSize = 0;
         size_t normalsBufferSize = 0;
         size_t normalsIndicesBufferSize = 0;
+        size_t texCoordsBufferSize = 0;
+        size_t texIndicesBufferSize = 0;
 
         std::vector<ModelRange> modelRanges;
     };

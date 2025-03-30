@@ -18,6 +18,14 @@ layout (binding = 6, set = 0, scalar) buffer NormalsIndicesBuffer {
     uint normalsIndices[];
 };
 
+layout (binding = 10, set = 0, scalar) buffer TexCoordsBuffer {
+    vec2 texCoords[];
+};
+
+layout (binding = 11, set = 0, scalar) buffer TexIndicesBuffer {
+    uint texIndices[];
+};
+
 layout(location = 0) rayPayloadInEXT HitPayload pld;
 
 struct ObjectProperties {
@@ -25,9 +33,11 @@ struct ObjectProperties {
     vec3 albedo;
     vec4 emission;
     uint normalsIndicesBytesOffset;
+    uint texIndicesBytesOffset;
     float fuzzOrRefIdx;
     bool interpNormals;
     float absorption;
+    vec3 padding;
 };
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {

@@ -31,7 +31,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     size_t totalVertices = 0;
     size_t totalIndices = 0;
     size_t totalNormals = 0;
-    size_t totalNormalsIndices = 0;
+    size_t totalTexCoords = 0;
 
     for (int i = 0; i < modelFilepaths.size(); i++) {
         modelObjData[i] = getObjData(modelFilepaths[i]);
@@ -39,19 +39,23 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         totalVertices += modelObjData[i].vertices.size();
         totalIndices += modelObjData[i].indices.size();
         totalNormals += modelObjData[i].normals.size();
-        totalNormalsIndices += modelObjData[i].normalsIndices.size();
+        totalTexCoords += modelObjData[i].texCoords.size();
     }
 
     std::vector<float> allVertices(totalVertices);
     std::vector<float> allNormals(totalNormals);
+    std::vector<float> allTexCoords(totalTexCoords);
     std::vector<uint32_t> allIndicesOffset(totalIndices);
-    std::vector<uint32_t> allNormalsIndicesOffset(totalNormalsIndices);
+    std::vector<uint32_t> allTexIndicesOffset(totalIndices);
+    std::vector<uint32_t> allNormalsIndicesOffset(totalIndices);
     std::vector<uint32_t> allIndicesNonOffset(totalIndices);
 
     size_t vertexOffset = 0;
     size_t normalsOffset = 0;
+    size_t texOffset = 0;
     size_t indexOffset = 0;
     size_t normalsIndexOffset = 0;
+    size_t texIndexOffset = 0;
 
     // Copy the data to allVertices and allIndicesOffset
     for (int i = 0; i < modelObjData.size(); i++) {
@@ -62,13 +66,16 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
             .firstNormal = static_cast<uint32_t>(normalsOffset / 4),
             .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
             .normalsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
+            .texIndexOffset = static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
             .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
-            .normalsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3)
+            .normalsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
+            .texIndexCount = static_cast<uint32_t>(objectData.texIndices.size() / 3),
         };
 
         // Copy vertices
         std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
         std::copy(objectData.normals.begin(), objectData.normals.end(), allNormals.begin() + static_cast<long long>(normalsOffset));
+        std::copy(objectData.texCoords.begin(), objectData.texCoords.end(), allTexCoords.begin() + static_cast<long long>(texOffset));
 
         // Copy indices with proper offset
         for (uint32_t idx : objectData.indices) {
@@ -80,50 +87,40 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
             allNormalsIndicesOffset[normalsIndexOffset++] = idx + (normalsOffset / 4);
         }
 
+        for (uint32_t idx : objectData.texIndices) {
+            allTexIndicesOffset[texIndexOffset++] = idx + (texOffset / 4);
+        }
+
         vertexOffset += objectData.vertices.size();
         normalsOffset += objectData.normals.size();
+        texOffset += objectData.texCoords.size();
     }
 
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-    VkMemoryAllocateFlagBits allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+    VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
     VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     verticesBufferSize = allVertices.size();
-    verticesBuffer = reina::core::Buffer{
-        logicalDevice, physicalDevice,
-        allVertices,
-        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
-    };
+    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allVertices, usage, allocFlags, memFlags};
 
     indicesBuffersSize = allIndicesOffset.size();
-    offsetIndicesBuffer = reina::core::Buffer{
-        logicalDevice,
-        physicalDevice,
-        allIndicesOffset,
-        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
-    };
-    nonOffsetIndicesBuffer = reina::core::Buffer{
-        logicalDevice, physicalDevice,
-        allIndicesNonOffset,
-        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
-    };
+    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allIndicesOffset, usage, allocFlags, memFlags};
+    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allIndicesNonOffset, usage, allocFlags, memFlags};
 
     normalsBufferSize = allNormals.size();
-    normalsBuffer = reina::core::Buffer{
-        logicalDevice, physicalDevice,
-        allNormals,
-        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
-    };
+    normalsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allNormals, usage, allocFlags, memFlags};
 
     normalsIndicesBufferSize = allNormalsIndicesOffset.size();
-    offsetNormalsIndicesBuffer = reina::core::Buffer{
-        logicalDevice, physicalDevice,
-        allNormalsIndicesOffset,
-        usage, static_cast<VkMemoryAllocateFlags>(allocFlags), memFlags
-    };
+    offsetNormalsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allNormalsIndicesOffset, usage, allocFlags, memFlags};
+
+    texCoordsBufferSize = allTexCoords.size();
+    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags, memFlags};
+
+    texIndicesBufferSize = allTexIndicesOffset.size();
+    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allTexIndicesOffset, usage, allocFlags, memFlags};
 }
 
 reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& filepath) {
@@ -136,6 +133,7 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
 
     std::vector<float> objVertices = tinyobjToVec4(reader.GetAttrib().GetVertices());
     std::vector<float> objNormals = tinyobjToVec4(reader.GetAttrib().normals);
+    std::vector<float> objTexCoords = reader.GetAttrib().texcoords;
 
     const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
     if (shapes.size() != 1) {
@@ -144,12 +142,16 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
 
     std::vector<uint32_t> objIndices(shapes[0].mesh.indices.size());
     std::vector<uint32_t> objNormalsIndices(shapes[0].mesh.indices.size());
+    std::vector<uint32_t> objTexIndices(shapes[0].mesh.indices.size());
     for (int i = 0; i < shapes[0].mesh.indices.size(); i++) {
-        objIndices[i] = shapes[0].mesh.indices[i].vertex_index;
-        objNormalsIndices[i] = shapes[0].mesh.indices[i].normal_index;
+        const tinyobj::index_t& index = shapes[0].mesh.indices[i];
+
+        objIndices[i] = index.vertex_index;
+        objNormalsIndices[i] = index.normal_index;
+        objTexIndices[i] = index.texcoord_index;
     }
 
-    return {objVertices, objIndices, objNormals, objNormalsIndices};
+    return {objVertices, objIndices, objNormals, objNormalsIndices, objTexCoords, objTexIndices};
 }
 
 size_t reina::graphics::Models::getVerticesBufferSize() const {
@@ -195,6 +197,8 @@ void reina::graphics::Models::destroy(VkDevice logicalDevice) {
     nonOffsetIndicesBuffer.destroy(logicalDevice);
     offsetNormalsIndicesBuffer.destroy(logicalDevice);
     normalsBuffer.destroy(logicalDevice);
+    texCoordsBuffer.destroy(logicalDevice);
+    offsetTexIndicesBuffer.destroy(logicalDevice);
 }
 
 size_t reina::graphics::Models::getNormalsBufferSize() const {
@@ -211,4 +215,20 @@ const reina::core::Buffer& reina::graphics::Models::getNormalsBuffer() const {
 
 const reina::core::Buffer& reina::graphics::Models::getOffsetNormalsIndicesBuffer() const {
     return offsetNormalsIndicesBuffer;
+}
+
+const reina::core::Buffer &reina::graphics::Models::getOffsetTexIndicesBuffer() const {
+    return offsetTexIndicesBuffer;
+}
+
+size_t reina::graphics::Models::getTexIndicesBufferSize() const {
+    return texIndicesBufferSize;
+}
+
+const reina::core::Buffer &reina::graphics::Models::getTexCoordsBuffer() const {
+    return texCoordsBuffer;
+}
+
+size_t reina::graphics::Models::getTexCoordsBufferSize() const {
+    return texCoordsBufferSize;
 }

@@ -90,7 +90,9 @@ Reina::Reina() {
                     reina::core::Binding{6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)},
                     reina::core::Binding{8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
-                    reina::core::Binding{9, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR}
+                    reina::core::Binding{9, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+                    reina::core::Binding{10, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                    reina::core::Binding{11, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
             }
     };
 
@@ -186,9 +188,9 @@ Reina::Reina() {
     glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.01f));
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0.01, false, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(2.5), models.getModelRange(2).normalsIndexOffset, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(7), models.getModelRange(0).normalsIndexOffset, 1.4f, true, 0.7}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, 0, 0.01, false, 0},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(2.5), models.getModelRange(2).normalsIndexOffset, 0, 0, false, 0},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(7), models.getModelRange(0).normalsIndexOffset, 0, 1.4f, true, 0.7}
     };
 
     instances = reina::graphics::Instances{
@@ -378,6 +380,8 @@ void Reina::writeCmdBuffers() {
     rtDescriptorSet.writeBinding(logicalDevice, 7, instances.getEmissiveMetadataBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 8, instances.getCdfTrianglesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 10, models.getTexCoordsBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 11, models.getOffsetTexIndicesBuffer());
 
     blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     blurXDescriptorSet.writeBinding(logicalDevice, 1, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
