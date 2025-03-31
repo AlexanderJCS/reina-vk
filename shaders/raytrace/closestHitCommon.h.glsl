@@ -37,12 +37,19 @@ struct ObjectProperties {
     float fuzzOrRefIdx;
     bool interpNormals;
     float absorption;
-    vec3 padding;
+    int textureID;
+    vec2 padding;
 };
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
     ObjectProperties objectProperties[];
 };
+
+//layout(binding = 12, set = 0, scalar) buffer ImagesBuffer {
+//    sampler2D images[];
+//};
+
+layout(binding = 12, set = 0) uniform sampler2D tex;
 
 struct HitInfo {
     vec3 objectPosition;

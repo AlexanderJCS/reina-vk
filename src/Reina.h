@@ -24,7 +24,7 @@ public:
     ~Reina();
 
 private:
-    void writeCmdBuffers();
+    void writeDescriptorSets();
     void traceRays();
     void applyBloom();
     void applyTonemapping();
@@ -89,6 +89,8 @@ private:
     VkSurfaceKHR surface;
 
     reina::tools::SaveManager saveManager;
+
+    reina::graphics::Image objectTexture;
 };
 
 

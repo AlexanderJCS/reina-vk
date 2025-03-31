@@ -19,6 +19,7 @@ void main() {
         pld.color = hitInfo.worldNormal * 0.5 + 0.5;
     #else
         pld.color = props.albedo;
+    pld.color = vec3(texture(tex, hitInfo.uv));
     #endif
 
     pld.emission = props.emission;
