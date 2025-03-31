@@ -497,6 +497,16 @@ void Reina::applyBloom() {
             (renderHeight + workgroupHeight - 1) / workgroupHeight,
             1
     );
+
+    vkCmdPipelineBarrier(
+            cmdBuffer.getHandle(),
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            0, nullptr
+    );
 }
 
 void Reina::applyTonemapping() {
