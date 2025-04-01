@@ -19,6 +19,7 @@ namespace reina::core {
         VkDescriptorType type;
         uint32_t descriptorCount;
         VkShaderStageFlagBits stageFlags;
+        bool partiallyBound = false;
 
         [[nodiscard]] VkDescriptorSetLayoutBinding toLayoutBinding() const;
     };
@@ -32,6 +33,7 @@ namespace reina::core {
 
         void writeBinding(VkDevice logicalDevice, int bindingPoint, const reina::core::Buffer& buffer);
         void writeBinding(VkDevice logicalDevice, int bindingPoint, const reina::graphics::Image& image, VkImageLayout imageLayout, VkSampler sampler);
+        void writeBinding(VkDevice logicalDevice, int bindingPoint, const std::vector<reina::graphics::Image>& images, VkImageLayout imageLayout, VkSampler sampler);
         void writeBinding(VkDevice logicalDevice, int bindingPoint, const vktools::AccStructureInfo& accStruct);
 
         void destroy(VkDevice device);

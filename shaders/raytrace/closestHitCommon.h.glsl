@@ -49,7 +49,7 @@ layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
 //    sampler2D images[];
 //};
 
-layout(binding = 12, set = 0) uniform sampler2D tex;
+layout(binding = 13, set = 0) uniform sampler2D textures[];
 
 struct HitInfo {
     vec3 objectPosition;

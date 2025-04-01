@@ -929,14 +929,22 @@ VkDevice vktools::createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice phy
 //        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV
 //    };
 
-    VkPhysicalDeviceBufferDeviceAddressFeatures addressFeatures{
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+    VkPhysicalDeviceVulkan12Features vulkan12Features{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+        .runtimeDescriptorArray = VK_TRUE,
+        .bufferDeviceAddress = VK_TRUE,
 //        .pNext = &validationFeatures
     };
 
+    // Commented out since the VulkanPhysicalDeviceVulkan12Features covers this
+//    VkPhysicalDeviceBufferDeviceAddressFeatures addressFeatures{
+//        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+//        .pNext = &vulkan12Features
+//    };
+
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures{
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
-            .pNext = &addressFeatures
+            .pNext = &vulkan12Features
     };
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeatures{

@@ -22,14 +22,27 @@ reina::core::DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vec
 
     // Create descriptor set layout
     std::vector<VkDescriptorSetLayoutBinding> vkBindings(bindings.size());
+    std::vector<VkDescriptorBindingFlags> bindingFlags(bindings.size());
+
     for (size_t i = 0; i < bindings.size(); ++i) {
         vkBindings[i] = bindings[i].toLayoutBinding();
+
+        if (bindings[i].partiallyBound) {
+            bindingFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+        }
     }
 
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+        .bindingCount = static_cast<uint32_t>(vkBindings.size()),
+        .pBindingFlags = bindingFlags.data()
+    };
+
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = static_cast<uint32_t>(vkBindings.size()),
-            .pBindings = vkBindings.data()
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = &bindingFlagsInfo,
+        .bindingCount = static_cast<uint32_t>(vkBindings.size()),
+        .pBindings = vkBindings.data(),
     };
 
     if (vkCreateDescriptorSetLayout(logicalDevice, &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS) {
@@ -49,17 +62,17 @@ reina::core::DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vec
         }
         if (!typeExists) {
             poolSizes.push_back(VkDescriptorPoolSize{
-                    .type = binding.type,
-                    .descriptorCount = 1
+                .type = binding.type,
+                .descriptorCount = 1
             });
         }
     }
 
     VkDescriptorPoolCreateInfo poolCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = 1, // Allocate 1 descriptor set
-            .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
-            .pPoolSizes = poolSizes.data()
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = 1, // Allocate 1 descriptor set
+        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+        .pPoolSizes = poolSizes.data()
     };
 
     if (vkCreateDescriptorPool(logicalDevice, &poolCreateInfo, nullptr, &pool) != VK_SUCCESS) {
@@ -68,10 +81,10 @@ reina::core::DescriptorSet::DescriptorSet(VkDevice logicalDevice, const std::vec
 
     // Allocate descriptor set
     VkDescriptorSetAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = pool,
-            .descriptorSetCount = 1, // Allocate 1 descriptor set
-            .pSetLayouts = &layout   // Use the layout created earlier
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = pool,
+        .descriptorSetCount = 1, // Allocate 1 descriptor set
+        .pSetLayouts = &layout   // Use the layout created earlier
     };
 
     if (vkAllocateDescriptorSets(logicalDevice, &allocInfo, &descriptorSet) != VK_SUCCESS) {
@@ -174,4 +187,38 @@ void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindin
     };
 
     writeBinding(logicalDevice, bindingPoint, nullptr, nullptr, &descriptorAccStructure);
+}
+
+void reina::core::DescriptorSet::writeBinding(VkDevice logicalDevice, int bindingPoint,
+                                              const std::vector<reina::graphics::Image>& images,
+                                              VkImageLayout imageLayout, VkSampler sampler) {
+
+    // todo: merge this with the generic writeBinding to prevent some repeated code
+    auto imageCount = static_cast<uint32_t>(images.size());
+    std::vector<VkDescriptorImageInfo> imageInfos(imageCount);
+
+    for (uint32_t i = 0; i < imageCount; i++) {
+        imageInfos[i].sampler = sampler;
+        imageInfos[i].imageView = images[i].getImageView();
+        imageInfos[i].imageLayout = imageLayout;
+    }
+
+    for (const Binding& binding : bindings) {
+        if (binding.bindingPoint != bindingPoint) {
+            continue;
+        }
+
+        VkWriteDescriptorSet descriptorWrite{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSet,
+                .dstBinding = binding.bindingPoint,
+                .dstArrayElement = 0,
+                .descriptorCount = imageCount,
+                .descriptorType = binding.type,
+                .pImageInfo = imageInfos.data()
+        };
+
+        vkUpdateDescriptorSets(logicalDevice, 1, &descriptorWrite, 0, nullptr);
+        break;
+    }
 }

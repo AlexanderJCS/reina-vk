@@ -78,6 +78,16 @@ Reina::Reina() {
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     };
 
+    commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
+
+    cmdBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
+    cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
+
+    textures = std::vector<reina::graphics::Image> {
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/2k_earth_normal_map.png"},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/2k_earth_daymap.png"},
+    };
+
     rtDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
             {
@@ -93,7 +103,8 @@ Reina::Reina() {
                     reina::core::Binding{9, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR},
                     reina::core::Binding{10, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{11, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
-                    reina::core::Binding{12, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}
+                    reina::core::Binding{12, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                    reina::core::Binding{13, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(textures.size()), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
             }
     };
 
@@ -175,11 +186,6 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    commandPool = vktools::createCommandPool(physicalDevice, logicalDevice, surface);
-
-    cmdBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
-    cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
-
     models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
@@ -189,9 +195,9 @@ Reina::Reina() {
     glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.2f));
 
     std::vector<reina::graphics::ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(4), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(4), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7, 1}
     };
 
     instances = reina::graphics::Instances{
@@ -319,7 +325,12 @@ void Reina::renderLoop() {
         cmdBuffer.wait(logicalDevice);
         cmdBuffer.begin();
 
+        // todo: these transitions should be done when initialized
         objectTexture.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+        for (reina::graphics::Image& texture : textures) {
+            texture.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        }
 
         traceRays();
 
@@ -388,6 +399,7 @@ void Reina::writeDescriptorSets() {
     rtDescriptorSet.writeBinding(logicalDevice, 10, models.getTexCoordsBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 11, models.getOffsetTexIndicesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 12, objectTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fragmentImageSampler);  // todo: just using the fragment image sampler for now
+    rtDescriptorSet.writeBinding(logicalDevice, 13, textures, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, fragmentImageSampler);
 
     blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     blurXDescriptorSet.writeBinding(logicalDevice, 1, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
@@ -597,6 +609,10 @@ Reina::~Reina() {
 
     for (VkFramebuffer framebuffer : framebuffers) {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+    }
+
+    for (reina::graphics::Image& texture : textures) {
+        texture.destroy(logicalDevice);
     }
 
     objectTexture.destroy(logicalDevice);

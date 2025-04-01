@@ -1,5 +1,6 @@
 #version 460
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #include "closestHitCommon.h.glsl"
 #include "nee.h.glsl"
@@ -19,7 +20,10 @@ void main() {
         pld.color = hitInfo.worldNormal * 0.5 + 0.5;
     #else
         pld.color = props.albedo;
-    pld.color = vec3(texture(tex, hitInfo.uv));
+
+        if (props.textureID >= 0) {
+            pld.color *= texture(textures[props.textureID], hitInfo.uv).xyz;
+        }
     #endif
 
     pld.emission = props.emission;
