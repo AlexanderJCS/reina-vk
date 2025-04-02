@@ -116,6 +116,7 @@ vec3 traceSegments(Ray ray) {
                     weightDirect = 1.0;
                     weightIndirect = 1.0;
                 } else if (tracedSegments + 1 == pushConstants.maxBounces) {  // last bounce
+                    // todo: you can increase performance by not computing the direct lighting contribution when this case occurs
                     weightDirect = 0.0;
                     weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
                 } else {
