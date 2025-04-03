@@ -19,7 +19,7 @@ struct HitPayload {
     vec3 rayDirection;  // The new ray direction in world-space.
     uint rngState;      // State of the random number generator.
     bool rayHitSky;     // True if the ray hit the sky.
-    vec4 emission;      // xyz: emission color, w: emission strength
+    vec3 emission;      // Emission color and strength. Supports values greater than one.
     vec3 surfaceNormal; // The normal of the surface hit by the ray.
     uint materialID;    // 0 for lambertian, 1 for metal, 2 for dielectric
     bool skip;          // If true, the raygen shader knows to skip this ray

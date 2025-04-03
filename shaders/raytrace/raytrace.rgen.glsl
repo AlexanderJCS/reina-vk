@@ -100,7 +100,7 @@ vec3 traceSegments(Ray ray) {
         }
 
         if (!pld.insideDielectric) {
-            vec3 indirect = pld.emission.xyz * pld.emission.w;
+            vec3 indirect = pld.emission.xyz;
             vec4 direct = pld.materialID == 0 ? directLight(pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
 
             float pdfDirect = direct.w;

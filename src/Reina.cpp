@@ -195,17 +195,17 @@ Reina::Reina() {
     glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.2f));
 
     std::vector<ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec4(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec4(4), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec4(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7, 1}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7, 1}
     };
 
     instances = reina::graphics::Instances{
             logicalDevice, physicalDevice,
             {
-                    {box, emissionAsVec3(objectProperties[0]), models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
-                    {light, emissionAsVec3(objectProperties[1]), models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
-                    {subject, emissionAsVec3(objectProperties[2]), models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform}
+                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
+                    {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
+                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform}
             },
     };
     rtPushConsts.getPushConstants().totalEmissiveArea = instances.getEmissiveInstancesArea();

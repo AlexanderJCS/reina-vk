@@ -18,21 +18,16 @@
 struct ObjectProperties {
     uint indicesBytesOffset;
     vec3 albedo;
-    vec4 emission;
+    vec3 emission;
     uint normalsIndicesBytesOffset;
     uint texIndicesBytesOffset;
     float fuzzOrRefIdx;
     bool interpNormals;
     float absorption;
     int textureID;
-    vec2 padding;
+    vec3 padding;
 };
 
-#ifdef __cplusplus
-    inline glm::vec3 emissionAsVec3(const ObjectProperties& props) {
-        return glm::vec3(props.emission.x, props.emission.y, props.emission.z) * props.emission.w;
-    }
-#endif  // #ifdef __cplusplus
 
 struct RtPushConsts {
     mat4 invView;
