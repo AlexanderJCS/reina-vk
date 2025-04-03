@@ -1,7 +1,7 @@
 #version 460
 
 // include common.h for the DEBUG_SHOW_NORMALS definition
-#include "common.h"
+#include "raytrace.h"
 #include "tonemapping.h"
 
 layout (push_constant) uniform PushConsts {

@@ -1,7 +1,7 @@
 #ifndef RAYGUN_VK_PUSHCONSTANTS_H
 #define RAYGUN_VK_PUSHCONSTANTS_H
 
-#include "../../polyglot/common.h"
+#include "../../polyglot/raytrace.h"
 
 #include <vulkan/vulkan.h>
 

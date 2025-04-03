@@ -2,7 +2,7 @@
 #define REINA_NEE_H
 
 #include "shaderCommon.h.glsl"
-#include "common.h"
+#include "raytrace.h"
 
 layout (push_constant) uniform PushConsts {
     RtPushConsts pushConstants;

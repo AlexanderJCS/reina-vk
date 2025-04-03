@@ -8,7 +8,7 @@
 #include "nee.h.glsl"
 #include "pdf.h.glsl"
 
-#include "common.h"
+#include "raytrace.h"
 
 // Binding BINDING_IMAGEDATA in set 0 is a storage image with four 32-bit floating-point channels,
 // defined using a uniform image2D variable.

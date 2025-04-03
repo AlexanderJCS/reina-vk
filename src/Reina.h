@@ -13,7 +13,7 @@
 #include "graphics/Camera.h"
 #include "tools/SaveManager.h"
 
-#include "../polyglot/common.h"
+#include "../polyglot/raytrace.h"
 #include "../polyglot/bloom.h"
 #include "../polyglot/tonemapping.h"
 

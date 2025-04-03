@@ -1,7 +1,7 @@
 #include "Clock.h"
 
 #include <sstream>
-#include "../../polyglot/common.h"
+#include "../../polyglot/raytrace.h"
 
 void reina::tools::TimeEntries::addEntry(double timing) {
     if (recordings == 0) {

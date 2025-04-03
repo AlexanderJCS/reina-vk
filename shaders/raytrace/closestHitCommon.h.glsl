@@ -6,7 +6,7 @@
 #include "shaderCommon.h.glsl"
 
 // include this primarily for DEBUG_SHOW_NORMALS
-#include "common.h"
+#include "raytrace.h"
 
 hitAttributeEXT vec2 attributes;
 
@@ -27,19 +27,6 @@ layout (binding = 11, set = 0, scalar) buffer TexIndicesBuffer {
 };
 
 layout(location = 0) rayPayloadInEXT HitPayload pld;
-
-struct ObjectProperties {
-    uint indicesBytesOffset;
-    vec3 albedo;
-    vec4 emission;
-    uint normalsIndicesBytesOffset;
-    uint texIndicesBytesOffset;
-    float fuzzOrRefIdx;
-    bool interpNormals;
-    float absorption;
-    int textureID;
-    vec2 padding;
-};
 
 layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
     ObjectProperties objectProperties[];

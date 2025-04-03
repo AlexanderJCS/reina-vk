@@ -46,11 +46,10 @@ add_executable(reina_vk src/main.cpp
         src/graphics/Shader.h
         src/core/DescriptorSet.cpp
         src/core/DescriptorSet.h
-        polyglot/common.h
+        polyglot/raytrace.h
         src/core/PushConstants.h
         src/core/Buffer.cpp
         src/core/Buffer.h
-        src/graphics/ObjectProperties.h
         src/graphics/Blas.cpp
         src/graphics/Blas.h
         src/graphics/Instance.cpp
