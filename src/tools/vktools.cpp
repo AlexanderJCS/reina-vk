@@ -1075,30 +1075,47 @@ VkInstance vktools::createInstance() {
     }
 
     VkApplicationInfo appInfo{
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "Reina",
-        .applicationVersion = VK_MAKE_VERSION(1, 3, 0),
-        .pEngineName = "No Engine",
-        .engineVersion = VK_MAKE_VERSION(1, 3, 0),
-        .apiVersion = VK_API_VERSION_1_3
+            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pApplicationName = "Reina",
+            .applicationVersion = VK_MAKE_VERSION(1, 3, 0),
+            .pEngineName = "No Engine",
+            .engineVersion = VK_MAKE_VERSION(1, 3, 0),
+            .apiVersion = VK_API_VERSION_1_3
     };
 
     std::vector<const char*> extensions = getRequiredExtensions();
 
     VkInstanceCreateInfo createInfo{
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pApplicationInfo = &appInfo,
-        .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
-        .ppEnabledExtensionNames = extensions.data()
+            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pApplicationInfo = &appInfo,
+            .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
+            .ppEnabledExtensionNames = extensions.data()
     };
 
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};  // in this scope to prevent being deleted early
+    // Structures to add into the pNext chain when validation layers are enabled.
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+    VkValidationFeaturesEXT validationFeatures{};
     if (consts::ENABLE_VALIDATION_LAYERS) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(consts::VALIDATION_LAYERS.size());
         createInfo.ppEnabledLayerNames = consts::VALIDATION_LAYERS.data();
 
+        // Set up debug messenger create info.
         populateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
+
+        // Set up validation features.
+        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
+                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+        };
+        validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+        validationFeatures.enabledValidationFeatureCount = enabledFeatures.size();
+        validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
+
+        // Chain the structures.
+        // Here we attach validationFeatures after the debug messenger.
+        validationFeatures.pNext = debugCreateInfo.pNext;  // in case debugCreateInfo already chains something
+        debugCreateInfo.pNext = &validationFeatures;
+        // Now attach the debug messenger chain to the instance create info.
+        createInfo.pNext = &debugCreateInfo;
     }
 
     VkInstance instance;
