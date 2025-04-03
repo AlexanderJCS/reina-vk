@@ -1075,21 +1075,21 @@ VkInstance vktools::createInstance() {
     }
 
     VkApplicationInfo appInfo{
-            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-            .pApplicationName = "Reina",
-            .applicationVersion = VK_MAKE_VERSION(1, 3, 0),
-            .pEngineName = "No Engine",
-            .engineVersion = VK_MAKE_VERSION(1, 3, 0),
-            .apiVersion = VK_API_VERSION_1_3
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = "Reina",
+        .applicationVersion = VK_MAKE_VERSION(1, 3, 0),
+        .pEngineName = "No Engine",
+        .engineVersion = VK_MAKE_VERSION(1, 3, 0),
+        .apiVersion = VK_API_VERSION_1_3
     };
 
     std::vector<const char*> extensions = getRequiredExtensions();
 
     VkInstanceCreateInfo createInfo{
-            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            .pApplicationInfo = &appInfo,
-            .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
-            .ppEnabledExtensionNames = extensions.data()
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo = &appInfo,
+        .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
+        .ppEnabledExtensionNames = extensions.data()
     };
 
     // Structures to add into the pNext chain when validation layers are enabled.
