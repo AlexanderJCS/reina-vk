@@ -17,7 +17,7 @@ void main() {
     ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
     vec3 worldNormal = hitInfo.worldNormal;
-    if (props.normalMapTexID != -1) {
+    if (props.normalMapTexID >= 0) {
         vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
         worldNormal = hitInfo.tbn * tangentNormal;
     }
@@ -26,7 +26,6 @@ void main() {
         pld.color = worldNormal * 0.5 + 0.5;
     #else
         pld.color = props.albedo;
-
         if (props.textureID >= 0) {
             pld.color *= texture(textures[props.textureID], hitInfo.uv).rgb;
         }

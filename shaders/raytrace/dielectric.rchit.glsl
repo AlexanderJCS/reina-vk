@@ -1,5 +1,6 @@
 #version 460
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
 #include "closestHitCommon.h.glsl"
 
 float reflectance(float cosine, float ref_idx) {
@@ -49,18 +50,32 @@ void main() {
 
     bool previouslyInsideDielectric = pld.insideDielectric;
 
+    vec3 albedo = props.albedo;
+    if (props.textureID >= 0) {
+        albedo *= texture(textures[props.textureID], hitInfo.uv).rgb;
+    }
+
+    vec3 worldNormal = hitInfo.worldNormal;
+    if (props.normalMapTexID >= 0) {
+        vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
+        worldNormal = hitInfo.tbn * tangentNormal;
+    }
+
     if (cannotRefract || reflectivity > random(pld.rngState)) {
         // specular reflection
-        pld.rayDirection = reflect(unitDir, hitInfo.worldNormal);
+        pld.rayDirection = reflect(unitDir, worldNormal);
         pld.color = vec3(1);
-        pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
+        pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, worldNormal);
     } else {
         pld.insideDielectric = hitInfo.frontFace;
 
         // refract
-        pld.rayDirection = refract(unitDir, hitInfo.worldNormal, ri);
-        pld.color = props.albedo;
-        pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
+        pld.rayDirection = refract(unitDir, worldNormal, ri);
+        pld.color = albedo;
+        if (props.textureID >= 0) {
+            pld.color *= texture(textures[props.textureID], hitInfo.uv).rgb;
+        }
+        pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, worldNormal, unitDir);
     }
 
     pld.accumulatedDistance += mix(0, length(hitInfo.worldPosition - gl_WorldRayOriginEXT), previouslyInsideDielectric);
@@ -71,7 +86,7 @@ void main() {
         dist *= 100.0;  // convert meters to cm
 
         pld.color = vec3(1) * exp(-props.absorption * pld.accumulatedDistance);
-        pld.color *= props.albedo;
+        pld.color *= albedo;
 
         pld.accumulatedDistance = 0.0;
     }
@@ -80,5 +95,5 @@ void main() {
     pld.rayHitSky = false;
     pld.skip = false;
     pld.materialID = 2;
-    pld.surfaceNormal = hitInfo.worldNormal;
+    pld.surfaceNormal = worldNormal;
 }

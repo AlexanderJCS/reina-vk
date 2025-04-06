@@ -84,8 +84,8 @@ Reina::Reina() {
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
     textures = std::vector<reina::graphics::Image>{
-        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/2k_earth_normal_map.png", false},
-        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/2k_earth_daymap.png", true},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/brick_normal.png", false},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/brick_diffuse.png", true},
     };
 
     rtDescriptorSet = reina::core::DescriptorSet{
