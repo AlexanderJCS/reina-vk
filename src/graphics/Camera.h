@@ -31,8 +31,9 @@ namespace reina::graphics {
 
         [[nodiscard]] const glm::mat4& getInverseView() const;
         [[nodiscard]] const glm::mat4& getInverseProjection() const;
-
+        [[nodiscard]] bool isAcceptingInput() const;
         [[nodiscard]] bool hasChanged() const;
+
         void refresh();
 
     private:

@@ -112,6 +112,8 @@ Reina::Reina() {
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     camera = reina::graphics::Camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
 
+    originalSamplesPerPixel = config.at_path("sampling.samples_per_pixel").value<uint32_t>().value();
+
     RtPushConsts defaultPushConstants = {
             .invView = camera.getInverseView(),
             .invProjection = camera.getInverseProjection(),
@@ -308,6 +310,12 @@ void Reina::renderLoop() {
             pushConstantsStruct.invView = camera.getInverseView();
             pushConstantsStruct.invProjection = camera.getInverseProjection();
             pushConstantsStruct.sampleBatch = 0;  // reset the image
+        }
+
+        if (camera.isAcceptingInput()) {
+            rtPushConsts.getPushConstants().samplesPerPixel = 1;
+        } else {
+            rtPushConsts.getPushConstants().samplesPerPixel = originalSamplesPerPixel;
         }
 
         // clock
