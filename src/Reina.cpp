@@ -300,7 +300,7 @@ Reina::Reina() {
 void Reina::renderLoop() {
     VkCommandBuffer cmdBufferHandle = cmdBuffer.getHandle();
 
-    reina::tools::Clock clock{32};
+    reina::tools::Clock clock{rtPushConsts.getPushConstants().samplesPerPixel};
     while (!renderWindow.shouldClose()) {
         // camera
         camera.processInput(renderWindow, clock.getTimeDelta());
