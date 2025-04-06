@@ -186,7 +186,7 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/blender_cube.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
@@ -197,7 +197,7 @@ Reina::Reina() {
     std::vector<ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1, -1},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, false, 0.7, 0, -1}
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, false, 0.7, 1, 0}
     };
 
     instances = reina::graphics::Instances{

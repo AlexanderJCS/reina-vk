@@ -19,7 +19,7 @@ void main() {
     vec3 worldNormal = hitInfo.worldNormal;
     if (props.normalMapTexID != -1) {
         vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
-        worldNormal = tangentNormal;
+        worldNormal = hitInfo.tbn * tangentNormal;
     }
 
     #ifdef DEBUG_SHOW_NORMALS
