@@ -16,24 +16,30 @@ void main() {
 
     ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
+    vec3 worldNormal = hitInfo.worldNormal;
+    if (props.normalMapTexID != -1) {
+        vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
+        worldNormal = tangentNormal;
+    }
+
     #ifdef DEBUG_SHOW_NORMALS
-        pld.color = hitInfo.worldNormal * 0.5 + 0.5;
+        pld.color = worldNormal * 0.5 + 0.5;
     #else
         pld.color = props.albedo;
 
         if (props.textureID >= 0) {
-            pld.color *= texture(textures[props.textureID], hitInfo.uv).xyz;
+            pld.color *= texture(textures[props.textureID], hitInfo.uv).rgb;
         }
     #endif
 
     pld.emission = props.emission;
-    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
-    pld.rayDirection = diffuseReflection(hitInfo.worldNormal, pld.rngState);
+    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, worldNormal);
+    pld.rayDirection = diffuseReflection(worldNormal, pld.rngState);
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;
     pld.materialID = 0;
-    pld.surfaceNormal = hitInfo.worldNormal;
+    pld.surfaceNormal = worldNormal;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

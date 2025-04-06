@@ -45,6 +45,7 @@ struct HitInfo {
     vec3 color;
     vec2 uv;
     bool frontFace;
+    mat3 tbn;
 };
 
 HitInfo getObjectHitInfo() {
@@ -108,14 +109,45 @@ HitInfo getObjectHitInfo() {
     }
 
     // Transform normals from object space to world space. These use the transpose of the inverse matrix,
-    // because they're directions of normals, not positions:
+    //  because they're directions of normals, not positions:
     result.worldNormal = normalize((objectNormal * gl_WorldToObjectEXT).xyz);
 
-    // Flip the normal so it points against the ray direction:
-    const vec3 rayDirection = gl_WorldRayDirectionEXT;
+    result.frontFace = dot(gl_WorldRayDirectionEXT, result.worldNormal) < 0;
+    result.worldNormal = faceforward(result.worldNormal, gl_WorldRayDirectionEXT, result.worldNormal);
 
-    result.frontFace = dot(rayDirection, result.worldNormal) < 0;
-    result.worldNormal = faceforward(result.worldNormal, rayDirection, result.worldNormal);
+    // TBN stuff
+    result.tbn = mat3(1.0);
+    if (props.normalMapTexID != -1) {
+        // This code is repeated from the above section but... oh well
+        // TODO: fix it later
+        const uint texIndexOffset = props.texIndicesBytesOffset / 4;
+        const uint t0Index = texIndices[3 * primitiveID + texIndexOffset + 0];
+        const uint t1Index = texIndices[3 * primitiveID + texIndexOffset + 1];
+        const uint t2Index = texIndices[3 * primitiveID + texIndexOffset + 2];
+
+        const vec2 uv0 = texCoords[t0Index].xy;
+        const vec2 uv1 = texCoords[t1Index].xy;
+        const vec2 uv2 = texCoords[t2Index].xy;
+
+        vec3 edge1 = v1 - v0;
+        vec3 edge2 = v2 - v0;
+
+        vec2 duv1 = uv1 - uv0;
+        vec2 duv2 = uv2 - uv0;
+
+        float f = 1.0f / (duv1.x * duv2.y - duv2.x * duv1.y);
+
+        vec3 objectTangent = normalize(f * (duv2.y * edge1 - duv1.y * edge2));
+        vec3 worldTangent = normalize((gl_ObjectToWorldEXT * vec4(objectTangent, 0)).xyz);
+
+        // Re-orthagonalize the tangent relative to the interpolated normal
+        vec3 tangentOrth = worldTangent - result.worldNormal * dot(result.worldNormal, worldTangent);
+        tangentOrth = normalize(tangentOrth);
+
+        vec3 bitangent = normalize(cross(result.worldNormal, tangentOrth));
+
+        result.tbn = mat3(tangentOrth, bitangent, result.worldNormal);
+    }
 
     return result;
 }

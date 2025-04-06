@@ -90,7 +90,6 @@ private:
 
     reina::tools::SaveManager saveManager;
 
-    reina::graphics::Image objectTexture;
     std::vector<reina::graphics::Image> textures;
 };
 
