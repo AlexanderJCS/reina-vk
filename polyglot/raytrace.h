@@ -2,7 +2,7 @@
 #define RAYGUN_VK_POLYGLOT_COMMON_H
 
 // define this to show normals on non-dielectric surfaces
-//#define DEBUG_SHOW_NORMALS
+#define DEBUG_SHOW_NORMALS
 
 #ifdef __cplusplus
     #include <cstdint>
@@ -26,7 +26,8 @@ struct ObjectProperties {
     float absorption;
     int textureID;
     int normalMapTexID;
-    vec2 padding;
+    bool cullBackface;
+    float padding;
 };
 
 struct RtPushConsts {

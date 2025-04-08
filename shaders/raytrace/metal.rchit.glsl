@@ -6,13 +6,13 @@
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
 
+    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
+
     // poor man's version of backface culling
-    if (!hitInfo.frontFace) {
+    if (props.cullBackface && !hitInfo.frontFace) {
         skip(hitInfo);
         return;
     }
-
-    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
     vec3 worldNormal = hitInfo.worldNormal;
     if (props.normalMapTexID >= 0) {

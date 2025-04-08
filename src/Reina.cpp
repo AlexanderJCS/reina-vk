@@ -84,8 +84,11 @@ Reina::Reina() {
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
     textures = std::vector<reina::graphics::Image>{
-        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/brick_normal.png", false},
-        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/brick_diffuse.png", true},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/qgdpH_2K_Albedo.jpg", true},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/qgdpH_2K_Normal.jpg", false},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Hammered_Metal_Albedo.png", true},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Hammered_Metal_normal.png", false},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Soil_2K_Albedo.png", false},
     };
 
     rtDescriptorSet = reina::core::DescriptorSet{
@@ -188,18 +191,24 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/plant_leaves_1.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj", "../models/plant_leaves_2.obj", "../models/plant_pot.obj", "../models/plant_soil.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
-    subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
+    leaves_1 = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
+    leaves_2 = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(3), true};
+    pot = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(4), true};
+    soil = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(5), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.2f));
+    glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 0.0f, 0)), glm::vec3(3.0f));
 
     std::vector<ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1, -1},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, false, 0.7, 1, 0}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1, -1, true},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1, true},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7, 0, 1, true},
+            {models.getModelRange(3).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(3).normalsIndexOffset, models.getModelRange(3).texIndexOffset, 1.4f, true, 0.7, 0, 1, true},
+            {models.getModelRange(4).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(4).normalsIndexOffset, models.getModelRange(4).texIndexOffset, 0.2f, false, 0, 2, 3, true},
+            {models.getModelRange(5).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(5).normalsIndexOffset, models.getModelRange(5).texIndexOffset, 0.2f, false, 0, 4, -1, true},
     };
 
     instances = reina::graphics::Instances{
@@ -207,7 +216,10 @@ Reina::Reina() {
             {
                     {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
                     {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
-                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform}
+                    {leaves_1, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform},
+                    {leaves_2, objectProperties[3].emission, models.getModelRange(3), models.getObjData(3), 3, 0, subjectTransform},
+                    {pot, objectProperties[4].emission, models.getModelRange(4), models.getObjData(4), 4, 0, subjectTransform},
+                    {soil, objectProperties[5].emission, models.getModelRange(5), models.getObjData(5), 5, 0, subjectTransform}
             },
     };
     rtPushConsts.getPushConstants().totalEmissiveArea = instances.getEmissiveInstancesArea();
@@ -628,7 +640,10 @@ Reina::~Reina() {
     combineDescriptorSet.destroy(logicalDevice);
     light.destroy(logicalDevice);
     box.destroy(logicalDevice);
-    subject.destroy(logicalDevice);
+    leaves_1.destroy(logicalDevice);
+    leaves_2.destroy(logicalDevice);
+    pot.destroy(logicalDevice);
+    soil.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
     objectPropertiesBuffer.destroy(logicalDevice);

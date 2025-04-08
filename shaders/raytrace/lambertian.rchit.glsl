@@ -7,14 +7,13 @@
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
+    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
     // poor man's version of backface culling
-    if (!hitInfo.frontFace) {
+    if (props.cullBackface && !hitInfo.frontFace) {
         skip(hitInfo);
         return;
     }
-
-    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
     vec3 worldNormal = hitInfo.worldNormal;
     if (props.normalMapTexID >= 0) {
@@ -24,6 +23,7 @@ void main() {
 
     #ifdef DEBUG_SHOW_NORMALS
         pld.color = worldNormal * 0.5 + 0.5;
+        pld.color = vec3(hitInfo.uv, 0.0);
     #else
         pld.color = props.albedo;
         if (props.textureID >= 0) {

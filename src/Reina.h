@@ -47,7 +47,10 @@ private:
     std::vector<VkFramebuffer> framebuffers;
     reina::graphics::Blas light;
     reina::graphics::Blas box;
-    reina::graphics::Blas subject;
+    reina::graphics::Blas leaves_1;
+    reina::graphics::Blas leaves_2;
+    reina::graphics::Blas pot;
+    reina::graphics::Blas soil;
     vktools::AccStructureInfo tlas;
     reina::core::Buffer sbtBuffer;
     reina::core::Buffer objectPropertiesBuffer;

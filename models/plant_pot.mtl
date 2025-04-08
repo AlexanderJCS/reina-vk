@@ -1,0 +1,14 @@
+# Blender 4.0.2 MTL File: 'None'
+# www.blender.org
+
+newmtl Hammered_Metal_Gold
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:/Hammered_Metal_Albedo.png
+map_Ns C:/Hammered_Metal_Roughness.png
+map_refl C:/Hammered_Metal.png
+map_Bump -bm 1.000000 C:/Hammered_Metal_normal.png
