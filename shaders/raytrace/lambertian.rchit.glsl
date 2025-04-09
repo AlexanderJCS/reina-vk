@@ -23,7 +23,6 @@ void main() {
 
     #ifdef DEBUG_SHOW_NORMALS
         pld.color = worldNormal * 0.5 + 0.5;
-        pld.color = vec3(hitInfo.uv, 0.0);
     #else
         pld.color = props.albedo;
         if (props.textureID >= 0) {

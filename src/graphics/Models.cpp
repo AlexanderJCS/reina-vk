@@ -88,7 +88,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         }
 
         for (uint32_t idx : objectData.texIndices) {
-            allTexIndicesOffset[texIndexOffset++] = idx == 4294967295 ? idx : idx + (texOffset / 4);
+            allTexIndicesOffset[texIndexOffset++] = idx == 4294967295 ? idx : idx + (texOffset / 2);
         }
 
         vertexOffset += objectData.vertices.size();

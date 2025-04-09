@@ -51,6 +51,7 @@ private:
     reina::graphics::Blas leaves_2;
     reina::graphics::Blas pot;
     reina::graphics::Blas soil;
+    reina::graphics::Blas floor;
     vktools::AccStructureInfo tlas;
     reina::core::Buffer sbtBuffer;
     reina::core::Buffer objectPropertiesBuffer;
