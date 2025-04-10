@@ -22,7 +22,7 @@ namespace reina::graphics {
         [[nodiscard]] ModelRange getModelRange() const;
 
     private:
-        void computeCDF(const ObjData& objData);
+        void computeCDF(const ObjData& objData, float brightness);
 
         ModelRange modelRange;
         const Blas& blas;

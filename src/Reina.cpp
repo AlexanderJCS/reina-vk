@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <iostream>
+#include <random>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -86,7 +87,7 @@ Reina::Reina() {
     textures = std::vector<reina::graphics::Image>{
         reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/qgdpH_2K_Albedo.jpg", false},
         reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/qgdpH_2K_Normal.jpg", false},
-        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Hammered_Metal_Albedo.png", false},
+        reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Hammered_Metal_Albedo.png", true},
         reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Hammered_Metal_normal.png", false},
         reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Soil_2K_Albedo.png", false},
         reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/Planks016_4K-JPG_Color.jpg", false},
@@ -193,7 +194,7 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/plant_leaves_1.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj", "../models/plant_leaves_2.obj", "../models/plant_pot.obj", "../models/plant_soil.obj", "../models/quad.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/plant_leaves_1.obj", "../models/empty_cornell_box.obj", "../models/light_to_block.obj", "../models/plant_leaves_2.obj", "../models/plant_pot.obj", "../models/plant_soil.obj", "../models/quad.obj", "../models/candle_flame.obj", "../models/light_block.obj", "../models/candle_base.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     leaves_1 = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
@@ -201,33 +202,59 @@ Reina::Reina() {
     pot = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(4), true};
     soil = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(5), true};
     floor = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(6), true};
+    bgLight = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(7), true};
+    lightBlock = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(8), true};
+    candleBase = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(9), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    glm::mat4x4 lightTransform = glm::translate(glm::scale(glm::rotate(baseTransform, (float) glm::radians(30.0f), glm::vec3(1, 0, 0)), glm::vec3(0.15f)), glm::vec3(0, 20, -15));
     glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 0.0f, 0)), glm::vec3(3.0f));
     glm::mat4x4 floorTransform = glm::scale(glm::rotate(baseTransform, (float) glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(2.0f));
 
     std::vector<ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1, -1, true},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1, true},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(245, 240, 220) * glm::vec3(0.1f), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1, true},
             {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, true, 0.7, 0, 1, true},
             {models.getModelRange(3).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(3).normalsIndexOffset, models.getModelRange(3).texIndexOffset, 1.4f, true, 0.7, 0, 1, true},
-            {models.getModelRange(4).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(4).normalsIndexOffset, models.getModelRange(4).texIndexOffset, 0.2f, true, 0, 2, 3, true},
-            {models.getModelRange(5).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(5).normalsIndexOffset, models.getModelRange(5).texIndexOffset, 0.2f, true, 0, 4, -1, true},
+            {models.getModelRange(4).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(4).normalsIndexOffset, models.getModelRange(4).texIndexOffset, 0.05f, true, 0, 2, 3, true},
+            {models.getModelRange(5).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(5).normalsIndexOffset, models.getModelRange(5).texIndexOffset, 0.05f, true, 0, 4, -1, true},
             {models.getModelRange(6).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(6).normalsIndexOffset, models.getModelRange(6).texIndexOffset, 0.0f, true, 0, 5, 6, false},
+            {models.getModelRange(7).indexOffset, glm::vec3(1), glm::vec3(1, 0.6f, 0.3f) * glm::vec3(25), models.getModelRange(7).normalsIndexOffset, models.getModelRange(7).texIndexOffset, 0.0f, false, 0, -1, -1, true},
+            {models.getModelRange(8).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(8).normalsIndexOffset, models.getModelRange(8).texIndexOffset, 0.0f, false, 0, -1, -1, false},
+            {models.getModelRange(9).indexOffset, glm::vec3(243.0/255, 227.0/255, 194.0/255), glm::vec3(0), models.getModelRange(9).normalsIndexOffset, models.getModelRange(9).texIndexOffset, 0.0f, false, 0, -1, -1, false}
     };
 
-    instances = reina::graphics::Instances{
-            logicalDevice, physicalDevice,
-            {
+    std::vector<reina::graphics::Instance> instancesVec = {
 //                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
-                    {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
-                    {leaves_1, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform},
-                    {leaves_2, objectProperties[3].emission, models.getModelRange(3), models.getObjData(3), 3, 0, subjectTransform},
-                    {pot, objectProperties[4].emission, models.getModelRange(4), models.getObjData(4), 4, 1, subjectTransform},
-                    {soil, objectProperties[5].emission, models.getModelRange(5), models.getObjData(5), 5, 0, subjectTransform},
-                    {floor, objectProperties[6].emission, models.getModelRange(6), models.getObjData(6), 6, 0, floorTransform}
-            },
+            {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, lightTransform},
+            {leaves_1, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform},
+            {leaves_2, objectProperties[3].emission, models.getModelRange(3), models.getObjData(3), 3, 0, subjectTransform},
+            {pot, objectProperties[4].emission, models.getModelRange(4), models.getObjData(4), 4, 1, subjectTransform},
+            {soil, objectProperties[5].emission, models.getModelRange(5), models.getObjData(5), 5, 0, subjectTransform},
+            {floor, objectProperties[6].emission, models.getModelRange(6), models.getObjData(6), 6, 0, floorTransform},
+            {lightBlock, objectProperties[8].emission, models.getModelRange(8), models.getObjData(8), 8, 0, lightTransform}
     };
+
+    std::random_device rd;
+    std::mt19937 engine(rd());
+    std::uniform_real_distribution<> xDist(-3, 6);
+    std::uniform_real_distribution<> yDist(0.35f, 3);
+    std::uniform_real_distribution<> zDist(-6, 3);
+    std::uniform_real_distribution<> zeroToOne(0, 1);
+    std::uniform_real_distribution<> yDistLow(0.0f, 0.0f);
+
+    for (int i = 0; i < 250; i++) {
+        float x = xDist(engine);
+        float y = zeroToOne(engine) > 0.1 ? yDist(engine) : yDistLow(engine);
+        float z = zDist(engine);
+
+        glm::mat4x4 transform = glm::translate(baseTransform, glm::vec3(x, y, z));
+        transform = glm::scale(transform, glm::vec3(0.8f));
+        instancesVec.emplace_back(bgLight, objectProperties[7].emission, models.getModelRange(7), models.getObjData(7), 7, 0, transform);
+        instancesVec.emplace_back(candleBase, objectProperties[9].emission, models.getModelRange(9), models.getObjData(9), 9, 0, transform);
+    }
+
+    instances = reina::graphics::Instances{logicalDevice, physicalDevice,instancesVec};
     rtPushConsts.getPushConstants().totalEmissiveArea = instances.getEmissiveInstancesArea();
 
     tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
@@ -636,6 +663,9 @@ Reina::~Reina() {
         texture.destroy(logicalDevice);
     }
 
+    candleBase.destroy(logicalDevice);
+    lightBlock.destroy(logicalDevice);
+    bgLight.destroy(logicalDevice);
     floor.destroy(logicalDevice);
     pingImage.destroy(logicalDevice);
     blurXShader.destroy(logicalDevice);

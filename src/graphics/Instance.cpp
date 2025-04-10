@@ -8,11 +8,11 @@ reina::graphics::Instance::Instance(
         : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission) {
 
     if (isEmissive()) {
-        computeCDF(objData);
+        computeCDF(objData, 0.2126 * emission.r + 0.7152 * emission.g + 0.0722 * emission.b);
     }
 }
 
-void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objData) {
+void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objData, float brightness) {
     // transform all vertices into transform space
     std::vector<glm::vec3> transformedVertices = std::vector<glm::vec3>(objData.vertices.size() / 4);
     for (int i = 0; i < objData.vertices.size(); i += 4) {  // += 4 since each vertex is represented as a 4d vec
@@ -20,7 +20,7 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
         float vy = objData.vertices[i + 1];
         float vz = objData.vertices[i + 2];
 
-        transformedVertices[i / 4] = glm::vec3(glm::vec4(vx, vy, vz, 0) * transform);
+        transformedVertices[i / 4] = glm::vec3(glm::vec4(vx, vy, vz, 1) * transform);
     }
 
     // construct CDF with absolute values
@@ -34,7 +34,7 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
         glm::vec3 ab = transformedVertices[i1] - transformedVertices[i0];
         glm::vec3 ac = transformedVertices[i2] - transformedVertices[i0];
 
-        cumulativeArea += glm::length(glm::cross(ab, ac)) / 2;
+        cumulativeArea += glm::length(glm::cross(ab, ac)) / 2 * brightness;
         cdf[i / 3] = cumulativeArea;
     }
 

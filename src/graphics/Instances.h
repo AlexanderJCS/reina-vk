@@ -20,7 +20,7 @@ namespace reina::graphics {
         uint32_t cdfRangeEnd;
         uint32_t indexOffset;
         glm::vec3 emission;
-        float padding;
+        float weight;
     };
 
     class Instances {

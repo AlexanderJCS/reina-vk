@@ -15,7 +15,7 @@ struct InstanceData {
     uint cdfRangeEnd;
     uint indexOffset;
     vec3 emission;
-    float padding;
+    float weight;
 };
 
 layout (binding = 7, set = 0, scalar) buffer EmissiveMetadataBuffer {
@@ -114,7 +114,9 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     vec3 point = randomPointOnTriangle(rngState, v0, v1, v2);
     vec3 normal = normalize(cross(v1 - v0, v2 - v0));
 
-    float probability = 1 / pushConstants.totalEmissiveArea;
+    float luminosity = 0.2126 * instanceMetadata.emission.r + 0.7152 * instanceMetadata.emission.g + 0.0722 * instanceMetadata.emission.b;
+
+    float probability = instanceMetadata.weight / pushConstants.totalEmissiveArea;
     return RandomEmissivePointOutput(point, normal, instanceMetadata.emission, probability);
 }
 
