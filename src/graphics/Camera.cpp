@@ -164,6 +164,7 @@ void reina::graphics::Camera::toggleInput(GLFWwindow* window) {
     input = !input;
     glfwSetInputMode(window, GLFW_CURSOR, input ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     ignoreNextMouseInput = true;
+    changed = true;
 }
 
 bool reina::graphics::Camera::isAcceptingInput() const {
