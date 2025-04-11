@@ -77,7 +77,8 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
         instanceData.materialOffset = instance.getMaterialOffset();
         instanceData.indexOffset = instance.getModelRange().indexOffset;
         instanceData.emission = instance.getEmission();
-        instanceData.weight = instance.getArea();
+        instanceData.weight = instance.getWeight();
+        instanceData.area = instance.getArea();
 
         if (isDuplicate) {
             const InstanceData& duplicateOf = emissiveInstancesData[duplicates.at(instanceIdx)];
@@ -100,7 +101,7 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
     float cumulativeArea = 0;
     for (int i = 0; i < cdfInstances.size(); i++) {
         int instanceIdx = emissiveInstanceIndices[i];
-        cumulativeArea += instances[instanceIdx].getArea();
+        cumulativeArea += instances[instanceIdx].getWeight();
         cdfInstances[i] = cumulativeArea;
     }
 
@@ -165,6 +166,6 @@ const reina::core::Buffer& reina::graphics::Instances::getCdfInstancesBuffer() c
     return cdfInstancesBuffer;
 }
 
-float reina::graphics::Instances::getEmissiveInstancesArea() const {
+float reina::graphics::Instances::getEmissiveInstancesWeight() const {
     return emissiveInstancesArea;
 }

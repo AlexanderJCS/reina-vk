@@ -25,7 +25,7 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
 
     // construct CDF with absolute values
     cdf = std::vector<float>(objData.indices.size() / 3);
-    float cumulativeArea = 0;
+    float cumulativeWeight = 0;
     for (int i = 0; i < objData.indices.size(); i += 3) {  // += 3 since 3 indices make a triangle
         uint32_t i0 = objData.indices[i + 0];
         uint32_t i1 = objData.indices[i + 1];
@@ -34,20 +34,22 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
         glm::vec3 ab = transformedVertices[i1] - transformedVertices[i0];
         glm::vec3 ac = transformedVertices[i2] - transformedVertices[i0];
 
-        cumulativeArea += glm::length(glm::cross(ab, ac)) / 2 * brightness;
-        cdf[i / 3] = cumulativeArea;
+        float triArea = glm::length(glm::cross(ab, ac)) / 2;
+        area += triArea;
+        cumulativeWeight += triArea * brightness;
+        cdf[i / 3] = cumulativeWeight;
     }
 
-    if (cumulativeArea == 0.0f) {
+    if (cumulativeWeight == 0.0f) {
         throw std::runtime_error("Cannot calculate CDF for a mesh because the cumulative area is 0");
     }
 
     // normalize all values between [0, 1]
     for (float& value : cdf) {
-        value /= cumulativeArea;
+        value /= cumulativeWeight;
     }
 
-    area = cumulativeArea;
+    weight = cumulativeWeight;
 }
 
 const reina::graphics::Blas& reina::graphics::Instance::getBlas() const {
@@ -84,4 +86,8 @@ float reina::graphics::Instance::getArea() const {
 
 glm::vec3 reina::graphics::Instance::getEmission() const {
     return emission;
+}
+
+float reina::graphics::Instance::getWeight() const {
+    return weight;
 }

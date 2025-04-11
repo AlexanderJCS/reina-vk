@@ -124,7 +124,7 @@ Reina::Reina() {
             .invView = camera.getInverseView(),
             .invProjection = camera.getInverseProjection(),
             .sampleBatch = 0,
-            .totalEmissiveArea = 0,
+            .totalEmissiveWeight = 0,
             .focusDist = config.at_path("camera.dof.focus_dist").value<float>().value(),
             .defocusMultiplier = config.at_path("camera.dof.defocus_multiplier").value<float>().value() / 100,  // divide by 100 to provide human-scale values in config file
             .directClamp = config.at_path("sampling.direct_clamp").value<float>().value(),
@@ -258,7 +258,7 @@ Reina::Reina() {
     }
 
     instances = reina::graphics::Instances{logicalDevice, physicalDevice,instancesVec};
-    rtPushConsts.getPushConstants().totalEmissiveArea = instances.getEmissiveInstancesArea();
+    rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
 
     tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
 

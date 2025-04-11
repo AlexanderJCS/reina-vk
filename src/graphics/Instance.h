@@ -20,6 +20,7 @@ namespace reina::graphics {
         [[nodiscard]] bool isEmissive() const;
         [[nodiscard]] glm::vec3 getEmission() const;
         [[nodiscard]] ModelRange getModelRange() const;
+        [[nodiscard]] float getWeight() const;
 
     private:
         void computeCDF(const ObjData& objData, float brightness);
@@ -30,7 +31,8 @@ namespace reina::graphics {
         uint32_t materialOffset = 0;
         glm::mat4x4 transform = glm::mat4x4(1.0f);
         std::vector<float> cdf;
-        float area;
+        float area = 0;
+        float weight = 0;
         glm::vec3 emission;
     };
 }

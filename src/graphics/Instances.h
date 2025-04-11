@@ -21,6 +21,8 @@ namespace reina::graphics {
         uint32_t indexOffset;
         glm::vec3 emission;
         float weight;
+        float area;
+        glm::vec3 padding;
     };
 
     class Instances {
@@ -33,7 +35,7 @@ namespace reina::graphics {
         [[nodiscard]] const reina::core::Buffer& getEmissiveMetadataBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getCdfTrianglesBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getCdfInstancesBuffer() const;
-        [[nodiscard]] float getEmissiveInstancesArea() const;
+        [[nodiscard]] float getEmissiveInstancesWeight() const;
 
         void destroy(VkDevice logicalDevice);
 
