@@ -211,8 +211,8 @@ Reina::Reina() {
     glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 0.0f, 0)), glm::vec3(3.0f));
     glm::mat4x4 floorTransform = glm::scale(glm::rotate(baseTransform, (float) glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(2.0f));
 
-    glm::mat4x4 light1Transform = glm::translate(glm::scale(baseTransform, glm::vec3(0.8f)), glm::vec3(-3.9f, 3.1f, -5.2f));
-    glm::mat4x4 light2Transform = glm::translate(glm::scale(baseTransform, glm::vec3(0.8f)), glm::vec3(-7.9f, 3.1f, -3.2f));
+    glm::mat4x4 light1Transform = glm::translate(glm::scale(baseTransform, glm::vec3(0.8f)), glm::vec3(-5.0f, 3.1f, -1.5f));
+    glm::mat4x4 light2Transform = glm::translate(glm::scale(baseTransform, glm::vec3(0.8f)), glm::vec3(-1.5f, 3.1f, -5.0f));
 
     std::vector<ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, true, 0, -1, -1, true},
@@ -222,10 +222,10 @@ Reina::Reina() {
             {models.getModelRange(4).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(4).normalsIndexOffset, models.getModelRange(4).texIndexOffset, 0.05f, true, 0, 2, 3, true},
             {models.getModelRange(5).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(5).normalsIndexOffset, models.getModelRange(5).texIndexOffset, 0.05f, true, 0, 4, -1, true},
             {models.getModelRange(6).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(6).normalsIndexOffset, models.getModelRange(6).texIndexOffset, 0.0f, true, 0, 5, 6, false},
-            {models.getModelRange(7).indexOffset, glm::vec3(1), glm::vec3(1, 0.6f, 0.5f) * glm::vec3(3), models.getModelRange(7).normalsIndexOffset, models.getModelRange(7).texIndexOffset, 0.0f, true, 0, -1, -1, true},
+            {models.getModelRange(7).indexOffset, glm::vec3(1), glm::vec3(1, 0.6f, 0.5f) * glm::vec3(2), models.getModelRange(7).normalsIndexOffset, models.getModelRange(7).texIndexOffset, 0.0f, true, 0, -1, -1, true},
             {models.getModelRange(8).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(8).normalsIndexOffset, models.getModelRange(8).texIndexOffset, 0.0f, true, 0, -1, -1, false},
             {models.getModelRange(9).indexOffset, glm::vec3(243.0/255, 227.0/255, 194.0/255), glm::vec3(0), models.getModelRange(9).normalsIndexOffset, models.getModelRange(9).texIndexOffset, 0.0f, true, 0, -1, -1, false},
-            {models.getModelRange(7).indexOffset, glm::vec3(1), glm::vec3(1, 0.6f, 0.4f) * glm::vec3(34.0), models.getModelRange(7).normalsIndexOffset, models.getModelRange(7).texIndexOffset, 0.0f, true, 0, -1, -1, true},
+            {models.getModelRange(7).indexOffset, glm::vec3(1), glm::vec3(1, 0.6f, 0.4f) * glm::vec3(25.0), models.getModelRange(7).normalsIndexOffset, models.getModelRange(7).texIndexOffset, 0.0f, true, 0, -1, -1, true},
     };
 
     std::vector<reina::graphics::Instance> instancesVec = {
@@ -235,7 +235,7 @@ Reina::Reina() {
             {leaves_2, objectProperties[3].emission, models.getModelRange(3), models.getObjData(3), 3, 0, subjectTransform},
             {pot, objectProperties[4].emission, models.getModelRange(4), models.getObjData(4), 4, 1, subjectTransform},
             {soil, objectProperties[5].emission, models.getModelRange(5), models.getObjData(5), 5, 0, subjectTransform},
-//                {bgLight, objectProperties[10].emission, models.getModelRange(7), models.getObjData(7), 10, 0, light1Transform},
+                {bgLight, objectProperties[10].emission, models.getModelRange(7), models.getObjData(7), 10, 0, light1Transform},
                 {bgLight, objectProperties[10].emission, models.getModelRange(7), models.getObjData(7), 10, 0, light2Transform}
 //            {floor, objectProperties[6].emission, models.getModelRange(6), models.getObjData(6), 6, 0, floorTransform},
 //            {lightBlock, objectProperties[8].emission, models.getModelRange(8), models.getObjData(8), 8, 0, lightTransform}

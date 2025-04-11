@@ -21,4 +21,4 @@ threshold = 1.0  # threshold at which to apply bloom
 intensity = 0.025  # [0, 1], but recommended to be less than 0.05
 
 [postprocessing.tonemap]
-exposure = 1.4  # exposure. 0 is no change. calculated by color_out = color_in * 2^exposure
+exposure = 1  # exposure. 0 is no change. calculated by color_out = color_in * 2^exposure
