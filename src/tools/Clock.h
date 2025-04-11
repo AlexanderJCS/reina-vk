@@ -21,12 +21,12 @@ namespace reina::tools {
      */
     class Clock {
     public:
-        explicit Clock(uint32_t spp);
+        Clock();
 
         [[nodiscard]] static double getTime();
         [[nodiscard]] double getAge() const;
 
-        void markFrame();
+        void markFrame(uint32_t samples);
         void markCategory(const std::string& category);
 
         [[nodiscard]] unsigned int getFrameCount() const;
@@ -39,7 +39,7 @@ namespace reina::tools {
 
         std::string summary();
     private:
-        uint32_t samplesPerPixel;
+        uint32_t samplesRecorded = 0;
         double creationTime;
         double secondToLastFrameTime = 0;
         double lastFrameTime = 0;

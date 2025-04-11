@@ -14,7 +14,7 @@ void reina::tools::TimeEntries::addEntry(double timing) {
     recordings++;
 }
 
-reina::tools::Clock::Clock(uint32_t spp) : creationTime(getTime()), samplesPerPixel(spp) {}
+reina::tools::Clock::Clock() : creationTime(getTime()) {}
 
 double reina::tools::Clock::getTime() {
     return glfwGetTime();
@@ -24,7 +24,7 @@ double reina::tools::Clock::getAge() const {
     return getTime() - creationTime;
 }
 
-void reina::tools::Clock::markFrame() {
+void reina::tools::Clock::markFrame(uint32_t samples) {
     // don't simply compare with 0 because floating point errors.
     // is it likely there's a floating point error here? no. do I want to risk it? also no.
     if (lastFrameTime < 0.000001) {
@@ -36,6 +36,7 @@ void reina::tools::Clock::markFrame() {
     frameTime.addEntry(time - lastFrameTime);
     secondToLastFrameTime = lastFrameTime;
     lastFrameTime = time;
+    samplesRecorded += samples;
 }
 
 void reina::tools::Clock::markCategory(const std::string& category) {
@@ -60,7 +61,7 @@ std::string reina::tools::Clock::summary() {
     oss << "Timer age: " << getAge() << "s\n";
     oss << "Samples: " << getSampleCount() << "\n";
     oss << "Average frame time: " << frameTime.averageTime * 1000 << "ms\n";
-    oss << "Average time per spp: " << frameTime.averageTime * 1000 / samplesPerPixel << "ms\n";
+    oss << "Average time per spp: " << frameTime.averageTime * 1000 / samplesRecorded << "ms\n";
 
     for (auto & time : categoryTimes) {
         oss << "Average category time | " << time.first << ": " << time.second.averageTime * 1000 << "ms\n";
@@ -74,7 +75,7 @@ unsigned int reina::tools::Clock::getFrameCount() const {
 }
 
 unsigned int reina::tools::Clock::getSampleCount() const {
-    return getFrameCount() * samplesPerPixel;
+    return samplesRecorded;
 }
 
 double reina::tools::Clock::getAverageFrameTime() const {

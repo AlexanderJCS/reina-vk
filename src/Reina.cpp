@@ -345,7 +345,7 @@ Reina::Reina() {
 void Reina::renderLoop() {
     VkCommandBuffer cmdBufferHandle = cmdBuffer.getHandle();
 
-    reina::tools::Clock clock{rtPushConsts.getPushConstants().samplesPerPixel};
+    reina::tools::Clock clock;
     while (!renderWindow.shouldClose()) {
         // camera
         camera.processInput(renderWindow, clock.getTimeDelta());
@@ -427,7 +427,7 @@ void Reina::renderLoop() {
             present(imageIndex);
         }
 
-        clock.markFrame();
+        clock.markFrame(rtPushConsts.getPushConstants().samplesPerPixel);
         glfwPollEvents();
     }
 
