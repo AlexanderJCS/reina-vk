@@ -9,7 +9,7 @@
 #include "../core/CmdBuffer.h"
 #include "../core/Buffer.h"
 
-reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath, bool gammaCorrection) {
+reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath) {
     // read image with stb: https://solarianprogrammer.com/2019/06/10/c-programming-reading-writing-images-stb_image-libraries/
     int imageWidth, imageHeight, channels;
 
@@ -32,7 +32,7 @@ reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalD
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
 
-    VkFormat format = gammaCorrection ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+    VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;  // Do not use gamma correction since it is already assumed to have it
     VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 

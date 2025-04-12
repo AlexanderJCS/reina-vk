@@ -8,7 +8,7 @@ namespace reina::graphics {
     class Image {
     public:
         Image() = default;
-        Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath, bool gammaCorrection);
+        Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath);
         Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps);
 
         [[nodiscard]] VkImage getImage() const;
