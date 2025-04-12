@@ -92,7 +92,7 @@ HitInfo getObjectHitInfo() {
         objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
     }
 
-    if (props.texIndicesBytesOffset == 4294967295) {
+    if (props.texIndicesBytesOffset == 0xFFFFFFFFu) {
         // no tex coords for this model
         result.uv = vec2(0);
     } else {
