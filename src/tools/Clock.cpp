@@ -61,7 +61,7 @@ std::string reina::tools::Clock::summary() {
     oss << "Timer age: " << getAge() << "s\n";
     oss << "Samples: " << getSampleCount() << "\n";
     oss << "Average frame time: " << frameTime.averageTime * 1000 << "ms\n";
-    oss << "Average time per spp: " << frameTime.averageTime * 1000 / samplesRecorded << "ms\n";
+    oss << "Average time per spp: " << frameTime.averageTime * frameTime.recordings * 1000 / getSampleCount() << "ms\n";
 
     for (auto & time : categoryTimes) {
         oss << "Average category time | " << time.first << ": " << time.second.averageTime * 1000 << "ms\n";

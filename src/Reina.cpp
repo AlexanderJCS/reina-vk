@@ -189,18 +189,18 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/uv_sphere.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0.0f, 1.0f, 0)), glm::vec3(0.2f));
+    glm::mat4x4 subjectTransform = glm::rotate(baseTransform, glm::radians(15.0f), glm::vec3(0, 1, 0));
 
     std::vector<ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1, -1, true},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1, true},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 1.4f, false, 0.7, 1, 0, true}
+            {models.getModelRange(0).indexOffset, glm::vec3(0.9), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 0.1f, true, 0.7, -1, -1, true}
     };
 
     instances = reina::graphics::Instances{
@@ -208,7 +208,7 @@ Reina::Reina() {
             {
                     {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
                     {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
-                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, subjectTransform}
+                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 1, subjectTransform}
             },
     };
     rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
