@@ -23,7 +23,7 @@ void save(const std::string& filename, VkDevice logicalDevice, VkQueue graphicsQ
     img.copyToBuffer(saveCmdBuffer.getHandle(), stagingBuffer.getHandle());
     saveCmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);
 
-    std::vector<uint8_t> pixels = stagingBuffer.copyData<uint8_t>(logicalDevice);
+    std::vector<uint8_t> pixels = stagingBuffer.copyToHost<uint8_t>(logicalDevice);
 
     int success = stbi_write_png(
             ("../" + filename).c_str(),
@@ -189,7 +189,7 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"../models/stanford_dragon.obj", "../models/empty_cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};

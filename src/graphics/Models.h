@@ -31,7 +31,7 @@ namespace reina::graphics {
     class Models {
     public:
         Models() = default;
-        Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths);
+        Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths);
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
         [[nodiscard]] size_t getIndicesBuffersSize() const;

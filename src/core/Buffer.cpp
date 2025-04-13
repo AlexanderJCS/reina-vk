@@ -60,3 +60,17 @@ void reina::core::Buffer::destroy(VkDevice logicalDevice) {
     vkDestroyBuffer(logicalDevice, buffer, nullptr);
     vkFreeMemory(logicalDevice, deviceMemory, nullptr);
 }
+
+void reina::core::Buffer::copyFrom(const reina::core::CmdBuffer& cmdBuffer, const reina::core::Buffer& src) {
+    VkBufferCopy copyInfo{
+        .srcOffset = 0,
+        .dstOffset = 0,
+        .size = src.getSize()
+    };
+
+    vkCmdCopyBuffer(cmdBuffer.getHandle(), src.getHandle(), getHandle(), 1, &copyInfo);
+}
+
+VkDeviceSize reina::core::Buffer::getSize() const {
+    return size;
+}

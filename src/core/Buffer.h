@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
+#include "CmdBuffer.h"
+
 namespace reina::core {
     class Buffer {
     public:
@@ -21,7 +23,25 @@ namespace reina::core {
         }
 
         template<typename T>
-        std::vector<T> copyData(VkDevice logicalDevice) {
+        Buffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<T>& data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags)
+                : Buffer(logicalDevice, physicalDevice, data.empty() ? 0 : sizeof(data[0]) * data.size(), usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, allocFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT){
+            VkBufferUsageFlags usageFlagsStaging = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            VkMemoryPropertyFlags memFlagsStaging = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+            Buffer stagingBuffer{logicalDevice, physicalDevice, data, usageFlagsStaging, allocFlags, memFlagsStaging};
+
+            reina::core::CmdBuffer oneTime{logicalDevice, cmdPool, true};
+            copyFrom(oneTime, stagingBuffer);
+            oneTime.endWaitSubmit(logicalDevice, queue);
+            oneTime.destroy(logicalDevice);
+
+            stagingBuffer.destroy(logicalDevice);
+        }
+
+        void copyFrom(const reina::core::CmdBuffer& cmdBuffer, const Buffer& src);
+
+        template<typename T>
+        std::vector<T> copyToHost(VkDevice logicalDevice) {
             void* data;
             vkMapMemory(logicalDevice, getDeviceMemory(), 0, size, 0, &data);
 
@@ -35,6 +55,7 @@ namespace reina::core {
         [[nodiscard]] VkBuffer getHandle() const;
         [[nodiscard]] VkDeviceMemory getDeviceMemory() const;
         [[nodiscard]] VkDeviceAddress getDeviceAddress(VkDevice logicalDevice) const;
+        [[nodiscard]] VkDeviceSize getSize() const;
 
         void destroy(VkDevice logicalDevice);
 

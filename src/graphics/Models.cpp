@@ -24,7 +24,7 @@ static std::vector<float> tinyobjToVec4(const std::vector<tinyobj::real_t>& tiny
     return output;
 }
 
-reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<std::string>& modelFilepaths) {
+reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
     modelRanges = std::vector<ModelRange>(modelFilepaths.size());
     modelObjData = std::vector<ObjData>(modelFilepaths.size());
 
@@ -104,23 +104,23 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     verticesBufferSize = allVertices.size();
-    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allVertices, usage, allocFlags, memFlags};
+    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};
 
     indicesBuffersSize = allIndicesOffset.size();
-    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allIndicesOffset, usage, allocFlags, memFlags};
-    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allIndicesNonOffset, usage, allocFlags, memFlags};
+    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
+    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
 
     normalsBufferSize = allNormals.size();
-    normalsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allNormals, usage, allocFlags, memFlags};
+    normalsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allNormals, usage, allocFlags};
 
     normalsIndicesBufferSize = allNormalsIndicesOffset.size();
-    offsetNormalsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allNormalsIndicesOffset, usage, allocFlags, memFlags};
+    offsetNormalsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allNormalsIndicesOffset, usage, allocFlags};
 
     texCoordsBufferSize = allTexCoords.size();
-    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags, memFlags};
+    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
 
     texIndicesBufferSize = allTexIndicesOffset.size();
-    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, allTexIndicesOffset, usage, allocFlags, memFlags};
+    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
 }
 
 reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& filepath) {
