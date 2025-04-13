@@ -11,6 +11,9 @@ Render of the Stanford bunny model with 6,000 samples per pixel. It has approxim
 Render of a plant with 10,000 samples that took approximately 50 seconds to render.
 <img src="renders/plant.png" width="500" alt="Render of a plant">
 
+Render of the Stanford dragon with 2048 samples and took 14 seconds to render.
+<img src="renders/dragon7.png" width="500" alt="Render of the Stanford Dragon model">
+
 ## Features
 
 * Path tracing of the following materials:
