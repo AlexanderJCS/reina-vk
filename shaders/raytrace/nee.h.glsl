@@ -17,7 +17,8 @@ struct InstanceData {
     vec3 emission;
     float weight;
     float area;
-    vec3 padding;
+    bool cullBackface;
+    vec2 padding;
 };
 
 layout (binding = 7, set = 0, scalar) buffer EmissiveMetadataBuffer {
@@ -39,6 +40,7 @@ struct RandomEmissivePointOutput {
     vec3 normal;
     vec3 emission;
     float pdf;
+    bool cullBackface;
 };
 
 struct ShadowPayload {
@@ -119,7 +121,7 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
     float luminosity = 0.2126 * instanceMetadata.emission.r + 0.7152 * instanceMetadata.emission.g + 0.0722 * instanceMetadata.emission.b;
 
     float probability = (instanceMetadata.weight / pushConstants.totalEmissiveWeight) * (1 / instanceMetadata.area);
-    return RandomEmissivePointOutput(point, normal, instanceMetadata.emission, probability);
+    return RandomEmissivePointOutput(point, normal, instanceMetadata.emission, probability, instanceMetadata.cullBackface);
 }
 
 bool shadowRayOccluded(vec3 origin, vec3 direction, float dist) {

@@ -53,8 +53,13 @@ vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rng
     }
 
     vec3 lambertBRDF = albedo / k_pi;
-    float cosThetai = max(dot(surfaceNormal, direction), 0.0);
-    float geometryTerm = max(dot(target.normal, -direction), 0.0) / (dist * dist);
+
+    float cosThetai = dot(surfaceNormal, direction);
+    cosThetai = target.cullBackface ? max(cosThetai, 0.0) : abs(cosThetai);
+
+    float geometryTermNumerator = dot(target.normal, -direction);
+    geometryTermNumerator = target.cullBackface ? max(geometryTermNumerator, 0.0) : abs(geometryTermNumerator);
+    float geometryTerm = geometryTermNumerator / (dist * dist);
 
     vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / target.pdf;
 

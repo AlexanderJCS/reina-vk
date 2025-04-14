@@ -9,7 +9,7 @@
 namespace reina::graphics {
     class Instance {
     public:
-        Instance(const Blas& blas, glm::vec3 emission, ModelRange modelRange, const ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform = glm::mat4x4(1.0f));
+        Instance(const Blas& blas, glm::vec3 emission, ModelRange modelRange, const ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
 
         [[nodiscard]] const Blas& getBlas() const;
         [[nodiscard]] glm::mat4x4 getTransform() const;
@@ -21,6 +21,7 @@ namespace reina::graphics {
         [[nodiscard]] glm::vec3 getEmission() const;
         [[nodiscard]] ModelRange getModelRange() const;
         [[nodiscard]] float getWeight() const;
+        [[nodiscard]] bool isCullBackface() const;
 
     private:
         void computeCDF(const ObjData& objData, float brightness);
@@ -34,6 +35,7 @@ namespace reina::graphics {
         float area = 0;
         float weight = 0;
         glm::vec3 emission;
+        bool cullBackface;
     };
 }
 

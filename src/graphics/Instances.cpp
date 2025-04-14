@@ -79,6 +79,7 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
         instanceData.emission = instance.getEmission();
         instanceData.weight = instance.getWeight();
         instanceData.area = instance.getArea();
+        instanceData.cullBackface = instance.isCullBackface();
 
         if (isDuplicate) {
             const InstanceData& duplicateOf = emissiveInstancesData[duplicates.at(instanceIdx)];

@@ -206,10 +206,10 @@ Reina::Reina() {
     instances = reina::graphics::Instances{
             logicalDevice, physicalDevice,
             {
-                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, baseTransform},
-                    {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, baseTransform},
-                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 1, subjectTransform}
-            },
+                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, objectProperties[0].cullBackface, baseTransform},
+                    {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, objectProperties[1].cullBackface, baseTransform},
+                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 1, objectProperties[2].cullBackface, subjectTransform}
+            }
     };
     rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
 

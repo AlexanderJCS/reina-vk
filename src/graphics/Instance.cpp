@@ -4,8 +4,8 @@
 
 reina::graphics::Instance::Instance(
         const reina::graphics::Blas& blas, glm::vec3 emission, ModelRange modelRange, const reina::graphics::ObjData& objData,
-        uint32_t objectPropertiesID, uint32_t materialOffset, glm::mat4x4 transform)
-        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission) {
+        uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform)
+        : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission), cullBackface(cullBackface) {
 
     if (isEmissive()) {
         computeCDF(objData, 0.2126 * emission.r + 0.7152 * emission.g + 0.0722 * emission.b);
@@ -90,4 +90,8 @@ glm::vec3 reina::graphics::Instance::getEmission() const {
 
 float reina::graphics::Instance::getWeight() const {
     return weight;
+}
+
+bool reina::graphics::Instance::isCullBackface() const {
+    return cullBackface;
 }

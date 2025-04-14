@@ -22,7 +22,8 @@ namespace reina::graphics {
         glm::vec3 emission;
         float weight;
         float area;
-        glm::vec3 padding;
+        bool cullBackface;
+        glm::vec2 padding;
     };
 
     class Instances {
