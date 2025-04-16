@@ -4,6 +4,7 @@
 
 #include "closestHitCommon.h.glsl"
 #include "nee.h.glsl"
+#include "texutils.h.glsl"
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
@@ -25,8 +26,14 @@ void main() {
         pld.color = worldNormal * 0.5 + 0.5;
     #else
         pld.color = props.albedo;
+
+        vec2 uv = hitInfo.uv;
+        if (props.bumpMapTexID >= 0) {
+            uv = bumpMapping(uv, normalize(gl_WorldRayDirectionEXT), hitInfo.tbn, textures[props.bumpMapTexID]);
+        }
+
         if (props.textureID >= 0) {
-            pld.color *= texture(textures[props.textureID], hitInfo.uv).rgb;
+            pld.color *= texture(textures[props.textureID], uv).rgb;
         }
     #endif
 

@@ -26,6 +26,7 @@ struct ObjectProperties {
     float absorption;
     int textureID;
     int normalMapTexID;
+    int bumpMapTexID;
     bool cullBackface;
     float padding;
 };
