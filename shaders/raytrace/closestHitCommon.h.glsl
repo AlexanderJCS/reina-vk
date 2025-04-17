@@ -135,18 +135,22 @@ HitInfo getObjectHitInfo() {
         vec2 duv1 = uv1 - uv0;
         vec2 duv2 = uv2 - uv0;
 
-        float f = 1.0f / (duv1.x * duv2.y - duv2.x * duv1.y);
+        float det = duv1.x*duv2.y - duv2.x*duv1.y;
+        float invDet = det == 0.0 ? 0.0 : 1.0/det;
 
-        vec3 objectTangent = normalize(f * (duv2.y * edge1 - duv1.y * edge2));
-        vec3 worldTangent = normalize((gl_ObjectToWorldEXT * vec4(objectTangent, 0)).xyz);
+        // build both axes in object‑space
+        vec3 objectTangent   = normalize( invDet * ( duv2.y*edge1 - duv1.y*edge2 ) );
+        vec3 objectBitangent = normalize( invDet * (-duv2.x*edge1 + duv1.x*edge2 ) );
 
-        // Re-orthagonalize the tangent relative to the interpolated normal
-        vec3 tangentOrth = worldTangent - result.worldNormal * dot(result.worldNormal, worldTangent);
-        tangentOrth = normalize(tangentOrth);
+        // transform to world
+        vec3 worldTangent    = normalize((gl_ObjectToWorldEXT * vec4(objectTangent,   0.0)).xyz);
+        vec3 worldBitangent  = normalize((gl_ObjectToWorldEXT * vec4(objectBitangent, 0.0)).xyz);
+        vec3 worldNormal = result.worldNormal;
 
-        vec3 bitangent = normalize(cross(result.worldNormal, tangentOrth));
-
-        result.tbn = mat3(tangentOrth, bitangent, result.worldNormal);
+        // re‑orthonormalize
+        worldTangent   = normalize(worldTangent   - worldNormal * dot(worldNormal, worldTangent));
+        worldBitangent = normalize(worldBitangent - worldNormal * dot(worldNormal, worldBitangent));
+        result.tbn     = mat3(worldTangent, worldBitangent, worldNormal);
     }
 
     return result;
