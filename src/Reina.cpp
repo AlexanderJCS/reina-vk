@@ -190,13 +190,13 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"../models/quad.obj", "../models/cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"../models/uv_sphere.obj", "../models/cornell_box.obj", "../models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::rotate(baseTransform, glm::radians(90.0f), glm::vec3(0, 1, 0));
+    glm::mat4x4 subjectTransform = glm::rotate(baseTransform, glm::radians(34.0f), glm::vec3(1, 1, 0));
 
     std::vector<ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, 0, -1, -1, false},

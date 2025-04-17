@@ -2,7 +2,7 @@
 #define REINA_TEXUTILS_H
 
 vec2 bumpMapping(vec2 uv, vec3 rayIn, mat3 T, sampler2D heightMap) {
-    const float heightScale = 0.5;
+    const float heightScale = 0.1;
     const float minLayers   =  512.0;
     const float maxLayers   = 1024.0;
 

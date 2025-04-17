@@ -137,11 +137,11 @@ HitInfo getObjectHitInfo() {
         vec2 duv2 = uv2 - uv0;
 
         float det = duv1.x*duv2.y - duv2.x*duv1.y;
-        float invDet = det == 0.0 ? 0.0 : 1.0/det;
+        float invDet =1.0 / det;
 
         // build both axes in object‑space
-        vec3 objectTangent   = normalize( invDet * ( duv2.y*edge1 - duv1.y*edge2 ) );
-        vec3 objectBitangent = normalize( invDet * (-duv2.x*edge1 + duv1.x*edge2 ) );
+        vec3 objectTangent   = normalize(invDet * ( duv2.y*edge1 - duv1.y*edge2));
+        vec3 objectBitangent = normalize(invDet * (-duv2.x*edge1 + duv1.x*edge2));
 
         // transform to world
         vec3 worldTangent    = normalize((gl_ObjectToWorldEXT * vec4(objectTangent,   0.0)).xyz);
@@ -149,8 +149,8 @@ HitInfo getObjectHitInfo() {
         vec3 worldNormal = result.worldNormal;
 
         worldTangent   = normalize(worldTangent - worldNormal * dot(worldNormal, worldTangent));
-        worldBitangent = cross(worldNormal, worldTangent);
-        worldBitangent *= result.frontFace ? 1.0 : -1.0;
+        float handedness = ( dot( cross(worldTangent, worldBitangent), worldNormal ) < 0.0 ) ? -1.0 : 1.0;
+        worldBitangent = cross(worldNormal, worldTangent) * handedness;
         result.tbn     = mat3(worldTangent, worldBitangent, worldNormal);
     }
 
