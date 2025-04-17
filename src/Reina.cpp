@@ -85,9 +85,9 @@ Reina::Reina() {
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
     textures = std::vector<reina::graphics::Image>{
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/toybox/diffuse.png"},
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/toybox/normal.png"},
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/toybox/parallax.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/bricks2/diffuse.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/bricks2/normal.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/bricks2/parallax.png"},
     };
 
     rtDescriptorSet = reina::core::DescriptorSet{
