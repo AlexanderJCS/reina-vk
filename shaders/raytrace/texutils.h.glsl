@@ -3,11 +3,11 @@
 
 vec2 bumpMapping(vec2 uv, vec3 rayIn, mat3 T, sampler2D heightMap) {
     const float heightScale = 0.5;
-    const float minLayers   =  256.0;
-    const float maxLayers   = 512.0;
+    const float minLayers   =  512.0;
+    const float maxLayers   = 1024.0;
 
     // 1. world → tangent, view vector
-    vec3 V = normalize(T * -rayIn);
+    vec3 V = normalize(transpose(T) * -rayIn);
     if (V.z <= 0.0) return uv;               // avoid divide‐by‐zero / backfaces
 
     // 2. pick layers based on angle

@@ -110,7 +110,8 @@ HitInfo getObjectHitInfo() {
 
     // Transform normals from object space to world space. These use the transpose of the inverse matrix,
     //  because they're directions of normals, not positions:
-    result.worldNormal = normalize((objectNormal * gl_WorldToObjectEXT).xyz);
+    mat3 normalMatrix = transpose(mat3(gl_WorldToObjectEXT));
+    result.worldNormal = normalize(normalMatrix * objectNormal);
 
     result.frontFace = dot(gl_WorldRayDirectionEXT, result.worldNormal) < 0;
     result.worldNormal = faceforward(result.worldNormal, gl_WorldRayDirectionEXT, result.worldNormal);
@@ -147,9 +148,9 @@ HitInfo getObjectHitInfo() {
         vec3 worldBitangent  = normalize((gl_ObjectToWorldEXT * vec4(objectBitangent, 0.0)).xyz);
         vec3 worldNormal = result.worldNormal;
 
-        // re‑orthonormalize
-        worldTangent   = normalize(worldTangent   - worldNormal * dot(worldNormal, worldTangent));
-        worldBitangent = normalize(worldBitangent - worldNormal * dot(worldNormal, worldBitangent));
+        worldTangent   = normalize(worldTangent - worldNormal * dot(worldNormal, worldTangent));
+        worldBitangent = cross(worldNormal, worldTangent);
+        worldBitangent *= result.frontFace ? 1.0 : -1.0;
         result.tbn     = mat3(worldTangent, worldBitangent, worldNormal);
     }
 
