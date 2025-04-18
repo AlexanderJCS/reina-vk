@@ -23,6 +23,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(stb)
 
 FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp.git
+        GIT_TAG        v5.4.3
+)
+FetchContent_MakeAvailable(assimp)
+
+FetchContent_Declare(
         tinyobjloader
         GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
         GIT_TAG        v2.0.0rc13
@@ -34,6 +41,7 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
         GIT_TAG        v3.4.0
 )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unknown-pragmas")
 FetchContent_MakeAvailable(tomlplusplus)
 
 add_executable(reina_vk src/main.cpp
@@ -74,9 +82,12 @@ add_executable(reina_vk src/main.cpp
         polyglot/bloom.h
         polyglot/tonemapping.h)
 
-target_link_libraries(reina_vk Vulkan::Vulkan glfw)
+target_link_libraries(reina_vk Vulkan::Vulkan glfw assimp)
 
-target_include_directories(reina_vk PRIVATE ${Vulkan_INCLUDE_DIRS})
-target_include_directories(reina_vk PRIVATE ${stb_SOURCE_DIR})
-target_include_directories(reina_vk PRIVATE ${tinyobjloader_SOURCE_DIR})
-target_include_directories(reina_vk PRIVATE ${tomlplusplus_SOURCE_DIR})
+target_include_directories(reina_vk PRIVATE
+    ${Vulkan_INCLUDE_DIRS}
+    ${stb_SOURCE_DIR}
+    ${tinyobjloader_SOURCE_DIR}
+    ${tomlplusplus_SOURCE_DIR}
+    ${assimp_SOURCE_DIR}/include
+)
