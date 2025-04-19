@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <cstring>
+#include <stdexcept>
 
 reina::graphics::Instances::Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances) : instances(instances) {
     computeSamplingDataEmissives();
@@ -120,6 +121,10 @@ void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysica
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
     VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    if (cdfTriangles.empty()) {
+        throw std::runtime_error("Scene must have at least one emissive object");
+    }
 
     cdfTrianglesBuffer = reina::core::Buffer{
             logicalDevice, physicalDevice, cdfTriangles,

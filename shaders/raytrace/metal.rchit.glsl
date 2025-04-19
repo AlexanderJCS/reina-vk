@@ -9,7 +9,7 @@ void main() {
     ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
     // poor man's version of backface culling
-    if (props.cullBackface && !hitInfo.frontFace) {
+    if (props.cullBackface != 0u && !hitInfo.frontFace) {
         skip(hitInfo);
         return;
     }

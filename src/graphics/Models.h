@@ -13,7 +13,7 @@ namespace reina::graphics {
         uint32_t firstVertex;
         uint32_t firstNormal;
         uint32_t indexOffset;
-        uint32_t normalsIndexOffset;
+        uint32_t tbnsIndexOffset;
         uint32_t texIndexOffset;
         uint32_t indexCount;
         uint32_t tbnsIndexCount;

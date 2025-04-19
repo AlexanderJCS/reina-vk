@@ -108,10 +108,8 @@ HitInfo getObjectHitInfo() {
         result.uv = t0 * barycentrics.x + t1 * barycentrics.y + t2 * barycentrics.z;
     }
 
-    // Transform normals from object space to world space. These use the transpose of the inverse matrix,
-    //  because they're directions of normals, not positions:
-    mat3 normalMatrix = transpose(mat3(gl_WorldToObjectEXT));
-    result.worldNormal = normalize(normalMatrix * objectNormal);
+    // Transform normals from object space to world space
+    result.worldNormal = normalize(mat3(gl_ObjectToWorldEXT) * objectNormal);
 
     result.frontFace = dot(gl_WorldRayDirectionEXT, result.worldNormal) < 0;
     result.worldNormal = faceforward(result.worldNormal, gl_WorldRayDirectionEXT, result.worldNormal);
@@ -119,39 +117,28 @@ HitInfo getObjectHitInfo() {
     // TBN stuff
     result.tbn = mat3(1.0);
     if (props.normalMapTexID != -1) {
-        // This code is repeated from the above section but... oh well
-        // TODO: fix it later
-        const uint texIndexOffset = props.texIndicesBytesOffset / 4;
-        const uint t0Index = texIndices[3 * primitiveID + texIndexOffset + 0];
-        const uint t1Index = texIndices[3 * primitiveID + texIndexOffset + 1];
-        const uint t2Index = texIndices[3 * primitiveID + texIndexOffset + 2];
+        const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
+        mat3 vertex1 = tbns[normalsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
+        mat3 vertex2 = tbns[normalsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
+        mat3 vertex3 = tbns[normalsIndices[3 * primitiveID + tbnsIndexOffset + 2]];
 
-        const vec2 uv0 = texCoords[t0Index].xy;
-        const vec2 uv1 = texCoords[t1Index].xy;
-        const vec2 uv2 = texCoords[t2Index].xy;
+        vec3 tangent = normalize(vertex1[0] * barycentrics.x + vertex2[0] * barycentrics.y + vertex3[0] * barycentrics.z);
+        vec3 bitangent = normalize(vertex1[1] * barycentrics.x + vertex2[1] * barycentrics.y + vertex3[1] * barycentrics.z);
+        vec3 normal = normalize(vertex1[2] * barycentrics.x + vertex2[2] * barycentrics.y + vertex3[2] * barycentrics.z);
 
-        vec3 edge1 = v1 - v0;
-        vec3 edge2 = v2 - v0;
+        vec3 worldTangent = vec3(mat3(gl_ObjectToWorldEXT) * tangent);
+        vec3 worldBitangent = vec3(mat3(gl_ObjectToWorldEXT) * bitangent);
+        vec3 worldNormal = vec3(mat3(gl_ObjectToWorldEXT) * normal);
 
-        vec2 duv1 = uv1 - uv0;
-        vec2 duv2 = uv2 - uv0;
+        mat3 localTBN = mat3(worldTangent, worldBitangent, worldNormal);
+        mat3 normalMatrix = transpose(inverse(mat3(gl_ObjectToWorldEXT)));
 
-        float det = duv1.x*duv2.y - duv2.x*duv1.y;
-        float invDet =1.0 / det;
+        vec3 Tw = normalize(normalMatrix * localTBN[0]);
+        vec3 Bw = normalize(normalMatrix * localTBN[1]);
+        vec3 Nw = normalize(normalMatrix * localTBN[2]);
 
-        // build both axes in object‑space
-        vec3 objectTangent   = normalize(invDet * ( duv2.y*edge1 - duv1.y*edge2));
-        vec3 objectBitangent = normalize(invDet * (-duv2.x*edge1 + duv1.x*edge2));
-
-        // transform to world
-        vec3 worldTangent    = normalize((gl_ObjectToWorldEXT * vec4(objectTangent,   0.0)).xyz);
-        vec3 worldBitangent  = normalize((gl_ObjectToWorldEXT * vec4(objectBitangent, 0.0)).xyz);
-        vec3 worldNormal = result.worldNormal;
-
-        worldTangent   = normalize(worldTangent - worldNormal * dot(worldNormal, worldTangent));
-        float handedness = ( dot( cross(worldTangent, worldBitangent), worldNormal ) < 0.0 ) ? -1.0 : 1.0;
-        worldBitangent = cross(worldNormal, worldTangent) * handedness;
-        result.tbn     = mat3(worldTangent, worldBitangent, worldNormal);
+        // Transform to world space
+        result.tbn = mat3(Tw, Bw, Nw);
     }
 
     return result;

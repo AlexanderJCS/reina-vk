@@ -8,6 +8,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <iostream>
 
 /**
  * Convert from 3 floats to vertex to 4 floats per vertex to more easily upload to the GPU.
@@ -69,7 +70,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
             .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
             .firstNormal = static_cast<uint32_t>(tbnsOffset),
             .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
-            .normalsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
+            .tbnsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
             .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
             .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .tbnsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
@@ -130,7 +131,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& filepath) {
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
+    const aiScene* scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
     if (!scene || !scene->HasMeshes()) {
         throw std::runtime_error("Failed to load model with Assimp: " + std::string(importer.GetErrorString()));
     }
@@ -182,6 +183,15 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
             objNormalsIndices.push_back(idx);
             objTexIndices.push_back(idx);
         }
+    }
+
+    // print the TBN matrices
+    std::cout << filepath << std::endl;
+    for (const glm::mat3& tbn : objTbns) {
+        for (int row = 0; row < 3; ++row) {
+            std::cout << tbn[row][0] << " " << tbn[row][1] << " " << tbn[row][2] << std::endl;
+        }
+        std::cout << std::endl; // Separate matrices with a blank line
     }
 
     return {objVertices, objIndices, objTbns, objNormalsIndices, objTexCoords, objTexIndices};
