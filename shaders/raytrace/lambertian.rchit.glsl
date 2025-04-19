@@ -11,19 +11,19 @@ void main() {
     ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
 
 //    // poor man's version of backface culling
-//    if (props.cullBackface != 0u && !hitInfo.frontFace) {
-//        skip(hitInfo);
-//        return;
-//    }
-//
+    if (props.cullBackface != 0u && !hitInfo.frontFace) {
+        skip(hitInfo);
+        return;
+    }
+
     vec3 worldNormal = hitInfo.worldNormal;
-//    if (props.normalMapTexID >= 0) {
-//        vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
-//        worldNormal = hitInfo.tbn * tangentNormal;
-//    }
+    if (props.normalMapTexID >= 0) {
+        vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
+        worldNormal = hitInfo.tbn * tangentNormal;
+    }
 
     #ifdef DEBUG_SHOW_NORMALS
-        pld.color = hitInfo.tbn[2] * 0.5 + 0.5;
+        pld.color = hitInfo.worldNormal * 0.5 + 0.5;
     #else
         pld.color = props.albedo;
 
