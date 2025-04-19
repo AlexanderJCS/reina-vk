@@ -26,7 +26,7 @@ void save(const std::string& filename, VkDevice logicalDevice, VkQueue graphicsQ
     std::vector<uint8_t> pixels = stagingBuffer.copyToHost<uint8_t>(logicalDevice);
 
     int success = stbi_write_png(
-            ("../" + filename).c_str(),
+            filename.c_str(),
             static_cast<int>(width),
             static_cast<int>(height),
             4,
@@ -48,7 +48,7 @@ void save(const std::string& filename, VkDevice logicalDevice, VkQueue graphicsQ
 
 
 Reina::Reina() {
-    auto config = toml::parse_file("../config/config.toml");
+    auto config = toml::parse_file("config/config.toml");
 
     // init
     renderWidth = 1080;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
@@ -85,9 +85,9 @@ Reina::Reina() {
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
     textures = std::vector<reina::graphics::Image>{
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/bricks2/diffuse.png"},
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/bricks2/normal.png"},
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "../textures/bricks2/parallax.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/bricks2/diffuse.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/bricks2/normal.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/bricks2/parallax.png"},
     };
 
     rtDescriptorSet = reina::core::DescriptorSet{
@@ -132,12 +132,12 @@ Reina::Reina() {
 
     sbtSpacing = vktools::calculateSbtSpacing(physicalDevice);
     shaders = {
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "../shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/raytrace.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/raytrace.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
     rtPipeline = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, rtPushConsts);
@@ -167,7 +167,7 @@ Reina::Reina() {
                     reina::core::Binding{1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT}   // output image
             }
     };
-    tonemapShader = reina::graphics::Shader(logicalDevice, "../shaders/postprocessing/tonemap/tonemapping.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+    tonemapShader = reina::graphics::Shader(logicalDevice, "shaders/postprocessing/tonemap/tonemapping.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
     tonemapPipeline = vktools::createComputePipeline(logicalDevice, tonemapDescriptorSet, tonemapShader, tonemapPushConsts);
 
     rasterDescriptorSet = reina::core::DescriptorSet{
@@ -177,8 +177,8 @@ Reina::Reina() {
             }
     };
 
-    reina::graphics::Shader vertexShader = reina::graphics::Shader(logicalDevice, "../shaders/raster/display.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    reina::graphics::Shader fragmentShader = reina::graphics::Shader(logicalDevice, "../shaders/raster/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+    reina::graphics::Shader vertexShader = reina::graphics::Shader(logicalDevice, "shaders/raster/display.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    reina::graphics::Shader fragmentShader = reina::graphics::Shader(logicalDevice, "shaders/raster/display.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     renderPass = vktools::createRenderPass(logicalDevice, swapchainObjects.swapchainImageFormat);
     rasterPipeline = vktools::createRasterizationPipeline(logicalDevice, rasterDescriptorSet, renderPass, vertexShader, fragmentShader);
@@ -190,26 +190,26 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"../models/uv_sphere.obj", "../models/cornell_box.obj", "../models/cornell_light.obj"}};
+    models = reina::graphics::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"models/uv_sphere.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::rotate(baseTransform, glm::radians(34.0f), glm::vec3(1, 1, 0));
+    glm::mat4x4 subjectTransform = glm::scale(glm::translate(baseTransform, glm::vec3(0, 1, 0)), glm::vec3(0.4f));
 
     std::vector<ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, 0, -1, -1, false},
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).normalsIndexOffset, models.getModelRange(1).texIndexOffset, 0.01, false, 0, -1, -1, -1, false},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).normalsIndexOffset, models.getModelRange(2).texIndexOffset, 0, false, 0, -1, -1, -1, false},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 0.1f, true, 0.7, 0, 1, 2, false}
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).normalsIndexOffset, models.getModelRange(0).texIndexOffset, 0.1f, false, 0.7, -1, -1, -1, false}
     };
 
     instances = reina::graphics::Instances{
             logicalDevice, physicalDevice,
             {
-//                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, objectProperties[0].cullBackface, baseTransform},
-                    {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, objectProperties[1].cullBackface, glm::translate(baseTransform, glm::vec3(0, 0, 1))},
-                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, objectProperties[2].cullBackface, subjectTransform}
+                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, objectProperties[0].cullBackface, baseTransform},
+                    {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, objectProperties[1].cullBackface, baseTransform},
+                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 1, objectProperties[2].cullBackface, subjectTransform}
             }
     };
     rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
@@ -261,7 +261,7 @@ Reina::Reina() {
     };
 
     blurXShader = reina::graphics::Shader(
-            logicalDevice, "../shaders/postprocessing/bloom/blurX.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
+            logicalDevice, "shaders/postprocessing/bloom/blurX.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
             );
 
     blurXPipeline = vktools::createComputePipeline(logicalDevice, blurXDescriptorSet, blurXShader, bloomPushConsts);
@@ -274,13 +274,13 @@ Reina::Reina() {
     };
 
     blurYShader = reina::graphics::Shader(
-            logicalDevice, "../shaders/postprocessing/bloom/blurY.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
+            logicalDevice, "shaders/postprocessing/bloom/blurY.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
     );
 
     blurYPipeline = vktools::createComputePipeline(logicalDevice, blurYDescriptorSet, blurYShader, bloomPushConsts);
 
     combineShader = reina::graphics::Shader(
-            logicalDevice, "../shaders/postprocessing/bloom/combine.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
+            logicalDevice, "shaders/postprocessing/bloom/combine.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT
             );
 
     combineDescriptorSet = reina::core::DescriptorSet{
@@ -397,8 +397,8 @@ void Reina::writeDescriptorSets() {
     rtDescriptorSet.writeBinding(logicalDevice, 2, models.getVerticesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 3, models.getOffsetIndicesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 4, objectPropertiesBuffer);
-    rtDescriptorSet.writeBinding(logicalDevice, 5, models.getNormalsBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 6, models.getOffsetNormalsIndicesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 5, models.getTbnsBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 6, models.getOffsetTbnsIndicesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 7, instances.getEmissiveMetadataBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 8, instances.getCdfTrianglesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());

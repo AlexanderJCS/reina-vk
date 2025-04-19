@@ -5,6 +5,10 @@
 #include <stdexcept>
 #include <cmath>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 /**
  * Convert from 3 floats to vertex to 4 floats per vertex to more easily upload to the GPU.
  * @param tinyobjArr The array of tinyobj data
@@ -30,7 +34,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 
     size_t totalVertices = 0;
     size_t totalIndices = 0;
-    size_t totalNormals = 0;
+    size_t totalTBNs = 0;
     size_t totalTexCoords = 0;
 
     for (int i = 0; i < modelFilepaths.size(); i++) {
@@ -38,20 +42,20 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 
         totalVertices += modelObjData[i].vertices.size();
         totalIndices += modelObjData[i].indices.size();
-        totalNormals += modelObjData[i].normals.size();
+        totalTBNs += modelObjData[i].tbns.size();
         totalTexCoords += modelObjData[i].texCoords.size();
     }
 
     std::vector<float> allVertices(totalVertices);
-    std::vector<float> allNormals(totalNormals);
+    std::vector<glm::mat3> allTBNs(totalTBNs);
     std::vector<float> allTexCoords(totalTexCoords);
     std::vector<uint32_t> allIndicesOffset(totalIndices);
     std::vector<uint32_t> allTexIndicesOffset(totalIndices);
-    std::vector<uint32_t> allNormalsIndicesOffset(totalIndices);
+    std::vector<uint32_t> allTBNsIndicesOffset(totalIndices);
     std::vector<uint32_t> allIndicesNonOffset(totalIndices);
 
     size_t vertexOffset = 0;
-    size_t normalsOffset = 0;
+    size_t tbnsOffset = 0;
     size_t texOffset = 0;
     size_t indexOffset = 0;
     size_t normalsIndexOffset = 0;
@@ -63,18 +67,18 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 
         modelRanges[i] = ModelRange{
             .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
-            .firstNormal = static_cast<uint32_t>(normalsOffset / 4),
+            .firstNormal = static_cast<uint32_t>(tbnsOffset),
             .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
             .normalsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
             .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
             .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
-            .normalsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
+            .tbnsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .texIndexCount = static_cast<uint32_t>(objectData.texIndices.size() / 3),
         };
 
         // Copy vertices
         std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
-        std::copy(objectData.normals.begin(), objectData.normals.end(), allNormals.begin() + static_cast<long long>(normalsOffset));
+        std::copy(objectData.tbns.begin(), objectData.tbns.end(), allTBNs.begin() + static_cast<long long>(tbnsOffset));
         std::copy(objectData.texCoords.begin(), objectData.texCoords.end(), allTexCoords.begin() + static_cast<long long>(texOffset));
 
         // Copy indices with proper offset
@@ -83,8 +87,8 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
             allIndicesNonOffset[indexOffset++] = idx;
         }
 
-        for (uint32_t idx : objectData.normalsIndices) {
-            allNormalsIndicesOffset[normalsIndexOffset++] = idx + (normalsOffset / 4);
+        for (uint32_t idx : objectData.tbnsIndices) {
+            allTBNsIndicesOffset[normalsIndexOffset++] = idx + tbnsOffset;
         }
 
         for (uint32_t idx : objectData.texIndices) {
@@ -92,7 +96,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
         }
 
         vertexOffset += objectData.vertices.size();
-        normalsOffset += objectData.normals.size();
+        tbnsOffset += objectData.tbns.size();
         texOffset += objectData.texCoords.size();
     }
 
@@ -110,11 +114,11 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
     nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
 
-    normalsBufferSize = allNormals.size();
-    normalsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allNormals, usage, allocFlags};
+    normalsBufferSize = allTBNs.size();
+    tbnsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNs, usage, allocFlags};
 
-    normalsIndicesBufferSize = allNormalsIndicesOffset.size();
-    offsetNormalsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allNormalsIndicesOffset, usage, allocFlags};
+    normalsIndicesBufferSize = allTBNsIndicesOffset.size();
+    offsetTbnsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNsIndicesOffset, usage, allocFlags};
 
     texCoordsBufferSize = allTexCoords.size();
     texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
@@ -124,34 +128,63 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 }
 
 reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& filepath) {
-    tinyobj::ObjReader reader;
-    reader.ParseFromFile(filepath);
+    Assimp::Importer importer;
 
-    if (!reader.Valid()) {
-        throw std::runtime_error("Error reading OBJ:\n" + reader.Error());
+    const aiScene* scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
+    if (!scene || !scene->HasMeshes()) {
+        throw std::runtime_error("Failed to load model with Assimp: " + std::string(importer.GetErrorString()));
     }
 
-    std::vector<float> objVertices = tinyobjToVec4(reader.GetAttrib().GetVertices());
-    std::vector<float> objNormals = tinyobjToVec4(reader.GetAttrib().normals);
-    std::vector<float> objTexCoords = reader.GetAttrib().texcoords;
+    const aiMesh* mesh = scene->mMeshes[0];
 
-    const std::vector<tinyobj::shape_t>& shapes = reader.GetShapes();
-    if (shapes.size() != 1) {
-        throw std::runtime_error("Several shapes to parse; need only one");
+    std::vector<float> objVertices;
+    std::vector<uint32_t> objIndices;
+    std::vector<glm::mat3> objTbns;
+    std::vector<uint32_t> objNormalsIndices;
+    std::vector<float> objTexCoords;
+    std::vector<uint32_t> objTexIndices;
+
+    for (size_t i = 0; i < mesh->mNumVertices; i++) {
+        const aiVector3D& v = mesh->mVertices[i];
+        objVertices.push_back(v.x);
+        objVertices.push_back(v.y);
+        objVertices.push_back(v.z);
+        objVertices.push_back(1.0f);
+
+        if (mesh->HasNormals()) {
+            const aiVector3D& n = mesh->mNormals[i];
+            glm::vec3 normalVec(n.x, n.y, n.z);
+            glm::vec3 tangentVec(0, 0, 0);
+            glm::vec3 bitangentVec(0, 0, 0);
+
+            if (mesh->HasTangentsAndBitangents()) {
+                const aiVector3D t = mesh->mTangents[i];
+                const aiVector3D b = mesh->mBitangents[i];
+                tangentVec = glm::vec3(t.x, t.y, t.z);
+                bitangentVec = glm::vec3(b.x, b.y, b.z);
+            }
+
+            objTbns.emplace_back(tangentVec, bitangentVec, normalVec);
+        }
+
+        if (mesh->HasTextureCoords(0)) {
+            const aiVector3D& t = mesh->mTextureCoords[0][i];
+            objTexCoords.push_back(t.x);
+            objTexCoords.push_back(t.y);
+        }
     }
 
-    std::vector<uint32_t> objIndices(shapes[0].mesh.indices.size());
-    std::vector<uint32_t> objNormalsIndices(shapes[0].mesh.indices.size());
-    std::vector<uint32_t> objTexIndices(shapes[0].mesh.indices.size());
-    for (int i = 0; i < shapes[0].mesh.indices.size(); i++) {
-        const tinyobj::index_t& index = shapes[0].mesh.indices[i];
-
-        objIndices[i] = index.vertex_index;
-        objNormalsIndices[i] = index.normal_index;
-        objTexIndices[i] = index.texcoord_index;
+    for (size_t i = 0; i < mesh->mNumFaces; i++) {
+        const aiFace& face = mesh->mFaces[i];
+        for (size_t j = 0; j < face.mNumIndices; j++) {
+            uint32_t idx = face.mIndices[j];
+            objIndices.push_back(idx);
+            objNormalsIndices.push_back(idx);
+            objTexIndices.push_back(idx);
+        }
     }
 
-    return {objVertices, objIndices, objNormals, objNormalsIndices, objTexCoords, objTexIndices};
+    return {objVertices, objIndices, objTbns, objNormalsIndices, objTexCoords, objTexIndices};
 }
 
 size_t reina::graphics::Models::getVerticesBufferSize() const {
@@ -195,8 +228,8 @@ void reina::graphics::Models::destroy(VkDevice logicalDevice) {
     verticesBuffer.destroy(logicalDevice);
     offsetIndicesBuffer.destroy(logicalDevice);
     nonOffsetIndicesBuffer.destroy(logicalDevice);
-    offsetNormalsIndicesBuffer.destroy(logicalDevice);
-    normalsBuffer.destroy(logicalDevice);
+    offsetTbnsIndicesBuffer.destroy(logicalDevice);
+    tbnsBuffer.destroy(logicalDevice);
     texCoordsBuffer.destroy(logicalDevice);
     offsetTexIndicesBuffer.destroy(logicalDevice);
 }
@@ -209,12 +242,12 @@ size_t reina::graphics::Models::getNormalsIndicesBufferSize() const {
     return normalsIndicesBufferSize;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getNormalsBuffer() const {
-    return normalsBuffer;
+const reina::core::Buffer& reina::graphics::Models::getTbnsBuffer() const {
+    return tbnsBuffer;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getOffsetNormalsIndicesBuffer() const {
-    return offsetNormalsIndicesBuffer;
+const reina::core::Buffer& reina::graphics::Models::getOffsetTbnsIndicesBuffer() const {
+    return offsetTbnsIndicesBuffer;
 }
 
 const reina::core::Buffer &reina::graphics::Models::getOffsetTexIndicesBuffer() const {

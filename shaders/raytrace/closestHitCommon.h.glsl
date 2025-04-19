@@ -11,7 +11,7 @@
 hitAttributeEXT vec2 attributes;
 
 layout (binding = 5, set = 0, scalar) buffer NormalsBuffer {
-    vec4 normals[];
+    mat3 tbns[];
 };
 
 layout (binding = 6, set = 0, scalar) buffer NormalsIndicesBuffer {
@@ -80,14 +80,14 @@ HitInfo getObjectHitInfo() {
     if (!props.interpNormals) {
         objectNormal = normalize(cross(v1 - v0, v2 - v0));
     } else {
-        const uint normalsIndexOffset = props.normalsIndicesBytesOffset / 4;
-        const uint n0Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 0];
-        const uint n1Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 1];
-        const uint n2Index = normalsIndices[3 * primitiveID + normalsIndexOffset + 2];
+        const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
+        const uint n0Index = normalsIndices[3 * primitiveID + tbnsIndexOffset + 0];
+        const uint n1Index = normalsIndices[3 * primitiveID + tbnsIndexOffset + 1];
+        const uint n2Index = normalsIndices[3 * primitiveID + tbnsIndexOffset + 2];
 
-        const vec3 n0 = normals[n0Index].xyz;
-        const vec3 n1 = normals[n1Index].xyz;
-        const vec3 n2 = normals[n2Index].xyz;
+        const vec3 n0 = tbns[n0Index][2];
+        const vec3 n1 = tbns[n1Index][2];
+        const vec3 n2 = tbns[n2Index][2];
 
         objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
     }

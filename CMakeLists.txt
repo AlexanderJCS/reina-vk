@@ -3,18 +3,21 @@ project(reina_vk)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# Use vcpkg via toolchain file (pass -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake when running CMake)
 find_package(Vulkan REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 
 include(FetchContent)
 
+# GLFW
 FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
         GIT_TAG        3.4
 )
-
 FetchContent_MakeAvailable(glfw)
 
+# stb
 FetchContent_Declare(
         stb
         GIT_REPOSITORY https://github.com/nothings/stb.git
@@ -22,13 +25,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
-FetchContent_Declare(
-        assimp
-        GIT_REPOSITORY https://github.com/assimp/assimp.git
-        GIT_TAG        v5.4.3
-)
-FetchContent_MakeAvailable(assimp)
-
+# tinyobjloader
 FetchContent_Declare(
         tinyobjloader
         GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
@@ -36,12 +33,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tinyobjloader)
 
+# tomlplusplus
 FetchContent_Declare(
         tomlplusplus
         GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
         GIT_TAG        v3.4.0
 )
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unknown-pragmas")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wno-error=unknown-pragmas)
+endif()
 FetchContent_MakeAvailable(tomlplusplus)
 
 add_executable(reina_vk src/main.cpp
@@ -82,12 +82,18 @@ add_executable(reina_vk src/main.cpp
         polyglot/bloom.h
         polyglot/tonemapping.h)
 
-target_link_libraries(reina_vk Vulkan::Vulkan glfw assimp)
+# Link libraries using keyword signature
+target_link_libraries(reina_vk
+        PRIVATE
+        Vulkan::Vulkan
+        glfw
+        assimp::assimp
+)
 
+# Include directories for FetchContent libraries
 target_include_directories(reina_vk PRIVATE
-    ${Vulkan_INCLUDE_DIRS}
-    ${stb_SOURCE_DIR}
-    ${tinyobjloader_SOURCE_DIR}
-    ${tomlplusplus_SOURCE_DIR}
-    ${assimp_SOURCE_DIR}/include
+        ${Vulkan_INCLUDE_DIRS}
+        ${stb_SOURCE_DIR}
+        ${tinyobjloader_SOURCE_DIR}
+        ${tomlplusplus_SOURCE_DIR}
 )
