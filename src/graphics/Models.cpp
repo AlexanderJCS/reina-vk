@@ -198,15 +198,6 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
         }
     }
 
-    // print the TBN matrices
-    std::cout << filepath << std::endl;
-    for (const glm::mat3& tbn : objTbns) {
-        for (int row = 0; row < 3; ++row) {
-            std::cout << tbn[row][0] << " " << tbn[row][1] << " " << tbn[row][2] << std::endl;
-        }
-        std::cout << std::endl; // Separate matrices with a blank line
-    }
-
     return {objVertices, objIndices, objTbns, objNormalsIndices, objTexCoords, objTexIndices};
 }
 

@@ -137,6 +137,9 @@ HitInfo getObjectHitInfo() {
         worldT = normalize(worldT - worldN * dot(worldN, worldT));
         worldB = normalize(worldB - worldN * dot(worldN, worldB));
 
+        worldB *= -1.0;
+        worldN *= result.frontFace ? 1.0 : -1.0;
+
         result.tbn = mat3(worldT, worldB, worldN);
 //    }
 
