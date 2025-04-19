@@ -15,7 +15,7 @@ layout (binding = 5, set = 0, scalar) buffer NormalsBuffer {
 };
 
 layout (binding = 6, set = 0, scalar) buffer NormalsIndicesBuffer {
-    uint normalsIndices[];
+    uint tbnsIndices[];
 };
 
 layout (binding = 10, set = 0, scalar) buffer TexCoordsBuffer {
@@ -81,13 +81,13 @@ HitInfo getObjectHitInfo() {
         objectNormal = normalize(cross(v1 - v0, v2 - v0));
     } else {
         const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
-        const uint n0Index = normalsIndices[3 * primitiveID + tbnsIndexOffset + 0];
-        const uint n1Index = normalsIndices[3 * primitiveID + tbnsIndexOffset + 1];
-        const uint n2Index = normalsIndices[3 * primitiveID + tbnsIndexOffset + 2];
+        const uint tbn0Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0];
+        const uint n1Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1];
+        const uint tbn2Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2];
 
-        const vec3 n0 = tbns[n0Index][2];
+        const vec3 n0 = tbns[tbn0Index][2];
         const vec3 n1 = tbns[n1Index][2];
-        const vec3 n2 = tbns[n2Index][2];
+        const vec3 n2 = tbns[tbn2Index][2];
 
         objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
     }
@@ -116,30 +116,29 @@ HitInfo getObjectHitInfo() {
 
     // TBN stuff
     result.tbn = mat3(1.0);
-    if (props.normalMapTexID != -1) {
+//    if (props.normalMapTexID != -1) {
         const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
-        mat3 vertex1 = tbns[normalsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
-        mat3 vertex2 = tbns[normalsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
-        mat3 vertex3 = tbns[normalsIndices[3 * primitiveID + tbnsIndexOffset + 2]];
+        mat3 vertex1 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
+        mat3 vertex2 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
+        mat3 vertex3 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2]];
 
         vec3 tangent = normalize(vertex1[0] * barycentrics.x + vertex2[0] * barycentrics.y + vertex3[0] * barycentrics.z);
         vec3 bitangent = normalize(vertex1[1] * barycentrics.x + vertex2[1] * barycentrics.y + vertex3[1] * barycentrics.z);
         vec3 normal = normalize(vertex1[2] * barycentrics.x + vertex2[2] * barycentrics.y + vertex3[2] * barycentrics.z);
 
-        vec3 worldTangent = vec3(mat3(gl_ObjectToWorldEXT) * tangent);
-        vec3 worldBitangent = vec3(mat3(gl_ObjectToWorldEXT) * bitangent);
-        vec3 worldNormal = vec3(mat3(gl_ObjectToWorldEXT) * normal);
+        mat3 M = mat3(gl_ObjectToWorldEXT);
+        mat3 N = transpose(inverse(M));
 
-        mat3 localTBN = mat3(worldTangent, worldBitangent, worldNormal);
-        mat3 normalMatrix = transpose(inverse(mat3(gl_ObjectToWorldEXT)));
+        vec3 worldT = normalize(M * tangent);
+        vec3 worldB = normalize(M * bitangent);
+        vec3 worldN = normalize(N * normal);
 
-        vec3 Tw = normalize(normalMatrix * localTBN[0]);
-        vec3 Bw = normalize(normalMatrix * localTBN[1]);
-        vec3 Nw = normalize(normalMatrix * localTBN[2]);
+        // Re-orthagonalization
+        worldT = normalize(worldT - worldN * dot(worldN, worldT));
+        worldB = normalize(worldB - worldN * dot(worldN, worldB));
 
-        // Transform to world space
-        result.tbn = mat3(Tw, Bw, Nw);
-    }
+        result.tbn = mat3(worldT, worldB, worldN);
+//    }
 
     return result;
 }

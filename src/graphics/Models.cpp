@@ -48,7 +48,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     }
 
     std::vector<float> allVertices(totalVertices);
-    std::vector<glm::mat3> allTBNs(totalTBNs);
+    std::vector<float> allTBNs(totalTBNs * 9);
     std::vector<float> allTexCoords(totalTexCoords);
     std::vector<uint32_t> allIndicesOffset(totalIndices);
     std::vector<uint32_t> allTexIndicesOffset(totalIndices);
@@ -79,8 +79,22 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
 
         // Copy vertices
         std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
-        std::copy(objectData.tbns.begin(), objectData.tbns.end(), allTBNs.begin() + static_cast<long long>(tbnsOffset));
+//        std::copy(objectData.tbns.begin(), objectData.tbns.end(), allTBNs.begin() + static_cast<long long>(tbnsOffset));
         std::copy(objectData.texCoords.begin(), objectData.texCoords.end(), allTexCoords.begin() + static_cast<long long>(texOffset));
+
+        for (size_t idx = 0; idx < objectData.tbns.size(); idx++) {
+            const glm::mat3 &m = objectData.tbns[idx];
+
+            // Compute the start of the i‑th matrix within allTBNs:
+            size_t base = (tbnsOffset + idx) * 9;
+
+            // Column‑major: for each column, then each row:
+            for (int col = 0; col < 3; col++) {
+                for (int row = 0; row < 3; row++) {
+                    allTBNs[base + col * 3 + row] = m[col][row];
+                }
+            }
+        }
 
         // Copy indices with proper offset
         for (uint32_t idx : objectData.indices) {
@@ -106,7 +120,6 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
     VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-    VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     verticesBufferSize = allVertices.size();
     verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};

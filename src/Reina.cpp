@@ -196,7 +196,7 @@ Reina::Reina() {
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = baseTransform;
+    glm::mat4x4 subjectTransform = glm::rotate(baseTransform, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
     std::vector<ObjectProperties> objectProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).tbnsIndexOffset,  models.getModelRange(1).texIndexOffset, 0.5, true, 0, -1, -1, -1, 0u},
