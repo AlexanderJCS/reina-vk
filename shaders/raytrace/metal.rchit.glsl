@@ -32,7 +32,14 @@ void main() {
     #else
         pld.color = props.albedo;
         if (props.textureID >= 0) {
-            pld.color *= texture(textures[props.textureID], uv).rgb;
+            vec4 texColor = texture(textures[props.textureID], uv);
+            if (texColor.a < 0.999 && random(pld.rngState) > texColor.a) {
+                // transparency
+                skip(hitInfo);
+                return;
+            }
+
+            pld.color *= texColor.rgb;
         }
     #endif
 
