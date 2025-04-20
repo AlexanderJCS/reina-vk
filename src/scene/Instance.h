@@ -1,17 +1,17 @@
 #ifndef RAYGUN_VK_INSTANCE_H
 #define RAYGUN_VK_INSTANCE_H
 
-#include "Blas.h"
+#include "../graphics/Blas.h"
 #include "Models.h"
 
 #include <glm/mat4x4.hpp>
 
-namespace reina::graphics {
+namespace reina::scene {
     class Instance {
     public:
-        Instance(const Blas& blas, glm::vec3 emission, ModelRange modelRange, const ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
+        Instance(const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
 
-        [[nodiscard]] const Blas& getBlas() const;
+        [[nodiscard]] const reina::graphics::Blas& getBlas() const;
         [[nodiscard]] glm::mat4x4 getTransform() const;
         [[nodiscard]] uint32_t getObjectPropertiesID() const;
         [[nodiscard]] uint32_t getMaterialOffset() const;
@@ -19,15 +19,15 @@ namespace reina::graphics {
         [[nodiscard]] const std::vector<float>& getCDF() const;
         [[nodiscard]] bool isEmissive() const;
         [[nodiscard]] glm::vec3 getEmission() const;
-        [[nodiscard]] ModelRange getModelRange() const;
+        [[nodiscard]] reina::scene::ModelRange getModelRange() const;
         [[nodiscard]] float getWeight() const;
         [[nodiscard]] bool isCullBackface() const;
 
     private:
-        void computeCDF(const ObjData& objData, float brightness);
+        void computeCDF(const reina::scene::ObjData& objData, float brightness);
 
-        ModelRange modelRange;
-        const Blas& blas;
+        reina::scene::ModelRange modelRange;
+        const reina::graphics::Blas& blas;
         uint32_t objectPropertiesID = 0;
         uint32_t materialOffset = 0;
         glm::mat4x4 transform = glm::mat4x4(1.0f);

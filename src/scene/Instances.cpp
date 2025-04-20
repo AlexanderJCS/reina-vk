@@ -4,7 +4,7 @@
 #include <cstring>
 #include <stdexcept>
 
-reina::graphics::Instances::Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances) : instances(instances) {
+reina::scene::Instances::Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<reina::scene::Instance>& instances) : instances(instances) {
     computeSamplingDataEmissives();
     createBuffers(logicalDevice, physicalDevice);
 }
@@ -25,7 +25,7 @@ static bool compareFloatVectors(const std::vector<float>& vec1, const std::vecto
     return true;
 }
 
-std::unordered_map<size_t, size_t> reina::graphics::Instances::computeEmissiveDuplicates(const std::vector<int>& emissiveInstancesIndices) {
+std::unordered_map<size_t, size_t> reina::scene::Instances::computeEmissiveDuplicates(const std::vector<int>& emissiveInstancesIndices) {
     // todo: performance in this function may be optimized
     std::unordered_map<size_t, size_t> duplicateMapping;
 
@@ -49,7 +49,7 @@ std::unordered_map<size_t, size_t> reina::graphics::Instances::computeEmissiveDu
     return duplicateMapping;
 }
 
-void reina::graphics::Instances::computeSamplingDataEmissives() {
+void reina::scene::Instances::computeSamplingDataEmissives() {
     if (instances.empty()) {
         cdfTriangles = {};
         emissiveInstancesData = {};
@@ -71,7 +71,7 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
         int instanceIdx = emissiveInstanceIndices[instanceIdxIdx];
         bool isDuplicate = duplicates.contains(instanceIdxIdx);
 
-        const Instance& instance = instances[instanceIdx];
+        const reina::scene::Instance& instance = instances[instanceIdx];
         InstanceData& instanceData = emissiveInstancesData[instanceIdxIdx];
 
         instanceData.transform = instance.getTransform();
@@ -113,11 +113,11 @@ void reina::graphics::Instances::computeSamplingDataEmissives() {
     emissiveInstancesArea = cumulativeArea;
 }
 
-const std::vector<reina::graphics::Instance>& reina::graphics::Instances::getInstances() const {
+const std::vector<reina::scene::Instance>& reina::scene::Instances::getInstances() const {
     return instances;
 }
 
-void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice) {
+void reina::scene::Instances::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice) {
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
     VkMemoryPropertyFlags memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -154,24 +154,24 @@ void reina::graphics::Instances::createBuffers(VkDevice logicalDevice, VkPhysica
     };
 }
 
-void reina::graphics::Instances::destroy(VkDevice logicalDevice) {
+void reina::scene::Instances::destroy(VkDevice logicalDevice) {
     cdfTrianglesBuffer.destroy(logicalDevice);
     emissiveMetadataBuffer.destroy(logicalDevice);
     cdfInstancesBuffer.destroy(logicalDevice);
 }
 
-const reina::core::Buffer& reina::graphics::Instances::getEmissiveMetadataBuffer() const {
+const reina::core::Buffer& reina::scene::Instances::getEmissiveMetadataBuffer() const {
     return emissiveMetadataBuffer;
 }
 
-const reina::core::Buffer& reina::graphics::Instances::getCdfTrianglesBuffer() const {
+const reina::core::Buffer& reina::scene::Instances::getCdfTrianglesBuffer() const {
     return cdfTrianglesBuffer;
 }
 
-const reina::core::Buffer& reina::graphics::Instances::getCdfInstancesBuffer() const {
+const reina::core::Buffer& reina::scene::Instances::getCdfInstancesBuffer() const {
     return cdfInstancesBuffer;
 }
 
-float reina::graphics::Instances::getEmissiveInstancesWeight() const {
+float reina::scene::Instances::getEmissiveInstancesWeight() const {
     return emissiveInstancesArea;
 }

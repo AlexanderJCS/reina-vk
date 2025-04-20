@@ -190,7 +190,7 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::graphics::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"models/quad.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
+    models = reina::scene::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"models/quad.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
@@ -204,7 +204,7 @@ Reina::Reina() {
             {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).tbnsIndexOffset,    models.getModelRange(0).texIndexOffset, 0.1f, true, 0.7, 0, 1, 2, 0u}
     };
 
-    instances = reina::graphics::Instances{
+    instances = reina::scene::Instances{
             logicalDevice, physicalDevice,
             {
 //                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, objectProperties[0].cullBackface, baseTransform},

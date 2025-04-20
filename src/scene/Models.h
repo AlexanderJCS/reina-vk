@@ -8,7 +8,7 @@
 
 #include "../core/Buffer.h"
 
-namespace reina::graphics {
+namespace reina::scene {
     struct ModelRange {
         uint32_t firstVertex;
         uint32_t firstNormal;

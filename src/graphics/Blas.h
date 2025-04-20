@@ -5,7 +5,7 @@
 #include <optional>
 #include <glm/mat4x4.hpp>
 
-#include "Models.h"
+#include "../scene/Models.h"
 #include "../core/Buffer.h"
 
 // todo: accumulate all BLASes then build them all at once for faster performance
@@ -13,7 +13,7 @@ namespace reina::graphics {
     class Blas {
     public:
         Blas();
-        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const Models& models, const reina::graphics::ModelRange& modelRange, bool shouldCompact);
+        Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const reina::scene::Models& models, const reina::scene::ModelRange& modelRange, bool shouldCompact);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;
         [[nodiscard]] const reina::core::Buffer& getBuffer() const;

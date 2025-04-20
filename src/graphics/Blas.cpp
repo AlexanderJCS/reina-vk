@@ -7,7 +7,7 @@
 #include "../core/CmdBuffer.h"
 
 reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
-                            const reina::graphics::Models& models, const reina::graphics::ModelRange& modelRange, bool shouldCompact) {
+                            const reina::scene::Models& models, const reina::scene::ModelRange& modelRange, bool shouldCompact) {
 
     uint32_t vertexCount = static_cast<uint32_t>(models.getVerticesBufferSize()) / 3;
 

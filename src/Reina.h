@@ -7,7 +7,7 @@
 
 #include "tools/vktools.h"
 #include "core/Buffer.h"
-#include "graphics/Instances.h"
+#include "scene/Instances.h"
 #include "core/CmdBuffer.h"
 #include "window/Window.h"
 #include "graphics/Camera.h"
@@ -54,14 +54,14 @@ private:
     reina::core::Buffer objectPropertiesBuffer;
     reina::graphics::Image tonemapOutputImage;
     reina::graphics::Image rtImage;
-    reina::graphics::Instances instances;
+    reina::scene::Instances instances;
     reina::core::Buffer stagingBuffer;
     reina::core::CmdBuffer cmdBuffer;
     reina::core::DescriptorSet rtDescriptorSet;
     reina::core::DescriptorSet tonemapDescriptorSet;
     reina::core::DescriptorSet rasterDescriptorSet;
     reina::graphics::Shader tonemapShader;
-    reina::graphics::Models models;
+    reina::scene::Models models;
     vktools::SyncObjects syncObjects;
     VkSampler fragmentImageSampler;
     VkRenderPass renderPass;

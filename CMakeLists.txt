@@ -60,10 +60,10 @@ add_executable(reina_vk src/main.cpp
         src/core/Buffer.h
         src/graphics/Blas.cpp
         src/graphics/Blas.h
-        src/graphics/Instance.cpp
-        src/graphics/Instance.h
-        src/graphics/Models.cpp
-        src/graphics/Models.h
+        src/scene/Instance.cpp
+        src/scene/Instance.h
+        src/scene/Models.cpp
+        src/scene/Models.h
         src/tools/Clock.cpp
         src/tools/Clock.h
         src/graphics/Camera.cpp
@@ -73,8 +73,8 @@ add_executable(reina_vk src/main.cpp
         src/graphics/Image.cpp
         src/graphics/Image.h
         src/graphics/Image.cpp
-        src/graphics/Instances.cpp
-        src/graphics/Instances.h
+        src/scene/Instances.cpp
+        src/scene/Instances.h
         src/Reina.cpp
         src/Reina.h
         src/tools/SaveManager.cpp

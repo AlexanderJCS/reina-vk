@@ -15,6 +15,7 @@
 #include "../core/DescriptorSet.h"
 #include "../core/PushConstants.h"
 #include "../core/Buffer.h"
+#include "../scene/Instance.h"
 
 // forward declaration
 namespace reina::graphics {
@@ -132,7 +133,7 @@ namespace vktools {
     PipelineInfo createRasterizationPipeline(VkDevice logicalDevice, const reina::core::DescriptorSet& descriptorSet, VkRenderPass renderPass, const reina::graphics::Shader& vertexShader, const reina::graphics::Shader& fragmentShader);
     VkRenderPass createRenderPass(VkDevice logicalDevice, VkFormat swapchainImageFormat);
 
-    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<reina::graphics::Instance>& instances);
+    vktools::AccStructureInfo createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<reina::scene::Instance>& instances);
     SyncObjects createSyncObjects(VkDevice logicalDevice);
     SbtSpacing calculateSbtSpacing(VkPhysicalDevice physicalDevice);
     reina::core::Buffer createSbt(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkPipeline rtPipeline, SbtSpacing spacing, uint32_t shaderGroups);

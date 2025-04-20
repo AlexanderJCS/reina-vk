@@ -2,8 +2,8 @@
 #include "Instance.h"
 #include "Models.h"
 
-reina::graphics::Instance::Instance(
-        const reina::graphics::Blas& blas, glm::vec3 emission, ModelRange modelRange, const reina::graphics::ObjData& objData,
+reina::scene::Instance::Instance(
+        const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ObjData& objData,
         uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform)
         : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission), cullBackface(cullBackface) {
 
@@ -12,7 +12,7 @@ reina::graphics::Instance::Instance(
     }
 }
 
-void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objData, float brightness) {
+void reina::scene::Instance::computeCDF(const reina::scene::ObjData& objData, float brightness) {
     // transform all vertices into transform space
     std::vector<glm::vec3> transformedVertices = std::vector<glm::vec3>(objData.vertices.size() / 4);
     for (int i = 0; i < objData.vertices.size(); i += 4) {  // += 4 since each vertex is represented as a 4d vec
@@ -52,46 +52,46 @@ void reina::graphics::Instance::computeCDF(const reina::graphics::ObjData& objDa
     weight = cumulativeWeight;
 }
 
-const reina::graphics::Blas& reina::graphics::Instance::getBlas() const {
+const reina::graphics::Blas& reina::scene::Instance::getBlas() const {
     return blas;
 }
 
-glm::mat4x4 reina::graphics::Instance::getTransform() const {
+glm::mat4x4 reina::scene::Instance::getTransform() const {
     return transform;
 }
 
-uint32_t reina::graphics::Instance::getObjectPropertiesID() const {
+uint32_t reina::scene::Instance::getObjectPropertiesID() const {
     return objectPropertiesID;
 }
 
-uint32_t reina::graphics::Instance::getMaterialOffset() const {
+uint32_t reina::scene::Instance::getMaterialOffset() const {
     return materialOffset;
 }
 
-const std::vector<float> &reina::graphics::Instance::getCDF() const {
+const std::vector<float> &reina::scene::Instance::getCDF() const {
     return cdf;
 }
 
-bool reina::graphics::Instance::isEmissive() const {
+bool reina::scene::Instance::isEmissive() const {
     return glm::dot(emission, emission) > 0.00001f * 0.00001f;
 }
 
-reina::graphics::ModelRange reina::graphics::Instance::getModelRange() const {
+reina::scene::ModelRange reina::scene::Instance::getModelRange() const {
     return modelRange;
 }
 
-float reina::graphics::Instance::getArea() const {
+float reina::scene::Instance::getArea() const {
     return area;
 }
 
-glm::vec3 reina::graphics::Instance::getEmission() const {
+glm::vec3 reina::scene::Instance::getEmission() const {
     return emission;
 }
 
-float reina::graphics::Instance::getWeight() const {
+float reina::scene::Instance::getWeight() const {
     return weight;
 }
 
-bool reina::graphics::Instance::isCullBackface() const {
+bool reina::scene::Instance::isCullBackface() const {
     return cullBackface;
 }

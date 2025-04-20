@@ -17,7 +17,7 @@
 #include "consts.h"
 #include "../core/DescriptorSet.h"
 #include "../graphics/Blas.h"
-#include "../graphics/Instance.h"
+#include "../scene/Instance.h"
 #include "../core/CmdBuffer.h"
 
 uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -465,7 +465,7 @@ VkRenderPass vktools::createRenderPass(VkDevice logicalDevice, VkFormat swapchai
 
 vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice,
                                               VkCommandPool cmdPool, VkQueue queue,
-                                              const std::vector<reina::graphics::Instance>& instances) {
+                                              const std::vector<reina::scene::Instance>& instances) {
 
     std::vector<VkAccelerationStructureInstanceKHR> vkInstances;
     for (const auto& instance : instances) {

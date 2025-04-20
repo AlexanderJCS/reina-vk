@@ -11,7 +11,7 @@
 #include <set>
 #include <unordered_map>
 
-namespace reina::graphics {
+namespace reina::scene {
     struct alignas(16) InstanceData {
         // todo: put this in a polyglot file
         glm::mat4x4 transform;
@@ -29,9 +29,9 @@ namespace reina::graphics {
     class Instances {
     public:
         Instances() = default;
-        explicit Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<Instance>& instances);
+        explicit Instances(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, const std::vector<reina::scene::Instance>& instances);
 
-        [[nodiscard]] const std::vector<Instance>& getInstances() const;
+        [[nodiscard]] const std::vector<reina::scene::Instance>& getInstances() const;
 
         [[nodiscard]] const reina::core::Buffer& getEmissiveMetadataBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getCdfTrianglesBuffer() const;
@@ -62,7 +62,7 @@ namespace reina::graphics {
 
         float emissiveInstancesArea = 0;
 
-        std::vector<Instance> instances;
+        std::vector<reina::scene::Instance> instances;
         std::vector<float> cdfTriangles;
         std::vector<float> cdfInstances;
         std::vector<InstanceData> emissiveInstancesData;

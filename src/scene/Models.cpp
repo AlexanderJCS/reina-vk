@@ -1,7 +1,7 @@
 #include "Models.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
+#include "tiny_obj_loader.h"
 #include <stdexcept>
 #include <cmath>
 
@@ -29,7 +29,7 @@ static std::vector<float> tinyobjToVec4(const std::vector<tinyobj::real_t>& tiny
     return output;
 }
 
-reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
+reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
     modelRanges = std::vector<ModelRange>(modelFilepaths.size());
     modelObjData = std::vector<ObjData>(modelFilepaths.size());
 
@@ -141,7 +141,7 @@ reina::graphics::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physica
     offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
 }
 
-reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& filepath) {
+reina::scene::ObjData reina::scene::Models::getObjData(const std::string& filepath) {
     Assimp::Importer importer;
 
     const aiScene* scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
@@ -201,27 +201,27 @@ reina::graphics::ObjData reina::graphics::Models::getObjData(const std::string& 
     return {objVertices, objIndices, objTbns, objNormalsIndices, objTexCoords, objTexIndices};
 }
 
-size_t reina::graphics::Models::getVerticesBufferSize() const {
+size_t reina::scene::Models::getVerticesBufferSize() const {
     return verticesBufferSize;
 }
 
-size_t reina::graphics::Models::getIndicesBuffersSize() const {
+size_t reina::scene::Models::getIndicesBuffersSize() const {
     return indicesBuffersSize;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getVerticesBuffer() const {
+const reina::core::Buffer& reina::scene::Models::getVerticesBuffer() const {
     return verticesBuffer;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getOffsetIndicesBuffer() const {
+const reina::core::Buffer& reina::scene::Models::getOffsetIndicesBuffer() const {
     return offsetIndicesBuffer;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getNonOffsetIndicesBuffer() const {
+const reina::core::Buffer& reina::scene::Models::getNonOffsetIndicesBuffer() const {
     return nonOffsetIndicesBuffer;
 }
 
-const reina::graphics::ObjData& reina::graphics::Models::getObjData(int index) const {
+const reina::scene::ObjData& reina::scene::Models::getObjData(int index) const {
     if (index >= modelRanges.size() || index < 0) {
         throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
     }
@@ -230,7 +230,7 @@ const reina::graphics::ObjData& reina::graphics::Models::getObjData(int index) c
 }
 
 
-reina::graphics::ModelRange reina::graphics::Models::getModelRange(int index) const {
+reina::scene::ModelRange reina::scene::Models::getModelRange(int index) const {
     if (index >= modelRanges.size() || index < 0) {
         throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
     }
@@ -238,7 +238,7 @@ reina::graphics::ModelRange reina::graphics::Models::getModelRange(int index) co
     return modelRanges[index];
 }
 
-void reina::graphics::Models::destroy(VkDevice logicalDevice) {
+void reina::scene::Models::destroy(VkDevice logicalDevice) {
     verticesBuffer.destroy(logicalDevice);
     offsetIndicesBuffer.destroy(logicalDevice);
     nonOffsetIndicesBuffer.destroy(logicalDevice);
@@ -248,34 +248,34 @@ void reina::graphics::Models::destroy(VkDevice logicalDevice) {
     offsetTexIndicesBuffer.destroy(logicalDevice);
 }
 
-size_t reina::graphics::Models::getNormalsBufferSize() const {
+size_t reina::scene::Models::getNormalsBufferSize() const {
     return normalsBufferSize;
 }
 
-size_t reina::graphics::Models::getNormalsIndicesBufferSize() const {
+size_t reina::scene::Models::getNormalsIndicesBufferSize() const {
     return normalsIndicesBufferSize;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getTbnsBuffer() const {
+const reina::core::Buffer& reina::scene::Models::getTbnsBuffer() const {
     return tbnsBuffer;
 }
 
-const reina::core::Buffer& reina::graphics::Models::getOffsetTbnsIndicesBuffer() const {
+const reina::core::Buffer& reina::scene::Models::getOffsetTbnsIndicesBuffer() const {
     return offsetTbnsIndicesBuffer;
 }
 
-const reina::core::Buffer &reina::graphics::Models::getOffsetTexIndicesBuffer() const {
+const reina::core::Buffer &reina::scene::Models::getOffsetTexIndicesBuffer() const {
     return offsetTexIndicesBuffer;
 }
 
-size_t reina::graphics::Models::getTexIndicesBufferSize() const {
+size_t reina::scene::Models::getTexIndicesBufferSize() const {
     return texIndicesBufferSize;
 }
 
-const reina::core::Buffer &reina::graphics::Models::getTexCoordsBuffer() const {
+const reina::core::Buffer &reina::scene::Models::getTexCoordsBuffer() const {
     return texCoordsBuffer;
 }
 
-size_t reina::graphics::Models::getTexCoordsBufferSize() const {
+size_t reina::scene::Models::getTexCoordsBufferSize() const {
     return texCoordsBufferSize;
 }
