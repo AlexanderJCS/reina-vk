@@ -2,6 +2,7 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
 #include "closestHitCommon.h.glsl"
+#include "texutils.h.glsl"
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
@@ -14,10 +15,16 @@ void main() {
         return;
     }
 
+    vec2 uv = hitInfo.uv;
+    if (props.bumpMapTexID >= 0) {
+        uv = bumpMapping(uv, normalize(gl_WorldRayDirectionEXT), hitInfo.tbn, textures[props.bumpMapTexID]);
+    }
+
     vec3 worldNormal = hitInfo.worldNormal;
     if (props.normalMapTexID >= 0) {
-        vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
-        worldNormal = hitInfo.tbn * tangentNormal;
+        vec3 tangentNormal = texture(textures[props.normalMapTexID], uv).rgb * 2 - 1;
+        tangentNormal.y *= -1;
+        worldNormal = normalize(hitInfo.tbn * tangentNormal);
     }
 
     #ifdef DEBUG_SHOW_NORMALS
@@ -25,12 +32,12 @@ void main() {
     #else
         pld.color = props.albedo;
         if (props.textureID >= 0) {
-            pld.color *= texture(textures[props.textureID], hitInfo.uv).rgb;
+            pld.color *= texture(textures[props.textureID], uv).rgb;
         }
     #endif
 
     pld.emission = props.emission;
-    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, normalize(worldNormal));
+    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);  // use hitInfo.worldNormal since using tangent-space calculations may not prevent self-intersection
     pld.rayDirection = reflect(normalize(gl_WorldRayDirectionEXT), normalize(worldNormal)) + props.fuzzOrRefIdx * randomUnitVec(pld.rngState);
     pld.rayHitSky = false;
     pld.skip = false;

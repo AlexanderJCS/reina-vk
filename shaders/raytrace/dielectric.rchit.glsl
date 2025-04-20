@@ -2,6 +2,7 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
 #include "closestHitCommon.h.glsl"
+#include "texutils.h.glsl"
 
 float reflectance(float cosine, float ref_idx) {
     // Use Schlick's approximation for reflectance
@@ -50,32 +51,35 @@ void main() {
 
     bool previouslyInsideDielectric = pld.insideDielectric;
 
+    vec2 uv = hitInfo.uv;
+    if (props.bumpMapTexID >= 0) {
+        uv = bumpMapping(uv, unitDir, hitInfo.tbn, textures[props.bumpMapTexID]);
+    }
+
     vec3 albedo = props.albedo;
     if (props.textureID >= 0) {
-        albedo *= texture(textures[props.textureID], hitInfo.uv).rgb;
+        albedo *= texture(textures[props.textureID], uv).rgb;
     }
 
     vec3 worldNormal = hitInfo.worldNormal;
     if (props.normalMapTexID >= 0) {
-        vec3 tangentNormal = texture(textures[props.normalMapTexID], hitInfo.uv).rgb * 2 - 1;
-        worldNormal = hitInfo.tbn * tangentNormal;
+        vec3 tangentNormal = texture(textures[props.normalMapTexID], uv).rgb * 2 - 1;
+        tangentNormal.y *= -1;
+        worldNormal = normalize(hitInfo.tbn * tangentNormal);
     }
 
     if (cannotRefract || reflectivity > random(pld.rngState)) {
         // specular reflection
         pld.rayDirection = reflect(unitDir, worldNormal);
         pld.color = vec3(1);
-        pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, worldNormal);
+        pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
     } else {
         pld.insideDielectric = hitInfo.frontFace;
 
         // refract
         pld.rayDirection = refract(unitDir, worldNormal, ri);
         pld.color = albedo;
-        if (props.textureID >= 0) {
-            pld.color *= texture(textures[props.textureID], hitInfo.uv).rgb;
-        }
-        pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, worldNormal, unitDir);
+        pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
     }
 
     pld.accumulatedDistance += mix(0, length(hitInfo.worldPosition - gl_WorldRayOriginEXT), previouslyInsideDielectric);
