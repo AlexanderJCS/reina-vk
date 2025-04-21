@@ -52,7 +52,7 @@ Reina::Reina() {
 
     // init
     renderWidth = 1080;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
-    renderHeight = 1350;
+    renderHeight = 1080;
     const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
     windowWidth = 800;
@@ -85,9 +85,7 @@ Reina::Reina() {
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
     textures = std::vector<reina::graphics::Image>{
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/bricks2/diffuse.png"},
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/bricks2/normal.png"},
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/bricks2/parallax.png"},
+            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/cornell_texture.png"},
     };
 
     rtDescriptorSet = reina::core::DescriptorSet{
@@ -190,26 +188,26 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::scene::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"models/quad.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
+    models = reina::scene::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"models/stanford_bunny.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
 
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::rotate(baseTransform, glm::radians(-33.5f), glm::vec3(1, 1, 1));
+    glm::mat4x4 subjectTransform = glm::translate(glm::rotate(baseTransform, glm::radians(-33.5f), glm::vec3(1, 1, 1)), glm::vec3(0, 0.3f, 0));
 
     std::vector<ObjectProperties> objectProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).tbnsIndexOffset,  models.getModelRange(1).texIndexOffset, 0.5, true, 0, -1, -1, -1, 0u},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).tbnsIndexOffset, models.getModelRange(2).texIndexOffset, 0,    true, 0, -1, -1, -1, 0u},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).tbnsIndexOffset,    models.getModelRange(0).texIndexOffset, 0.1f, true, 0.7, 0, 1, 2, 0u}
+            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).tbnsIndexOffset,  models.getModelRange(1).texIndexOffset, 0.5, true, 0, 0, -1, -1, 1u},
+            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).tbnsIndexOffset, models.getModelRange(2).texIndexOffset, 0,    true, 0, -1, -1, -1, 1u},
+            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).tbnsIndexOffset,    models.getModelRange(0).texIndexOffset, 1.5f, true, 0.7, -1, -1, -1, 0u}
     };
 
     instances = reina::scene::Instances{
             logicalDevice, physicalDevice,
             {
-//                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, objectProperties[0].cullBackface, baseTransform},
+                    {box, objectProperties[0].emission, models.getModelRange(1), models.getObjData(1), 0, 0, (bool) objectProperties[0].cullBackface, baseTransform},
                     {light, objectProperties[1].emission, models.getModelRange(2), models.getObjData(2), 1, 0, (bool) objectProperties[1].cullBackface, baseTransform},
-                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 0, (bool) objectProperties[2].cullBackface, subjectTransform}
+                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getObjData(0), 2, 2, (bool) objectProperties[2].cullBackface, subjectTransform}
             }
     };
     rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
