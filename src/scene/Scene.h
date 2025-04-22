@@ -29,9 +29,6 @@ namespace reina::scene {
 
     class Scene {
     public:
-        // TODO: scene needs a Models class; but that requires all models in advance which I don't want to do.
-        //  Instead, modify Models so that it allows you to "dynamically" add more
-
         Scene();
 
         /**
