@@ -10,92 +10,109 @@
 #include <assimp/postprocess.h>
 
 reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
-    modelRanges = std::vector<ModelRange>(modelFilepaths.size());
-    modelObjData = std::vector<ObjData>(modelFilepaths.size());
-
-    size_t totalVertices = 0;
-    size_t totalIndices = 0;
-    size_t totalTBNs = 0;
-    size_t totalTexCoords = 0;
-
-    for (int i = 0; i < modelFilepaths.size(); i++) {
-        modelObjData[i] = getObjData(modelFilepaths[i]);
-
-        totalVertices += modelObjData[i].vertices.size();
-        totalIndices += modelObjData[i].indices.size();
-        totalTBNs += modelObjData[i].tbns.size();
-        totalTexCoords += modelObjData[i].texCoords.size();
-    }
-
-    allVertices = std::vector<float>(totalVertices);
-    allTBNs = std::vector<float>(totalTBNs * 9);
-    allTexCoords = std::vector<float>(totalTexCoords);
-    allIndicesOffset = std::vector<uint32_t>(totalIndices);
-    allTexIndicesOffset = std::vector<uint32_t>(totalIndices);
-    allTBNsIndicesOffset = std::vector<uint32_t>(totalIndices);
-    allIndicesNonOffset = std::vector<uint32_t>(totalIndices);
-
-    size_t vertexOffset = 0;
-    size_t tbnsOffset = 0;
-    size_t texOffset = 0;
-    size_t indexOffset = 0;
-    size_t normalsIndexOffset = 0;
-    size_t texIndexOffset = 0;
-
-    // Copy the data to allVertices and allIndicesOffset
-    for (int i = 0; i < modelObjData.size(); i++) {
-        const ObjData& objectData = modelObjData[i];
-
-        modelRanges[i] = ModelRange{
-            .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
-            .firstNormal = static_cast<uint32_t>(tbnsOffset),
-            .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
-            .tbnsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
-            .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
-            .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
-            .tbnsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
-            .texIndexCount = static_cast<uint32_t>(objectData.texIndices.size() / 3),
-        };
-
-        // Copy vertices
-        std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
-//        std::copy(objectData.tbns.begin(), objectData.tbns.end(), allTBNs.begin() + static_cast<long long>(tbnsOffset));
-        std::copy(objectData.texCoords.begin(), objectData.texCoords.end(), allTexCoords.begin() + static_cast<long long>(texOffset));
-
-        for (size_t idx = 0; idx < objectData.tbns.size(); idx++) {
-            const glm::mat3 &m = objectData.tbns[idx];
-
-            // Compute the start of the i‑th matrix within allTBNs:
-            size_t base = (tbnsOffset + idx) * 9;
-
-            // Column‑major: for each column, then each row:
-            for (int col = 0; col < 3; col++) {
-                for (int row = 0; row < 3; row++) {
-                    allTBNs[base + col * 3 + row] = m[col][row];
-                }
-            }
-        }
-
-        // Copy indices with proper offset
-        for (uint32_t idx : objectData.indices) {
-            allIndicesOffset[indexOffset] = idx + (vertexOffset / 4);
-            allIndicesNonOffset[indexOffset++] = idx;
-        }
-
-        for (uint32_t idx : objectData.tbnsIndices) {
-            allTBNsIndicesOffset[normalsIndexOffset++] = idx + tbnsOffset;
-        }
-
-        for (uint32_t idx : objectData.texIndices) {
-            allTexIndicesOffset[texIndexOffset++] = idx == 0xFFFFFFFFu ? idx : idx + (texOffset / 2);
-        }
-
-        vertexOffset += objectData.vertices.size();
-        tbnsOffset += objectData.tbns.size();
-        texOffset += objectData.texCoords.size();
+    for (const auto & modelFilepath : modelFilepaths) {
+        ObjData objData = getObjData(modelFilepath);
+        addModel(objData);
     }
 
     createBuffers(logicalDevice, physicalDevice, cmdPool, queue);
+}
+
+void reina::scene::Models::addModel(const reina::scene::ObjData& objData) {
+    if (areBuffersCreated()) {
+        throw std::runtime_error("Could not add model; buffers already created. Models must be added before buffers are created.");
+    }
+
+    modelObjData.push_back(objData);
+
+    // The starting indices of the vertices/TBNs/indices for this model
+    size_t vertexOffset = allVertices.size();
+    size_t tbnsOffset = allTBNs.size();
+    size_t texOffset = allTexCoords.size();
+    size_t indexOffset = allIndicesOffset.size();
+    size_t tbnsIndicesOffset = allTBNsIndicesOffset.size();
+    size_t texIndexOffset = allTexIndicesOffset.size();
+
+    allVertices.resize(allVertices.size() + objData.vertices.size());
+    allTBNs.resize(allTBNs.size() + objData.tbns.size() * 9);
+    allTexCoords.resize(allTexCoords.size() + objData.texCoords.size());
+    allIndicesNonOffset.resize(allIndicesNonOffset.size() + objData.indices.size());
+    allIndicesOffset.resize(allIndicesOffset.size() + objData.indices.size());
+    allTBNsIndicesOffset.resize(allTBNsIndicesOffset.size() + objData.tbnsIndices.size());
+    allTexIndicesOffset.resize(allTexIndicesOffset.size() + objData.texIndices.size());
+
+    modelRanges.push_back(ModelRange{
+        .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
+        .firstNormal = static_cast<uint32_t>(tbnsOffset),
+        .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
+        .tbnsIndexOffset = static_cast<uint32_t>(tbnsIndicesOffset * sizeof(uint32_t)),
+        .texIndexOffset = objData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
+        .indexCount = static_cast<uint32_t>(objData.indices.size() / 3),
+        .tbnsIndexCount = static_cast<uint32_t>(objData.indices.size() / 3),
+        .texIndexCount = static_cast<uint32_t>(objData.texIndices.size() / 3),
+    });
+
+    // Copy vertices and tex coords
+    std::copy(objData.vertices.begin(), objData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
+    std::copy(objData.texCoords.begin(), objData.texCoords.end(), allTexCoords.begin() + static_cast<long long>(texOffset));
+
+    // Copy TBN matrices
+    for (size_t idx = 0; idx < objData.tbns.size(); idx++) {
+        const glm::mat3& m = objData.tbns[idx];
+
+        // Compute the start of the i‑th matrix within allTBNs:
+        size_t base = tbnsOffset + idx * 9;
+
+        // Column‑major: for each column, then each row:
+        for (int col = 0; col < 3; col++) {
+            for (int row = 0; row < 3; row++) {
+                allTBNs[base + col * 3 + row] = m[col][row];
+            }
+        }
+    }
+
+    // Copy indices with proper offset
+    for (uint32_t idx : objData.indices) {
+        allIndicesOffset[indexOffset] = idx + (vertexOffset / 4);
+        allIndicesNonOffset[indexOffset++] = idx;
+    }
+
+    for (uint32_t idx : objData.tbnsIndices) {
+        allTBNsIndicesOffset[tbnsIndicesOffset++] = idx + tbnsOffset;
+    }
+
+    for (uint32_t idx : objData.texIndices) {
+        allTexIndicesOffset[texIndexOffset++] = idx == 0xFFFFFFFFu ? idx : idx + (texOffset / 2);
+    }
+}
+
+void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
+    buffersCreated = true;
+
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+    VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+    verticesBufferSize = allVertices.size();
+    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};
+
+    indicesBuffersSize = allIndicesOffset.size();
+    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
+    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
+
+    normalsBufferSize = allTBNs.size();
+    tbnsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNs, usage, allocFlags};
+
+    normalsIndicesBufferSize = allTBNsIndicesOffset.size();
+    offsetTbnsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNsIndicesOffset, usage, allocFlags};
+
+    texCoordsBufferSize = allTexCoords.size();
+    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
+
+    texIndicesBufferSize = allTexIndicesOffset.size();
+    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
 }
 
 reina::scene::ObjData reina::scene::Models::getObjData(const std::string& filepath) {
@@ -217,29 +234,6 @@ const reina::core::Buffer &reina::scene::Models::getTexCoordsBuffer() const {
     return texCoordsBuffer;
 }
 
-void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
-    VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
-                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-    VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-
-    verticesBufferSize = allVertices.size();
-    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};
-
-    indicesBuffersSize = allIndicesOffset.size();
-    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
-    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
-
-    normalsBufferSize = allTBNs.size();
-    tbnsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNs, usage, allocFlags};
-
-    normalsIndicesBufferSize = allTBNsIndicesOffset.size();
-    offsetTbnsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNsIndicesOffset, usage, allocFlags};
-
-    texCoordsBufferSize = allTexCoords.size();
-    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
-
-    texIndicesBufferSize = allTexIndicesOffset.size();
-    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
+bool reina::scene::Models::areBuffersCreated() const {
+    return buffersCreated;
 }
