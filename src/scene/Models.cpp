@@ -8,6 +8,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <iostream>
 
 reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
     for (const auto & modelFilepath : modelFilepaths) {
@@ -44,9 +45,9 @@ void reina::scene::Models::addModel(const reina::scene::ObjData& objData) {
     modelRanges.push_back(ModelRange{
         .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
         .firstNormal = static_cast<uint32_t>(tbnsOffset),
-        .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
-        .tbnsIndexOffset = static_cast<uint32_t>(tbnsIndicesOffset * sizeof(uint32_t)),
-        .texIndexOffset = objData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
+        .indexOffset = static_cast<uint32_t>(indexOffset),
+        .tbnsIndexOffset = static_cast<uint32_t>(tbnsIndicesOffset),
+        .texIndexOffset = objData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset),
         .indexCount = static_cast<uint32_t>(objData.indices.size() / 3),
         .tbnsIndexCount = static_cast<uint32_t>(objData.indices.size() / 3),
         .texIndexCount = static_cast<uint32_t>(objData.texIndices.size() / 3),
@@ -59,11 +60,8 @@ void reina::scene::Models::addModel(const reina::scene::ObjData& objData) {
     // Copy TBN matrices
     for (size_t idx = 0; idx < objData.tbns.size(); idx++) {
         const glm::mat3& m = objData.tbns[idx];
-
-        // Compute the start of the i‑th matrix within allTBNs:
         size_t base = tbnsOffset + idx * 9;
 
-        // Column‑major: for each column, then each row:
         for (int col = 0; col < 3; col++) {
             for (int row = 0; row < 3; row++) {
                 allTBNs[base + col * 3 + row] = m[col][row];
