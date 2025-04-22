@@ -116,7 +116,7 @@ HitInfo getObjectHitInfo() {
 
     // TBN stuff
     result.tbn = mat3(1.0);
-//    if (props.normalMapTexID != -1) {
+    if (props.normalMapTexID != -1) {  // Only calculate TBN matrices if needed
         const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
         mat3 vertex1 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
         mat3 vertex2 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
@@ -141,7 +141,7 @@ HitInfo getObjectHitInfo() {
         worldN *= result.frontFace ? 1.0 : -1.0;
 
         result.tbn = mat3(worldT, worldB, worldN);
-//    }
+    }
 
     return result;
 }
