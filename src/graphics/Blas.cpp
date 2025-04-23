@@ -30,7 +30,7 @@ reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDev
 
     VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{
             .primitiveCount = modelRange.indexCount,
-            .primitiveOffset = modelRange.indexOffset,
+            .primitiveOffset = static_cast<uint32_t>(modelRange.indexOffset * sizeof(uint32_t)),
             .firstVertex = modelRange.firstVertex,
             .transformOffset = 0
     };

@@ -98,8 +98,7 @@ RandomEmissivePointOutput randomEmissivePoint(inout uint rngState) {
 
     InstanceData instanceMetadata = emissiveMetadata[instanceIdx];
 
-    // divide by 4 since 4 bytes for an int32
-    const uint indexOffset = instanceMetadata.indexOffset / 4;
+    const uint indexOffset = instanceMetadata.indexOffset;
 
     // get the indices of the vertices of the triangle
     const uint i0 = indices[3 * emissiveTriangleIndex + indexOffset + 0];

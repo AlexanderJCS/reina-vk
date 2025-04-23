@@ -49,9 +49,9 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
         modelRanges[i] = ModelRange{
             .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
             .firstNormal = static_cast<uint32_t>(tbnsOffset),
-            .indexOffset = static_cast<uint32_t>(indexOffset * sizeof(uint32_t)),
-            .tbnsIndexOffset = static_cast<uint32_t>(normalsIndexOffset * sizeof(uint32_t)),
-            .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset * sizeof(uint32_t)),
+            .indexOffset = static_cast<uint32_t>(indexOffset),
+            .tbnsIndexOffset = static_cast<uint32_t>(normalsIndexOffset),
+            .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset),
             .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .tbnsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .texIndexCount = static_cast<uint32_t>(objectData.texIndices.size() / 3),
