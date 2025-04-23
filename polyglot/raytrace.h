@@ -16,11 +16,11 @@
 #endif  // #ifdef __cplusplus
 
 struct ObjectProperties {
-    uint indicesOffset;
+    uint indicesBytesOffset;
     vec3 albedo;
     vec3 emission;
-    uint tbnsIndicesOffset;
-    uint texIndicesOffset;
+    uint tbnsIndicesBytesOffset;
+    uint texIndicesBytesOffset;
     float fuzzOrRefIdx;
     bool interpNormals;
     float absorption;

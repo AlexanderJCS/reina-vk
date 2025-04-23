@@ -54,7 +54,8 @@ HitInfo getObjectHitInfo() {
     // Get the ID of the triangle
     const uint primitiveID = gl_PrimitiveID;
 
-    const uint indexOffset = props.indicesOffset;
+    // divide by 4 since 4 bytes for an int32
+    const uint indexOffset = props.indicesBytesOffset / 4;
 
     // Get the indices of the vertices of the triangle
     const uint i0 = indices[3 * primitiveID + indexOffset + 0];
@@ -79,7 +80,7 @@ HitInfo getObjectHitInfo() {
     if (!props.interpNormals) {
         objectNormal = normalize(cross(v1 - v0, v2 - v0));
     } else {
-        const uint tbnsIndexOffset = props.tbnsIndicesOffset;
+        const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
         const uint tbn0Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0];
         const uint n1Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1];
         const uint tbn2Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2];
@@ -91,11 +92,11 @@ HitInfo getObjectHitInfo() {
         objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
     }
 
-    if (props.texIndicesOffset == 0xFFFFFFFFu) {
+    if (props.texIndicesBytesOffset == 0xFFFFFFFFu) {
         // no tex coords for this model
         result.uv = vec2(0);
     } else {
-        const uint texIndexOffset = props.texIndicesOffset;
+        const uint texIndexOffset = props.texIndicesBytesOffset / 4;
         const uint t0Index = texIndices[3 * primitiveID + texIndexOffset + 0];
         const uint t1Index = texIndices[3 * primitiveID + texIndexOffset + 1];
         const uint t2Index = texIndices[3 * primitiveID + texIndexOffset + 2];
@@ -116,7 +117,7 @@ HitInfo getObjectHitInfo() {
     // TBN stuff
     result.tbn = mat3(1.0);
     if (props.normalMapTexID != -1) {  // Only calculate TBN matrices if needed
-        const uint tbnsIndexOffset = props.tbnsIndicesOffset;
+        const uint tbnsIndexOffset = props.tbnsIndicesBytesOffset / 4;
         mat3 vertex1 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
         mat3 vertex2 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
         mat3 vertex3 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2]];

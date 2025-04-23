@@ -34,7 +34,6 @@ namespace reina::scene {
         Models() = default;
         Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths);
 
-        void addModel(const ObjData& objData);
         void createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
@@ -49,14 +48,11 @@ namespace reina::scene {
 
         [[nodiscard]] const ObjData& getObjData(int index) const;
         [[nodiscard]] ModelRange getModelRange(int index) const;
-        [[nodiscard]] bool areBuffersCreated() const;
 
         void destroy(VkDevice logicalDevice);
 
     private:
         [[nodiscard]] static ObjData getObjData(const std::string& filepath);
-
-        bool buffersCreated = false;
 
         std::vector<ObjData> modelObjData;
         reina::core::Buffer verticesBuffer;
