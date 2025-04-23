@@ -98,6 +98,33 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
     createBuffers(logicalDevice, physicalDevice, cmdPool, queue);
 }
 
+void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+    VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+    verticesBufferSize = allVertices.size();
+    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};
+
+    indicesBuffersSize = allIndicesOffset.size();
+    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
+    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
+
+    normalsBufferSize = allTBNs.size();
+    tbnsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNs, usage, allocFlags};
+
+    normalsIndicesBufferSize = allTBNsIndicesOffset.size();
+    offsetTbnsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNsIndicesOffset, usage, allocFlags};
+
+    texCoordsBufferSize = allTexCoords.size();
+    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
+
+    texIndicesBufferSize = allTexIndicesOffset.size();
+    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
+}
+
 reina::scene::ObjData reina::scene::Models::getObjData(const std::string& filepath) {
     Assimp::Importer importer;
 
@@ -215,31 +242,4 @@ const reina::core::Buffer &reina::scene::Models::getOffsetTexIndicesBuffer() con
 
 const reina::core::Buffer &reina::scene::Models::getTexCoordsBuffer() const {
     return texCoordsBuffer;
-}
-
-void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
-    VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
-                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-    VkMemoryAllocateFlags allocFlags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-
-    verticesBufferSize = allVertices.size();
-    verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};
-
-    indicesBuffersSize = allIndicesOffset.size();
-    offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
-    nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
-
-    normalsBufferSize = allTBNs.size();
-    tbnsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNs, usage, allocFlags};
-
-    normalsIndicesBufferSize = allTBNsIndicesOffset.size();
-    offsetTbnsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNsIndicesOffset, usage, allocFlags};
-
-    texCoordsBufferSize = allTexCoords.size();
-    texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
-
-    texIndicesBufferSize = allTexIndicesOffset.size();
-    offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
 }
