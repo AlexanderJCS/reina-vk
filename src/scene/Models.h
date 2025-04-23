@@ -20,7 +20,7 @@ namespace reina::scene {
         uint32_t texIndexCount;
     };
 
-    struct ObjData {
+    struct ModelData {
         std::vector<float> vertices;
         std::vector<uint32_t> indices;
         std::vector<glm::mat3> tbns;
@@ -34,7 +34,7 @@ namespace reina::scene {
         Models() = default;
         Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths);
 
-        void addModel(const ObjData& objData);
+        void addModel(const ModelData& objData);
         void createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
@@ -47,15 +47,15 @@ namespace reina::scene {
         [[nodiscard]] const reina::core::Buffer& getTexCoordsBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getOffsetTexIndicesBuffer() const;
 
-        [[nodiscard]] const ObjData& getObjData(int index) const;
+        [[nodiscard]] const ModelData& getModelData(int index) const;
         [[nodiscard]] ModelRange getModelRange(int index) const;
 
         void destroy(VkDevice logicalDevice);
 
     private:
-        [[nodiscard]] static ObjData getObjData(const std::string& filepath);
+        [[nodiscard]] static ModelData getObjData(const std::string& filepath);
 
-        std::vector<ObjData> modelObjData;
+        std::vector<ModelData> modelData;
         reina::core::Buffer verticesBuffer;
         reina::core::Buffer offsetIndicesBuffer;
         reina::core::Buffer nonOffsetIndicesBuffer;
@@ -65,11 +65,6 @@ namespace reina::scene {
         reina::core::Buffer offsetTexIndicesBuffer;
 
         size_t verticesBufferSize = 0;
-        size_t indicesBuffersSize = 0;
-        size_t normalsBufferSize = 0;
-        size_t normalsIndicesBufferSize = 0;
-        size_t texCoordsBufferSize = 0;
-        size_t texIndicesBufferSize = 0;
 
         std::vector<float> allVertices = std::vector<float>(0);
         std::vector<float> allTBNs = std::vector<float>(0);

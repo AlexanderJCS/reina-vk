@@ -3,7 +3,7 @@
 #include "Models.h"
 
 reina::scene::Instance::Instance(
-        const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ObjData& objData,
+        const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ModelData& objData,
         uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform)
         : blas(blas), objectPropertiesID(objectPropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission), cullBackface(cullBackface) {
 
@@ -12,7 +12,7 @@ reina::scene::Instance::Instance(
     }
 }
 
-void reina::scene::Instance::computeCDF(const reina::scene::ObjData& objData, float brightness) {
+void reina::scene::Instance::computeCDF(const reina::scene::ModelData& objData, float brightness) {
     // transform all vertices into transform space
     std::vector<glm::vec3> transformedVertices = std::vector<glm::vec3>(objData.vertices.size() / 4);
     for (int i = 0; i < objData.vertices.size(); i += 4) {  // += 4 since each vertex is represented as a 4d vec

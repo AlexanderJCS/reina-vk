@@ -9,7 +9,7 @@
 namespace reina::scene {
     class Instance {
     public:
-        Instance(const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ObjData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
+        Instance(const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ModelData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
 
         [[nodiscard]] const reina::graphics::Blas& getBlas() const;
         [[nodiscard]] glm::mat4x4 getTransform() const;
@@ -24,7 +24,7 @@ namespace reina::scene {
         [[nodiscard]] bool isCullBackface() const;
 
     private:
-        void computeCDF(const reina::scene::ObjData& objData, float brightness);
+        void computeCDF(const reina::scene::ModelData& objData, float brightness);
 
         reina::scene::ModelRange modelRange;
         const reina::graphics::Blas& blas;

@@ -10,31 +10,16 @@
 #include <assimp/postprocess.h>
 
 reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
-    modelObjData = std::vector<ObjData>(modelFilepaths.size());
-
-    size_t totalVertices = 0;
-    size_t totalIndices = 0;
-    size_t totalTBNs = 0;
-    size_t totalTexCoords = 0;
-
-    for (int i = 0; i < modelFilepaths.size(); i++) {
-        modelObjData[i] = getObjData(modelFilepaths[i]);
-
-        totalVertices += modelObjData[i].vertices.size();
-        totalIndices += modelObjData[i].indices.size();
-        totalTBNs += modelObjData[i].tbns.size();
-        totalTexCoords += modelObjData[i].texCoords.size();
-    }
-
     // Copy the data to allVertices and allIndicesOffset
-    for (int i = 0; i < modelObjData.size(); i++) {
-        addModel(modelObjData[i]);
+    for (const std::string& filepath : modelFilepaths) {
+        ModelData modelData = getObjData(filepath);
+        addModel(modelData);
     }
 
     createBuffers(logicalDevice, physicalDevice, cmdPool, queue);
 }
 
-void reina::scene::Models::addModel(const reina::scene::ObjData& objData) {
+void reina::scene::Models::addModel(const reina::scene::ModelData& objData) {
     size_t vertexOffset = allVertices.size();
     size_t tbnsOffset = allTBNs.size() / 9;
     size_t texOffset = allTexCoords.size();
@@ -50,7 +35,7 @@ void reina::scene::Models::addModel(const reina::scene::ObjData& objData) {
     allTBNsIndicesOffset.resize(allTBNsIndicesOffset.size() + objData.tbnsIndices.size());
     allIndicesNonOffset.resize(allIndicesNonOffset.size() + objData.indices.size());
 
-    const ObjData& objectData = objData;
+    const ModelData& objectData = objData;
 
     modelRanges.push_back(ModelRange{
             .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
@@ -62,6 +47,8 @@ void reina::scene::Models::addModel(const reina::scene::ObjData& objData) {
             .tbnsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .texIndexCount = static_cast<uint32_t>(objectData.texIndices.size() / 3),
     });
+
+    modelData.push_back(objData);
 
     // Copy vertices
     std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
@@ -105,25 +92,15 @@ void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevic
 
     verticesBufferSize = allVertices.size();
     verticesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allVertices, usage, allocFlags};
-
-    indicesBuffersSize = allIndicesOffset.size();
     offsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesOffset, usage, allocFlags};
     nonOffsetIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allIndicesNonOffset, usage, allocFlags};
-
-    normalsBufferSize = allTBNs.size();
     tbnsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNs, usage, allocFlags};
-
-    normalsIndicesBufferSize = allTBNsIndicesOffset.size();
     offsetTbnsIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTBNsIndicesOffset, usage, allocFlags};
-
-    texCoordsBufferSize = allTexCoords.size();
     texCoordsBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexCoords.empty() ? std::vector<float>{0} : allTexCoords, usage, allocFlags};
-
-    texIndicesBufferSize = allTexIndicesOffset.size();
     offsetTexIndicesBuffer = reina::core::Buffer{logicalDevice, physicalDevice, cmdPool, queue, allTexIndicesOffset, usage, allocFlags};
 }
 
-reina::scene::ObjData reina::scene::Models::getObjData(const std::string& filepath) {
+reina::scene::ModelData reina::scene::Models::getObjData(const std::string& filepath) {
     Assimp::Importer importer;
 
     const aiScene* scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
@@ -199,12 +176,12 @@ const reina::core::Buffer& reina::scene::Models::getNonOffsetIndicesBuffer() con
     return nonOffsetIndicesBuffer;
 }
 
-const reina::scene::ObjData& reina::scene::Models::getObjData(int index) const {
+const reina::scene::ModelData& reina::scene::Models::getModelData(int index) const {
     if (index >= modelRanges.size() || index < 0) {
         throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
     }
 
-    return modelObjData[index];
+    return modelData[index];
 }
 
 
