@@ -27,15 +27,15 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
         totalTexCoords += modelObjData[i].texCoords.size();
     }
 
-    size_t vertexOffset = 0;
-    size_t tbnsOffset = 0;
-    size_t texOffset = 0;
-    size_t indexOffset = 0;
-    size_t normalsIndexOffset = 0;
-    size_t texIndexOffset = 0;
-
     // Copy the data to allVertices and allIndicesOffset
     for (int i = 0; i < modelObjData.size(); i++) {
+        size_t vertexOffset = allVertices.size();
+        size_t tbnsOffset = allTBNs.size() / 9;
+        size_t texOffset = allTexCoords.size();
+        size_t indexOffset = allIndicesOffset.size();
+        size_t tbnsIndicesOffset = allTBNsIndicesOffset.size();
+        size_t texIndexOffset = allTexIndicesOffset.size();
+
         allVertices.resize(allVertices.size() + modelObjData[i].vertices.size());
         allTBNs.resize(allTBNs.size() + modelObjData[i].tbns.size() * 9);
         allTexCoords.resize(allTexCoords.size() + modelObjData[i].texCoords.size());
@@ -50,7 +50,7 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
             .firstVertex = static_cast<uint32_t>(vertexOffset / 4),
             .firstNormal = static_cast<uint32_t>(tbnsOffset),
             .indexOffset = static_cast<uint32_t>(indexOffset),
-            .tbnsIndexOffset = static_cast<uint32_t>(normalsIndexOffset),
+            .tbnsIndexOffset = static_cast<uint32_t>(tbnsIndicesOffset),
             .texIndexOffset = objectData.texCoords.empty() ? static_cast<uint32_t>(-1) : static_cast<uint32_t>(texIndexOffset),
             .indexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
             .tbnsIndexCount = static_cast<uint32_t>(objectData.indices.size() / 3),
@@ -59,7 +59,6 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
 
         // Copy vertices
         std::copy(objectData.vertices.begin(), objectData.vertices.end(), allVertices.begin() + static_cast<long long>(vertexOffset));
-//        std::copy(objectData.tbns.begin(), objectData.tbns.end(), allTBNs.begin() + static_cast<long long>(tbnsOffset));
         std::copy(objectData.texCoords.begin(), objectData.texCoords.end(), allTexCoords.begin() + static_cast<long long>(texOffset));
 
         for (size_t idx = 0; idx < objectData.tbns.size(); idx++) {
@@ -83,7 +82,7 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
         }
 
         for (uint32_t idx : objectData.tbnsIndices) {
-            allTBNsIndicesOffset[normalsIndexOffset++] = idx + tbnsOffset;
+            allTBNsIndicesOffset[tbnsIndicesOffset++] = idx + tbnsOffset;
         }
 
         for (uint32_t idx : objectData.texIndices) {
