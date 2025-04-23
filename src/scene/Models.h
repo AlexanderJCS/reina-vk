@@ -70,13 +70,13 @@ namespace reina::scene {
         size_t texCoordsBufferSize = 0;
         size_t texIndicesBufferSize = 0;
 
-        std::vector<float> allVertices;
-        std::vector<float> allTBNs;
-        std::vector<float> allTexCoords;
-        std::vector<uint32_t> allIndicesOffset;
-        std::vector<uint32_t> allTexIndicesOffset;
-        std::vector<uint32_t> allTBNsIndicesOffset;
-        std::vector<uint32_t> allIndicesNonOffset;
+        std::vector<float> allVertices = std::vector<float>(0);
+        std::vector<float> allTBNs = std::vector<float>(0);
+        std::vector<float> allTexCoords = std::vector<float>(0);
+        std::vector<uint32_t> allIndicesOffset = std::vector<uint32_t>(0);
+        std::vector<uint32_t> allTexIndicesOffset = std::vector<uint32_t>(0);
+        std::vector<uint32_t> allTBNsIndicesOffset = std::vector<uint32_t>(0);
+        std::vector<uint32_t> allIndicesNonOffset = std::vector<uint32_t>(0);
 
         std::vector<ModelRange> modelRanges;
     };

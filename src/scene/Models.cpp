@@ -27,14 +27,6 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
         totalTexCoords += modelObjData[i].texCoords.size();
     }
 
-    allVertices = std::vector<float>(totalVertices);
-    allTBNs = std::vector<float>(totalTBNs * 9);
-    allTexCoords = std::vector<float>(totalTexCoords);
-    allIndicesOffset = std::vector<uint32_t>(totalIndices);
-    allTexIndicesOffset = std::vector<uint32_t>(totalIndices);
-    allTBNsIndicesOffset = std::vector<uint32_t>(totalIndices);
-    allIndicesNonOffset = std::vector<uint32_t>(totalIndices);
-
     size_t vertexOffset = 0;
     size_t tbnsOffset = 0;
     size_t texOffset = 0;
@@ -44,6 +36,14 @@ reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDe
 
     // Copy the data to allVertices and allIndicesOffset
     for (int i = 0; i < modelObjData.size(); i++) {
+        allVertices.resize(allVertices.size() + modelObjData[i].vertices.size());
+        allTBNs.resize(allTBNs.size() + modelObjData[i].tbns.size() * 9);
+        allTexCoords.resize(allTexCoords.size() + modelObjData[i].texCoords.size());
+        allIndicesOffset.resize(allIndicesOffset.size() + modelObjData[i].indices.size());
+        allTexIndicesOffset.resize(allTexIndicesOffset.size() + modelObjData[i].texIndices.size());
+        allTBNsIndicesOffset.resize(allTBNsIndicesOffset.size() + modelObjData[i].tbnsIndices.size());
+        allIndicesNonOffset.resize(allIndicesNonOffset.size() + modelObjData[i].indices.size());
+
         const ObjData& objectData = modelObjData[i];
 
         modelRanges[i] = ModelRange{
