@@ -39,7 +39,7 @@ vec3 offsetPositionForDielectric(vec3 worldPosition, vec3 normal, vec3 rayDir) {
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
-    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
+    InstanceProperties props = instanceProperties[gl_InstanceCustomIndexEXT];
 
     float ri = hitInfo.frontFace ? 1.0 / props.fuzzOrRefIdx : props.fuzzOrRefIdx;
     vec3 unitDir = normalize(gl_WorldRayDirectionEXT);

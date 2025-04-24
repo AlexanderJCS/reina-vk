@@ -28,8 +28,8 @@ layout (binding = 11, set = 0, scalar) buffer TexIndicesBuffer {
 
 layout(location = 0) rayPayloadInEXT HitPayload pld;
 
-layout(binding = 4, set = 0, scalar) buffer ObjectPropertiesBuffer {
-    ObjectProperties objectProperties[];
+layout(binding = 4, set = 0, scalar) buffer InstancePropertiesBuffer {
+    InstanceProperties instanceProperties[];
 };
 
 //layout(binding = 12, set = 0, scalar) buffer ImagesBuffer {
@@ -50,7 +50,7 @@ struct HitInfo {
 
 HitInfo getObjectHitInfo() {
     HitInfo result;
-    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
+    InstanceProperties props = instanceProperties[gl_InstanceCustomIndexEXT];
     // Get the ID of the triangle
     const uint primitiveID = gl_PrimitiveID;
 

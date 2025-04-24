@@ -9,11 +9,11 @@
 namespace reina::scene {
     class Instance {
     public:
-        Instance(const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ModelData& objData, uint32_t objectPropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
+        Instance(const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ModelData& objData, uint32_t instancePropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform = glm::mat4x4(1.0f));
 
         [[nodiscard]] const reina::graphics::Blas& getBlas() const;
         [[nodiscard]] glm::mat4x4 getTransform() const;
-        [[nodiscard]] uint32_t getObjectPropertiesID() const;
+        [[nodiscard]] uint32_t getInstancePropertiesID() const;
         [[nodiscard]] uint32_t getMaterialOffset() const;
         [[nodiscard]] float getArea() const;
         [[nodiscard]] const std::vector<float>& getCDF() const;
@@ -28,7 +28,7 @@ namespace reina::scene {
 
         reina::scene::ModelRange modelRange;
         const reina::graphics::Blas& blas;
-        uint32_t objectPropertiesID = 0;
+        uint32_t instancePropertiesID = 0;
         uint32_t materialOffset = 0;
         glm::mat4x4 transform = glm::mat4x4(1.0f);
         std::vector<float> cdf;

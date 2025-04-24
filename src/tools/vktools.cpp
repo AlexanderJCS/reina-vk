@@ -484,7 +484,7 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
 
         VkAccelerationStructureInstanceKHR vkInstance{
                 .transform = vkTransform,
-                .instanceCustomIndex = instance.getObjectPropertiesID(),
+                .instanceCustomIndex = instance.getInstancePropertiesID(),
                 .mask = 0xFF,
                 .instanceShaderBindingTableRecordOffset = instance.getMaterialOffset(),
                 .flags = 0,

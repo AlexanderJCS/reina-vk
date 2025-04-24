@@ -12,14 +12,17 @@
 reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
     // Copy the data to allVertices and allIndicesOffset
     for (const std::string& filepath : modelFilepaths) {
-        ModelData modelData = getObjData(filepath);
-        addModel(modelData);
+        addModel(filepath);
     }
 
     createBuffers(logicalDevice, physicalDevice, cmdPool, queue);
 }
 
-void reina::scene::Models::addModel(const reina::scene::ModelData& objData) {
+uint32_t reina::scene::Models::addModel(const std::string& filepath) {
+    return addModel(getObjData(filepath));
+}
+
+uint32_t reina::scene::Models::addModel(const reina::scene::ModelData& objData) {
     size_t vertexOffset = allVertices.size();
     size_t tbnsOffset = allTBNs.size() / 9;
     size_t texOffset = allTexCoords.size();
@@ -81,6 +84,8 @@ void reina::scene::Models::addModel(const reina::scene::ModelData& objData) {
     for (uint32_t idx : objectData.texIndices) {
         allTexIndicesOffset[texIndexOffset++] = idx == 0xFFFFFFFFu ? idx : idx + (texOffset / 2);
     }
+
+    return static_cast<uint32_t>(modelRanges.size() - 1);
 }
 
 void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {

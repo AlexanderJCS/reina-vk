@@ -15,7 +15,7 @@
     using mat4 = glm::mat4;
 #endif  // #ifdef __cplusplus
 
-struct ObjectProperties {
+struct InstanceProperties {
     uint indicesOffset;
     vec3 albedo;
     vec3 emission;

@@ -3,10 +3,16 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
+#include <unordered_map>
 #include <glm/glm.hpp>
 
 #include "../graphics/Image.h"
+#include "Instance.h"
+#include "Instances.h"
 #include "../../polyglot/raytrace.h"
+
+#include <vulkan/vulkan.h>
 
 namespace reina::scene {
     struct Material {
@@ -22,10 +28,13 @@ namespace reina::scene {
         bool cullBackface;
     };
 
-    struct Object{
-        ObjectProperties props;
-        uint32_t modelID;
-    };
+    namespace {
+        struct InstanceToCreate {
+            uint32_t instancePropertiesID;
+            uint32_t objectID;
+            glm::mat4 transform;
+        };
+    }
 
     class Scene {
     public:
@@ -36,14 +45,14 @@ namespace reina::scene {
          * @param filepath The filepath to the OBJ file
          * @returns The object ID
          */
-        uint32_t defineObject(std::string filepath);
+        uint32_t defineObject(const std::string& filepath);
 
         /**
          * Define an image to be referenced by materials
          * @param image The image
          * @return The image ID
          */
-        uint32_t defineImage(const reina::graphics::Image& image);
+        uint32_t defineImage(const std::string& filepath);
 
         /**
          * Add an instance to the scene. References an object with ObjectID
@@ -53,8 +62,18 @@ namespace reina::scene {
          */
         void addInstance(uint32_t objectID, glm::mat4 transform, const Material& mat);
 
-    private:
+        void build(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
 
+        void destroy(VkDevice logicalDevice);
+
+    private:
+        Models models;
+        uint32_t nextImageID = 0;
+        std::unordered_map<std::string, uint32_t> imageFilepathsToID;
+        std::vector<InstanceToCreate> instanceVec;
+        std::vector<InstanceProperties> instanceProperties;
+        Instances instances;
+        std::vector<reina::graphics::Image> images;
     };
 }
 

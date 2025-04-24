@@ -196,7 +196,7 @@ Reina::Reina() {
     glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4x4 subjectTransform = glm::translate(glm::rotate(baseTransform, glm::radians(-33.5f), glm::vec3(1, 1, 1)), glm::vec3(0, 0.3f, 0));
 
-    std::vector<ObjectProperties> objectProperties{
+    std::vector<InstanceProperties> instanceProperties{
             {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).tbnsIndexOffset,  models.getModelRange(1).texIndexOffset, 0.5, true, 0, 0, -1, -1, 1u},
             {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).tbnsIndexOffset, models.getModelRange(2).texIndexOffset, 0,    true, 0, -1, -1, -1, 1u},
             {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).tbnsIndexOffset,    models.getModelRange(0).texIndexOffset, 1.5f, true, 0.7, -1, -1, -1, 0u}
@@ -205,17 +205,17 @@ Reina::Reina() {
     instances = reina::scene::Instances{
             logicalDevice, physicalDevice,
             {
-                    {box, objectProperties[0].emission, models.getModelRange(1), models.getModelData(1), 0, 0, (bool) objectProperties[0].cullBackface, baseTransform},
-                    {light, objectProperties[1].emission, models.getModelRange(2), models.getModelData(2), 1, 0, (bool) objectProperties[1].cullBackface, baseTransform},
-                    {subject, objectProperties[2].emission, models.getModelRange(0), models.getModelData(0), 2, 2, (bool) objectProperties[2].cullBackface, subjectTransform}
+                    {box, instanceProperties[0].emission, models.getModelRange(1), models.getModelData(1), 0, 0, (bool) instanceProperties[0].cullBackface, baseTransform},
+                    {light, instanceProperties[1].emission, models.getModelRange(2), models.getModelData(2), 1, 0, (bool) instanceProperties[1].cullBackface, baseTransform},
+                    {subject, instanceProperties[2].emission, models.getModelRange(0), models.getModelData(0), 2, 2, (bool) instanceProperties[2].cullBackface, subjectTransform}
             }
     };
     rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
 
     tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
 
-    objectPropertiesBuffer = reina::core::Buffer{
-            logicalDevice, physicalDevice, objectProperties,
+    instancePropertiesBuffer = reina::core::Buffer{
+            logicalDevice, physicalDevice, instanceProperties,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             static_cast<VkMemoryAllocateFlagBits>(0),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
@@ -394,7 +394,7 @@ void Reina::writeDescriptorSets() {
     rtDescriptorSet.writeBinding(logicalDevice, 1, tlas);
     rtDescriptorSet.writeBinding(logicalDevice, 2, models.getVerticesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 3, models.getOffsetIndicesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 4, objectPropertiesBuffer);
+    rtDescriptorSet.writeBinding(logicalDevice, 4, instancePropertiesBuffer);
     rtDescriptorSet.writeBinding(logicalDevice, 5, models.getTbnsBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 6, models.getOffsetTbnsIndicesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 7, instances.getEmissiveMetadataBuffer());
@@ -632,7 +632,7 @@ Reina::~Reina() {
     leaves_2.destroy(logicalDevice);
     tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
-    objectPropertiesBuffer.destroy(logicalDevice);
+    instancePropertiesBuffer.destroy(logicalDevice);
     tonemapOutputImage.destroy(logicalDevice);
     rtImage.destroy(logicalDevice);
     instances.destroy(logicalDevice);

@@ -7,7 +7,7 @@
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
 
-    ObjectProperties props = objectProperties[gl_InstanceCustomIndexEXT];
+    InstanceProperties props = instanceProperties[gl_InstanceCustomIndexEXT];
 
     // poor man's version of backface culling
     if (props.cullBackface != 0u && !hitInfo.frontFace) {

@@ -51,7 +51,7 @@ private:
     reina::graphics::Blas leaves_2;
     vktools::AccStructureInfo tlas;
     reina::core::Buffer sbtBuffer;
-    reina::core::Buffer objectPropertiesBuffer;
+    reina::core::Buffer instancePropertiesBuffer;
     reina::graphics::Image tonemapOutputImage;
     reina::graphics::Image rtImage;
     reina::scene::Instances instances;
