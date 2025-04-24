@@ -9,13 +9,11 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-reina::scene::Models::Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths) {
+reina::scene::Models::Models(const std::vector<std::string>& modelFilepaths) {
     // Copy the data to allVertices and allIndicesOffset
     for (const std::string& filepath : modelFilepaths) {
         addModel(filepath);
     }
-
-    createBuffers(logicalDevice, physicalDevice, cmdPool, queue);
 }
 
 uint32_t reina::scene::Models::addModel(const std::string& filepath) {
@@ -23,6 +21,10 @@ uint32_t reina::scene::Models::addModel(const std::string& filepath) {
 }
 
 uint32_t reina::scene::Models::addModel(const reina::scene::ModelData& objData) {
+    if (areBuffersBuilt()) {
+        throw std::runtime_error("Could not add model; buffers are already built");
+    }
+
     size_t vertexOffset = allVertices.size();
     size_t tbnsOffset = allTBNs.size() / 9;
     size_t texOffset = allTexCoords.size();
@@ -88,7 +90,13 @@ uint32_t reina::scene::Models::addModel(const reina::scene::ModelData& objData) 
     return static_cast<uint32_t>(modelRanges.size() - 1);
 }
 
-void reina::scene::Models::createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
+void reina::scene::Models::buildBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
+    if (areBuffersBuilt()) {
+        throw std::runtime_error("Cannot call buildBuffers more than once");
+    }
+
+    builtBuffers = true;
+
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -222,4 +230,12 @@ const reina::core::Buffer &reina::scene::Models::getOffsetTexIndicesBuffer() con
 
 const reina::core::Buffer &reina::scene::Models::getTexCoordsBuffer() const {
     return texCoordsBuffer;
+}
+
+size_t reina::scene::Models::getNumModels() const {
+    return modelRanges.size();
+}
+
+bool reina::scene::Models::areBuffersBuilt() const {
+    return builtBuffers;
 }

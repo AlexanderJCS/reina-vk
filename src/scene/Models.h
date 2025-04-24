@@ -32,7 +32,7 @@ namespace reina::scene {
     class Models {
     public:
         Models() = default;
-        Models(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::vector<std::string>& modelFilepaths);
+        Models(const std::vector<std::string>& modelFilepaths);
 
         /**
          * @param filepath The filepath of the model OBJ
@@ -45,7 +45,7 @@ namespace reina::scene {
          * @return The model ID
          */
         uint32_t addModel(const ModelData& objData);
-        void createBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
+        void buildBuffers(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
 
         [[nodiscard]] size_t getVerticesBufferSize() const;
 
@@ -59,6 +59,9 @@ namespace reina::scene {
 
         [[nodiscard]] const ModelData& getModelData(int index) const;
         [[nodiscard]] ModelRange getModelRange(int index) const;
+        [[nodiscard]] size_t getNumModels() const;
+
+        [[nodiscard]] bool areBuffersBuilt() const;
 
         void destroy(VkDevice logicalDevice);
 
@@ -75,6 +78,8 @@ namespace reina::scene {
         reina::core::Buffer offsetTexIndicesBuffer;
 
         size_t verticesBufferSize = 0;
+
+        bool builtBuffers = false;
 
         std::vector<float> allVertices = std::vector<float>(0);
         std::vector<float> allTBNs = std::vector<float>(0);

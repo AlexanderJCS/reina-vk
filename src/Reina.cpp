@@ -188,7 +188,8 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::scene::Models{logicalDevice, physicalDevice, commandPool, graphicsQueue, {"models/stanford_bunny.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
+    models = reina::scene::Models{{"models/stanford_bunny.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
+    models.buildBuffers(logicalDevice, physicalDevice, commandPool, graphicsQueue);
     box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
     light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
     subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};

@@ -9,6 +9,8 @@
 
 #include "../graphics/Image.h"
 #include "Instance.h"
+#include "../graphics/Blas.h"
+#include "../tools/vktools.h"
 #include "Instances.h"
 #include "../../polyglot/raytrace.h"
 
@@ -70,10 +72,12 @@ namespace reina::scene {
         Models models;
         uint32_t nextImageID = 0;
         std::unordered_map<std::string, uint32_t> imageFilepathsToID;
-        std::vector<InstanceToCreate> instanceVec;
+        std::vector<InstanceToCreate> instancesToCreate;
         std::vector<InstanceProperties> instanceProperties;
+        std::vector<reina::graphics::Blas> blases;
         Instances instances;
         std::vector<reina::graphics::Image> images;
+        vktools::AccStructureInfo tlas;
     };
 }
 

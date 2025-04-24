@@ -12,7 +12,7 @@
 namespace reina::graphics {
     class Blas {
     public:
-        Blas();
+        Blas() = default;
         Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const reina::scene::Models& models, const reina::scene::ModelRange& modelRange, bool shouldCompact);
 
         [[nodiscard]] VkAccelerationStructureKHR getHandle() const;

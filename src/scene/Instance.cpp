@@ -3,12 +3,12 @@
 #include "Models.h"
 
 reina::scene::Instance::Instance(
-        const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ModelData& objData,
+        const reina::graphics::Blas& blas, glm::vec3 emission, reina::scene::ModelRange modelRange, const reina::scene::ModelData& modelData,
         uint32_t instancePropertiesID, uint32_t materialOffset, bool cullBackface, glm::mat4x4 transform)
         : blas(blas), instancePropertiesID(instancePropertiesID), materialOffset(materialOffset), transform(transform), modelRange(modelRange), area(0), emission(emission), cullBackface(cullBackface) {
 
     if (isEmissive()) {
-        computeCDF(objData, 0.2126 * emission.r + 0.7152 * emission.g + 0.0722 * emission.b);
+        computeCDF(modelData, 0.2126 * emission.r + 0.7152 * emission.g + 0.0722 * emission.b);
     }
 }
 

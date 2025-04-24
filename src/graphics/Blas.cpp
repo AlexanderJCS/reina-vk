@@ -9,6 +9,10 @@
 reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
                             const reina::scene::Models& models, const reina::scene::ModelRange& modelRange, bool shouldCompact) {
 
+    if (!models.areBuffersBuilt()) {
+        throw std::runtime_error("Could not create BLAS; model buffers are not built");
+    }
+
     uint32_t vertexCount = static_cast<uint32_t>(models.getVerticesBufferSize()) / 3;
 
     VkAccelerationStructureGeometryTrianglesDataKHR triangles{
@@ -215,8 +219,4 @@ VkDeviceSize reina::graphics::Blas::compact(VkDevice logicalDevice, VkPhysicalDe
     blasBuffer = compactBlasBuffer;
 
     return compactSize;
-}
-
-reina::graphics::Blas::Blas() {
-
 }
