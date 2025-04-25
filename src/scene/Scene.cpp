@@ -47,6 +47,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
      * 3. Build BLASes
      * 4. Create instances
      * 5. Build TLAS
+     * 6. Create instance properties buffer
      */
 
     // Step 1
@@ -80,12 +81,20 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
     }
 
     // Step 5
-    tlas = vktools::createTlas(logicalDevice, physicalDevice, cmdPool, queue, instances);
+    tlas = vktools::createTlas(logicalDevice, physicalDevice, cmdPool, queue, instancesVec);
+
+    // Step 6
+    instancePropertiesBuffer = reina::core::Buffer{
+            logicalDevice, physicalDevice, instanceProperties,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            static_cast<VkMemoryAllocateFlagBits>(0),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+    };
 }
 
 void reina::scene::Scene::destroy(VkDevice logicalDevice) {
     instances.destroy(logicalDevice);
-    tlas.destroy(logicalDevice);
+//    tlas.destroy(logicalDevice);
 
     for (auto& blas : blases) {
         blas.destroy(logicalDevice);
@@ -94,4 +103,24 @@ void reina::scene::Scene::destroy(VkDevice logicalDevice) {
     for (auto& image : images) {
         image.destroy(logicalDevice);
     }
+}
+
+float reina::scene::Scene::getEmissiveWeight() {
+    return instances.getEmissiveInstancesWeight();
+}
+
+const vktools::AccStructureInfo& reina::scene::Scene::getTlas() const {
+    return tlas;
+}
+
+const reina::scene::Models& reina::scene::Scene::getModels() const {
+    return models;
+}
+
+const reina::scene::Instances& reina::scene::Scene::getInstances() const {
+    return instances;
+}
+
+const reina::core::Buffer &reina::scene::Scene::getInstancePropertiesBuffer() const {
+    return instancePropertiesBuffer;
 }

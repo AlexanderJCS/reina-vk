@@ -7,11 +7,11 @@
 
 #include "tools/vktools.h"
 #include "core/Buffer.h"
-#include "scene/Instances.h"
 #include "core/CmdBuffer.h"
 #include "window/Window.h"
 #include "graphics/Camera.h"
 #include "tools/SaveManager.h"
+#include "scene/Scene.h"
 
 #include "../polyglot/raytrace.h"
 #include "../polyglot/bloom.h"
@@ -44,24 +44,17 @@ private:
     reina::window::Window renderWindow;
     VkInstance instance;
     VkDevice logicalDevice;
+    reina::scene::Scene scene;
     std::vector<VkFramebuffer> framebuffers;
-    reina::graphics::Blas light;
-    reina::graphics::Blas box;
-    reina::graphics::Blas subject;
-    reina::graphics::Blas leaves_2;
-    vktools::AccStructureInfo tlas;
     reina::core::Buffer sbtBuffer;
-    reina::core::Buffer instancePropertiesBuffer;
     reina::graphics::Image tonemapOutputImage;
     reina::graphics::Image rtImage;
-    reina::scene::Instances instances;
     reina::core::Buffer stagingBuffer;
     reina::core::CmdBuffer cmdBuffer;
     reina::core::DescriptorSet rtDescriptorSet;
     reina::core::DescriptorSet tonemapDescriptorSet;
     reina::core::DescriptorSet rasterDescriptorSet;
     reina::graphics::Shader tonemapShader;
-    reina::scene::Models models;
     vktools::SyncObjects syncObjects;
     VkSampler fragmentImageSampler;
     VkRenderPass renderPass;

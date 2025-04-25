@@ -188,39 +188,19 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    models = reina::scene::Models{{"models/stanford_bunny.obj", "models/cornell_box.obj", "models/cornell_light.obj"}};
-    models.buildBuffers(logicalDevice, physicalDevice, commandPool, graphicsQueue);
-    box = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(1), true};
-    light = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(2), true};
-    subject = reina::graphics::Blas{logicalDevice, physicalDevice, commandPool, graphicsQueue, models, models.getModelRange(0), true};
+    scene = reina::scene::Scene();
 
-    glm::mat4x4 baseTransform = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::mat4x4 subjectTransform = glm::translate(glm::rotate(baseTransform, glm::radians(-33.5f), glm::vec3(1, 1, 1)), glm::vec3(0, 0.3f, 0));
+    // todo: add a defineAndAddInstance function or something
+    uint32_t boxID = scene.defineObject("models/cornell_box.obj");
+    uint32_t lightID = scene.defineObject("models/cornell_light.obj");
 
-    std::vector<InstanceProperties> instanceProperties{
-            {models.getModelRange(1).indexOffset, glm::vec3{0.9}, glm::vec3(0), models.getModelRange(1).tbnsIndexOffset,  models.getModelRange(1).texIndexOffset, 0.5, true, 0, 0, -1, -1, 1u},
-            {models.getModelRange(2).indexOffset, glm::vec3{0.9}, glm::vec3(16), models.getModelRange(2).tbnsIndexOffset, models.getModelRange(2).texIndexOffset, 0,    true, 0, -1, -1, -1, 1u},
-            {models.getModelRange(0).indexOffset, glm::vec3(1), glm::vec3(0), models.getModelRange(0).tbnsIndexOffset,    models.getModelRange(0).texIndexOffset, 1.5f, true, 0.7, -1, -1, -1, 0u}
-    };
+    reina::scene::Material diffuseMaterial{static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), glm::vec3(0.9f), glm::vec3(0.0f), false, 0, true};
+    reina::scene::Material lightMaterial{static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), glm::vec3(0.9f), glm::vec3(16.0f), false, 0, true};
+    scene.addInstance(boxID, glm::mat4(1.0f), diffuseMaterial);
+    scene.addInstance(lightID, glm::mat4(1.0f), lightMaterial);
 
-    instances = reina::scene::Instances{
-            logicalDevice, physicalDevice,
-            {
-                    {box, instanceProperties[0].emission, models.getModelRange(1), models.getModelData(1), 0, 0, (bool) instanceProperties[0].cullBackface, baseTransform},
-                    {light, instanceProperties[1].emission, models.getModelRange(2), models.getModelData(2), 1, 0, (bool) instanceProperties[1].cullBackface, baseTransform},
-                    {subject, instanceProperties[2].emission, models.getModelRange(0), models.getModelData(0), 2, 2, (bool) instanceProperties[2].cullBackface, subjectTransform}
-            }
-    };
-    rtPushConsts.getPushConstants().totalEmissiveWeight = instances.getEmissiveInstancesWeight();
-
-    tlas = vktools::createTlas(logicalDevice, physicalDevice, commandPool, graphicsQueue, instances.getInstances());
-
-    instancePropertiesBuffer = reina::core::Buffer{
-            logicalDevice, physicalDevice, instanceProperties,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            static_cast<VkMemoryAllocateFlagBits>(0),
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-    };
+    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
+    rtPushConsts.getPushConstants().totalEmissiveWeight = scene.getEmissiveWeight();
 
     VkDeviceSize imageSize = renderWidth * renderHeight * 4;  // RGBA8
 
@@ -392,17 +372,17 @@ void Reina::renderLoop() {
 
 void Reina::writeDescriptorSets() {
     rtDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    rtDescriptorSet.writeBinding(logicalDevice, 1, tlas);
-    rtDescriptorSet.writeBinding(logicalDevice, 2, models.getVerticesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 3, models.getOffsetIndicesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 4, instancePropertiesBuffer);
-    rtDescriptorSet.writeBinding(logicalDevice, 5, models.getTbnsBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 6, models.getOffsetTbnsIndicesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 7, instances.getEmissiveMetadataBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 8, instances.getCdfTrianglesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 9, instances.getCdfInstancesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 10, models.getTexCoordsBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 11, models.getOffsetTexIndicesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 1, scene.getTlas());
+    rtDescriptorSet.writeBinding(logicalDevice, 2, scene.getModels().getVerticesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 3, scene.getModels().getOffsetIndicesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 4, scene.getInstancePropertiesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 5, scene.getModels().getTbnsBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 6, scene.getModels().getOffsetTbnsIndicesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 7, scene.getInstances().getEmissiveMetadataBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 8, scene.getInstances().getCdfTrianglesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 9, scene.getInstances().getCdfInstancesBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 10, scene.getModels().getTexCoordsBuffer());
+    rtDescriptorSet.writeBinding(logicalDevice, 11, scene.getModels().getOffsetTexIndicesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 13, textures, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, fragmentImageSampler);
 
     blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
@@ -627,30 +607,23 @@ Reina::~Reina() {
     blurYDescriptorSet.destroy(logicalDevice);
     combineShader.destroy(logicalDevice);
     combineDescriptorSet.destroy(logicalDevice);
-    light.destroy(logicalDevice);
-    box.destroy(logicalDevice);
-    subject.destroy(logicalDevice);
-    leaves_2.destroy(logicalDevice);
-    tlas.buffer.destroy(logicalDevice);
     sbtBuffer.destroy(logicalDevice);
-    instancePropertiesBuffer.destroy(logicalDevice);
     tonemapOutputImage.destroy(logicalDevice);
     rtImage.destroy(logicalDevice);
-    instances.destroy(logicalDevice);
+    scene.destroy(logicalDevice);
 
     stagingBuffer.destroy(logicalDevice);
 
     vkDestroySampler(logicalDevice, fragmentImageSampler, nullptr);
     cmdBuffer.destroy(logicalDevice);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-    vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
+    vkDestroyAccelerationStructureKHR(logicalDevice, scene.getTlas().accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);
     tonemapDescriptorSet.destroy(logicalDevice);
     tonemapShader.destroy(logicalDevice);
     rasterDescriptorSet.destroy(logicalDevice);
     vkDestroySemaphore(logicalDevice, syncObjects.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(logicalDevice, syncObjects.imageAvailableSemaphore, nullptr);
-    models.destroy(logicalDevice);
     vkDestroyPipeline(logicalDevice, rtPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, rasterPipeline.pipeline, nullptr);
     vkDestroyPipeline(logicalDevice, tonemapPipeline.pipeline, nullptr);

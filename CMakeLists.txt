@@ -79,6 +79,8 @@ add_executable(reina_vk src/main.cpp
         src/Reina.h
         src/tools/SaveManager.cpp
         src/tools/SaveManager.h
+        src/scene/Scene.cpp
+        src/scene/Scene.h
         polyglot/bloom.h
         polyglot/tonemapping.h)
 

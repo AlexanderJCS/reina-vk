@@ -66,6 +66,13 @@ namespace reina::scene {
 
         void build(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue);
 
+        [[nodiscard]] float getEmissiveWeight();
+
+        [[nodiscard]] const vktools::AccStructureInfo& getTlas() const;
+        [[nodiscard]] const Models& getModels() const;
+        [[nodiscard]] const Instances& getInstances() const;
+        [[nodiscard]] const core::Buffer& getInstancePropertiesBuffer() const;
+
         void destroy(VkDevice logicalDevice);
 
     private:
@@ -78,6 +85,7 @@ namespace reina::scene {
         Instances instances;
         std::vector<reina::graphics::Image> images;
         vktools::AccStructureInfo tlas;
+        reina::core::Buffer instancePropertiesBuffer;
     };
 }
 
