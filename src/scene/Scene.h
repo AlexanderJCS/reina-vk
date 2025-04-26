@@ -18,9 +18,9 @@
 
 namespace reina::scene {
     struct Material {
-        uint32_t textureID;
-        uint32_t normalMapID;
-        uint32_t bumpMapID;
+        int textureID;
+        int normalMapID;
+        int bumpMapID;
 
         glm::vec3 albedo;
         glm::vec3 emission;
@@ -72,6 +72,7 @@ namespace reina::scene {
         [[nodiscard]] const Models& getModels() const;
         [[nodiscard]] const Instances& getInstances() const;
         [[nodiscard]] const core::Buffer& getInstancePropertiesBuffer() const;
+        [[nodiscard]] const std::vector<reina::graphics::Image>& getTextures() const;
 
         void destroy(VkDevice logicalDevice);
 
@@ -83,7 +84,7 @@ namespace reina::scene {
         std::vector<InstanceProperties> instanceProperties;
         std::vector<reina::graphics::Blas> blases;
         Instances instances;
-        std::vector<reina::graphics::Image> images;
+        std::vector<reina::graphics::Image> textures;
         vktools::AccStructureInfo tlas;
         reina::core::Buffer instancePropertiesBuffer;
     };

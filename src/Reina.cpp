@@ -194,8 +194,8 @@ Reina::Reina() {
     uint32_t boxID = scene.defineObject("models/cornell_box.obj");
     uint32_t lightID = scene.defineObject("models/cornell_light.obj");
 
-    reina::scene::Material diffuseMaterial{static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), glm::vec3(0.9f), glm::vec3(0.0f), false, 0, true};
-    reina::scene::Material lightMaterial{static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), glm::vec3(0.9f), glm::vec3(16.0f), false, 0, true};
+    reina::scene::Material diffuseMaterial{-1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
+    reina::scene::Material lightMaterial{-1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
     scene.addInstance(boxID, glm::mat4(1.0f), diffuseMaterial);
     scene.addInstance(lightID, glm::mat4(1.0f), lightMaterial);
 
@@ -383,7 +383,7 @@ void Reina::writeDescriptorSets() {
     rtDescriptorSet.writeBinding(logicalDevice, 9, scene.getInstances().getCdfInstancesBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 10, scene.getModels().getTexCoordsBuffer());
     rtDescriptorSet.writeBinding(logicalDevice, 11, scene.getModels().getOffsetTexIndicesBuffer());
-    rtDescriptorSet.writeBinding(logicalDevice, 13, textures, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, fragmentImageSampler);
+    rtDescriptorSet.writeBinding(logicalDevice, 13, scene.getTextures(), VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, fragmentImageSampler);
 
     blurXDescriptorSet.writeBinding(logicalDevice, 0, rtImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     blurXDescriptorSet.writeBinding(logicalDevice, 1, pingImage, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);

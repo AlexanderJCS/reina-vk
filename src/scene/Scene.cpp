@@ -23,14 +23,15 @@ uint32_t reina::scene::Scene::defineImage(const std::string& filepath) {
 
 void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, const Material& mat) {
     instanceProperties.emplace_back(
-            models.getModelRange(objectID).indexOffset,
+            models.getModelRange(static_cast<int>(objectID)).indexOffset,
             mat.albedo,
             mat.emission,
-            models.getModelRange(objectID).tbnsIndexOffset,
-            models.getModelRange(objectID).texIndexOffset,
+            models.getModelRange(static_cast<int>(objectID)).tbnsIndexOffset,
+            models.getModelRange(static_cast<int>(objectID)).texIndexOffset,
             mat.fuzzOrRefIdx,
             mat.interpNormals,
             mat.absorption,
+            mat.textureID,
             mat.normalMapID,
             mat.bumpMapID,
             mat.cullBackface ? 1u : 0u
@@ -53,7 +54,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
     // Step 1
     for (const auto& pair : imageFilepathsToID) {
         const std::string& filepath = pair.first;
-        images.push_back(reina::graphics::Image(logicalDevice, physicalDevice, cmdPool, queue, filepath));
+        textures.push_back(reina::graphics::Image(logicalDevice, physicalDevice, cmdPool, queue, filepath));
     }
 
     // Step 2
@@ -62,7 +63,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
     // Step 3
     blases.resize(models.getNumModels());
     for (size_t i = 0; i < models.getNumModels(); i++) {
-        blases[i] = reina::graphics::Blas{logicalDevice, physicalDevice, cmdPool, queue, models, models.getModelRange(i), true};
+        blases[i] = reina::graphics::Blas{logicalDevice, physicalDevice, cmdPool, queue, models, models.getModelRange(static_cast<int>(i)), true};
     }
 
     // Step 4
@@ -71,8 +72,8 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
         instancesVec.emplace_back(
                 blases[instanceToCreate.objectID],
                 instanceProperties[instanceToCreate.instancePropertiesID].emission,
-                models.getModelRange(instanceToCreate.objectID),
-                models.getModelData(instanceToCreate.objectID),
+                models.getModelRange(static_cast<int>(instanceToCreate.objectID)),  // TODO: make model IDs ints from the model side
+                models.getModelData(static_cast<int>(instanceToCreate.objectID)),
                 instanceToCreate.instancePropertiesID,
                 0,  // TODO: change
                 instanceProperties[instanceToCreate.instancePropertiesID].cullBackface,
@@ -100,7 +101,7 @@ void reina::scene::Scene::destroy(VkDevice logicalDevice) {
         blas.destroy(logicalDevice);
     }
 
-    for (auto& image : images) {
+    for (auto& image : textures) {
         image.destroy(logicalDevice);
     }
 }
@@ -123,4 +124,8 @@ const reina::scene::Instances& reina::scene::Scene::getInstances() const {
 
 const reina::core::Buffer &reina::scene::Scene::getInstancePropertiesBuffer() const {
     return instancePropertiesBuffer;
+}
+
+const std::vector<reina::graphics::Image> &reina::scene::Scene::getTextures() const {
+    return textures;
 }
