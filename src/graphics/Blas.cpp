@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "../tools/vktools.h"
-#include "../core/CmdBuffer.h"
 
 reina::graphics::Blas::Blas(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue,
                             const reina::scene::Models& models, const reina::scene::ModelRange& modelRange, bool shouldCompact) {

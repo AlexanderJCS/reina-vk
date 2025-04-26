@@ -43,11 +43,6 @@ namespace vktools {
         VkExtent2D swapchainExtent;
     };
 
-    struct ImageObjects {
-        VkImage image;
-        VkDeviceMemory imageMemory;
-    };
-
     struct SbtSpacing {
         VkDeviceSize headerSize;
         VkDeviceSize baseAlignment;
@@ -145,7 +140,7 @@ namespace vktools {
     std::vector<VkImageView> createSwapchainImageViews(VkDevice logicalDevice, VkFormat swapchainImageFormat, std::vector<VkImage> swapchainImages);
     SwapchainObjects createSwapchain(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice logicalDevice, int windowWidth, int windowHeight);
     VkDevice createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice);
-    VkPhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
+    VkPhysicalDevice pickPhysicalDevice(VkInstance instance);
     VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow* window);
     std::optional<VkDebugUtilsMessengerEXT> createDebugMessenger(VkInstance instance);
     VkInstance createInstance();

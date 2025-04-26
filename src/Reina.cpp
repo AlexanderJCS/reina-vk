@@ -2,7 +2,6 @@
 
 #include "graphics/Camera.h"
 #include "tools/Clock.h"
-#include "../polyglot/raytrace.h"
 
 #include <stdexcept>
 
@@ -63,7 +62,7 @@ Reina::Reina() {
     instance = vktools::createInstance();
     debugMessenger = vktools::createDebugMessenger(instance);
     surface = vktools::createSurface(instance, renderWindow.getGlfwWindow());
-    VkPhysicalDevice physicalDevice = vktools::pickPhysicalDevice(instance, surface);
+    VkPhysicalDevice physicalDevice = vktools::pickPhysicalDevice(instance);
     logicalDevice = vktools::createLogicalDevice(surface, physicalDevice);
 
     vktools::QueueFamilyIndices indices = vktools::findQueueFamilies(surface, physicalDevice);

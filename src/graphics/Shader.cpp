@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 #include <fstream>
-#include <iostream>
 #include <utility>
 
 reina::graphics::Shader::Shader(VkDevice logicalDevice, const std::string& path, VkShaderStageFlagBits shaderStage, std::string  entryPoint)

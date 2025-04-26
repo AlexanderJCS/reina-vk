@@ -7,18 +7,12 @@
 #include <set>
 #include <algorithm>
 #include <limits>
-#include <fstream>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "GLFW/glfw3.h"
 
 #include "consts.h"
-#include "../core/DescriptorSet.h"
-#include "../graphics/Blas.h"
-#include "../scene/Instance.h"
-#include "../core/CmdBuffer.h"
 
 uint32_t vktools::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
@@ -586,11 +580,6 @@ vktools::AccStructureInfo vktools::createTlas(VkDevice logicalDevice, VkPhysical
     buildInfo.scratchData.deviceAddress = scratchBuffer.getDeviceAddress(logicalDevice);
 
     // Submit the build command
-    VkCommandBufferBeginInfo beginInfo{
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-    };
-
     reina::core::CmdBuffer cmdBuffer{logicalDevice, cmdPool, true};
 
     auto vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
@@ -995,7 +984,7 @@ VkDevice vktools::createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice phy
     return device;
 }
 
-VkPhysicalDevice vktools::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
+VkPhysicalDevice vktools::pickPhysicalDevice(VkInstance instance) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -1103,9 +1092,9 @@ VkInstance vktools::createInstance() {
         populateDebugMessengerCreateInfo(debugCreateInfo);
 
         // Set up validation features.
-        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
-                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
-        };
+//        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
+//                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+//        };
 //        validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
 //        validationFeatures.enabledValidationFeatureCount = enabledFeatures.size();
 //        validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();

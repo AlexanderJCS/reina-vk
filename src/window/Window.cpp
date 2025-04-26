@@ -1,7 +1,6 @@
 #include "Window.h"
 
 #include <stdexcept>
-#include <iostream>
 
 reina::window::Window::Window(int width, int height) {
     if (glfwInit() != GLFW_TRUE) {  // todo: should glfw init for every object or just once?
