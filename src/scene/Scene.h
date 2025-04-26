@@ -18,6 +18,8 @@
 
 namespace reina::scene {
     struct Material {
+        uint32_t materialIdx;  // 0 = lambertian, 1 = metal, 2 = transparent dielectric
+
         int textureID;
         int normalMapID;
         int bumpMapID;
@@ -33,6 +35,7 @@ namespace reina::scene {
     namespace {
         struct InstanceToCreate {
             uint32_t instancePropertiesID;
+            uint32_t materialIdx;
             uint32_t objectID;
             glm::mat4 transform;
         };

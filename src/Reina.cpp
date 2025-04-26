@@ -196,8 +196,8 @@ Reina::Reina() {
 
     uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
-    reina::scene::Material diffuseMaterial{-1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
-    reina::scene::Material lightMaterial{-1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
+    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
+    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
     scene.addInstance(boxID, glm::mat4(1.0f), diffuseMaterial);
     scene.addInstance(lightID, glm::mat4(1.0f), lightMaterial);
 

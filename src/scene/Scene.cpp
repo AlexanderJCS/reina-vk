@@ -40,7 +40,7 @@ void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, co
             mat.cullBackface ? 1u : 0u
             );
 
-    instancesToCreate.emplace_back(instanceProperties.size() - 1, objectID, transform);
+    instancesToCreate.emplace_back(instanceProperties.size() - 1, mat.materialIdx, objectID, transform);
 }
 
 void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
@@ -78,7 +78,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
                 models.getModelRange(static_cast<int>(instanceToCreate.objectID)),  // TODO: make model IDs ints from the model side
                 models.getModelData(static_cast<int>(instanceToCreate.objectID)),
                 instanceToCreate.instancePropertiesID,
-                0,  // TODO: change
+                instanceToCreate.materialIdx,
                 instanceProperties[instanceToCreate.instancePropertiesID].cullBackface,
                 instanceToCreate.transform
                 );
