@@ -4,10 +4,6 @@
 
 #include "Instances.h"
 
-reina::scene::Scene::Scene() {
-
-}
-
 uint32_t reina::scene::Scene::defineObject(const std::string& filepath) {
     return models.addModel(filepath);
 }
@@ -26,11 +22,11 @@ uint32_t reina::scene::Scene::defineTexture(const std::string& filepath) {
 
 void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, const Material& mat) {
     instanceProperties.emplace_back(
-            models.getModelRange(static_cast<int>(objectID)).indexOffset,
+            models.getModelRange(objectID).indexOffset,
             mat.albedo,
             mat.emission,
-            models.getModelRange(static_cast<int>(objectID)).tbnsIndexOffset,
-            models.getModelRange(static_cast<int>(objectID)).texIndexOffset,
+            models.getModelRange(objectID).tbnsIndexOffset,
+            models.getModelRange(objectID).texIndexOffset,
             mat.fuzzOrRefIdx,
             mat.interpNormals,
             mat.absorption,
@@ -57,7 +53,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
     // Step 1
     for (const auto& pair : textureFilepathsToID) {
         const std::string& filepath = pair.first;
-        textures.push_back(reina::graphics::Image(logicalDevice, physicalDevice, cmdPool, queue, filepath));
+        textures.emplace_back(logicalDevice, physicalDevice, cmdPool, queue, filepath);
     }
 
     // Step 2
@@ -66,7 +62,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
     // Step 3
     blases.resize(models.getNumModels());
     for (size_t i = 0; i < models.getNumModels(); i++) {
-        blases[i] = reina::graphics::Blas{logicalDevice, physicalDevice, cmdPool, queue, models, models.getModelRange(static_cast<int>(i)), true};
+        blases[i] = reina::graphics::Blas{logicalDevice, physicalDevice, cmdPool, queue, models, models.getModelRange(i), true};
     }
 
     // Step 4
@@ -75,8 +71,8 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
         instancesVec.emplace_back(
                 blases[instanceToCreate.objectID],
                 instanceProperties[instanceToCreate.instancePropertiesID].emission,
-                models.getModelRange(static_cast<int>(instanceToCreate.objectID)),  // TODO: make model IDs ints from the model side
-                models.getModelData(static_cast<int>(instanceToCreate.objectID)),
+                models.getModelRange(instanceToCreate.objectID),
+                models.getModelData(instanceToCreate.objectID),
                 instanceToCreate.instancePropertiesID,
                 instanceToCreate.materialIdx,
                 instanceProperties[instanceToCreate.instancePropertiesID].cullBackface,

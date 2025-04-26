@@ -43,7 +43,7 @@ namespace reina::scene {
 
     class Scene {
     public:
-        Scene();
+        Scene() = default;
 
         /**
          * Define an object to be referenced by instances

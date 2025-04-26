@@ -189,8 +189,8 @@ const reina::core::Buffer& reina::scene::Models::getNonOffsetIndicesBuffer() con
     return nonOffsetIndicesBuffer;
 }
 
-const reina::scene::ModelData& reina::scene::Models::getModelData(int index) const {
-    if (index >= modelRanges.size() || index < 0) {
+const reina::scene::ModelData& reina::scene::Models::getModelData(uint32_t index) const {
+    if (index >= modelRanges.size()) {
         throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
     }
 
@@ -198,8 +198,8 @@ const reina::scene::ModelData& reina::scene::Models::getModelData(int index) con
 }
 
 
-reina::scene::ModelRange reina::scene::Models::getModelRange(int index) const {
-    if (index >= modelRanges.size() || index < 0) {
+reina::scene::ModelRange reina::scene::Models::getModelRange(uint32_t index) const {
+    if (index >= modelRanges.size()) {
         throw std::runtime_error("Index " + std::to_string(index) + " out of range for models");
     }
 

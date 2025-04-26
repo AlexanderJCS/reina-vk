@@ -57,8 +57,8 @@ namespace reina::scene {
         [[nodiscard]] const reina::core::Buffer& getTexCoordsBuffer() const;
         [[nodiscard]] const reina::core::Buffer& getOffsetTexIndicesBuffer() const;
 
-        [[nodiscard]] const ModelData& getModelData(int index) const;
-        [[nodiscard]] ModelRange getModelRange(int index) const;
+        [[nodiscard]] const ModelData& getModelData(uint32_t index) const;
+        [[nodiscard]] ModelRange getModelRange(uint32_t index) const;
         [[nodiscard]] size_t getNumModels() const;
 
         [[nodiscard]] bool areBuffersBuilt() const;
