@@ -99,7 +99,14 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
 
 void reina::scene::Scene::destroy(VkDevice logicalDevice) {
     instances.destroy(logicalDevice);
-//    tlas.destroy(logicalDevice);
+    instancePropertiesBuffer.destroy(logicalDevice);
+    models.destroy(logicalDevice);
+
+    auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
+            vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
+
+    vkDestroyAccelerationStructureKHR(logicalDevice, tlas.accelerationStructure, nullptr);
+    tlas.buffer.destroy(logicalDevice);
 
     for (auto& blas : blases) {
         blas.destroy(logicalDevice);

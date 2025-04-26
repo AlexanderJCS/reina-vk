@@ -588,9 +588,6 @@ void Reina::present(uint32_t imageIndex) {
 }
 
 Reina::~Reina() {
-    auto vkDestroyAccelerationStructureKHR = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
-            vkGetDeviceProcAddr(logicalDevice, "vkDestroyAccelerationStructureKHR"));
-
     for (VkFramebuffer framebuffer : framebuffers) {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
     }
@@ -617,7 +614,6 @@ Reina::~Reina() {
     vkDestroySampler(logicalDevice, fragmentImageSampler, nullptr);
     cmdBuffer.destroy(logicalDevice);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-    vkDestroyAccelerationStructureKHR(logicalDevice, scene.getTlas().accelerationStructure, nullptr);
     rtDescriptorSet.destroy(logicalDevice);
     tonemapDescriptorSet.destroy(logicalDevice);
     tonemapShader.destroy(logicalDevice);
