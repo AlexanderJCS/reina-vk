@@ -141,3 +141,11 @@ const reina::core::Buffer &reina::scene::Scene::getInstancePropertiesBuffer() co
 const std::vector<reina::graphics::Image> &reina::scene::Scene::getTextures() const {
     return textures;
 }
+
+uint32_t
+reina::scene::Scene::addObject(const std::string& filepath, glm::mat4 transform, const reina::scene::Material& mat) {
+    uint32_t objectID = defineObject(filepath);
+    addInstance(objectID, transform, mat);
+
+    return objectID;
+}

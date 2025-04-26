@@ -190,16 +190,12 @@ Reina::Reina() {
 
     scene = reina::scene::Scene();
 
-    // todo: add a defineAndAddInstance function or something
-    uint32_t boxID = scene.defineObject("models/cornell_box.obj");
-    uint32_t lightID = scene.defineObject("models/cornell_light.obj");
-
     uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
     reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
     reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
-    scene.addInstance(boxID, glm::mat4(1.0f), diffuseMaterial);
-    scene.addInstance(lightID, glm::mat4(1.0f), lightMaterial);
+    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
+    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
 
     scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
     rtPushConsts.getPushConstants().totalEmissiveWeight = scene.getEmissiveWeight();

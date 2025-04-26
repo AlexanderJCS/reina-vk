@@ -60,6 +60,13 @@ namespace reina::scene {
         uint32_t defineTexture(const std::string& filepath);
 
         /**
+         * A combination of defineObject and addInstance. Intended for when only one instance is required; saves on
+         * verbosity of defining an object then adding an instance.
+         * @return The Object ID
+         */
+        uint32_t addObject(const std::string& filepath, glm::mat4 transform, const Material& mat);
+
+        /**
          * Add an instance to the scene. References an object with ObjectID
          * @param objectID The object ID
          * @param transform The object's transform
