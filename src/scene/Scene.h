@@ -54,7 +54,7 @@ namespace reina::scene {
          * @param image The image
          * @return The image ID
          */
-        uint32_t defineImage(const std::string& filepath);
+        uint32_t defineTexture(const std::string& filepath);
 
         /**
          * Add an instance to the scene. References an object with ObjectID
@@ -79,7 +79,7 @@ namespace reina::scene {
     private:
         Models models;
         uint32_t nextImageID = 0;
-        std::unordered_map<std::string, uint32_t> imageFilepathsToID;
+        std::unordered_map<std::string, uint32_t> textureFilepathsToID;
         std::vector<InstanceToCreate> instancesToCreate;
         std::vector<InstanceProperties> instanceProperties;
         std::vector<reina::graphics::Blas> blases;

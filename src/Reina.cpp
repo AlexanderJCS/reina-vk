@@ -194,6 +194,8 @@ Reina::Reina() {
     uint32_t boxID = scene.defineObject("models/cornell_box.obj");
     uint32_t lightID = scene.defineObject("models/cornell_light.obj");
 
+    uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
+
     reina::scene::Material diffuseMaterial{-1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
     reina::scene::Material lightMaterial{-1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
     scene.addInstance(boxID, glm::mat4(1.0f), diffuseMaterial);

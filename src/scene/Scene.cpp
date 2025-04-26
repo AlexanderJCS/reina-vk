@@ -12,15 +12,16 @@ uint32_t reina::scene::Scene::defineObject(const std::string& filepath) {
     return models.addModel(filepath);
 }
 
-uint32_t reina::scene::Scene::defineImage(const std::string& filepath) {
-    if (imageFilepathsToID.find(filepath) != imageFilepathsToID.end()) {
-        return imageFilepathsToID[filepath];
+uint32_t reina::scene::Scene::defineTexture(const std::string& filepath) {
+    // TODO: make it so that validation layer warnings do not occur if there are no textures in the scene
+    if (textureFilepathsToID.find(filepath) != textureFilepathsToID.end()) {
+        return textureFilepathsToID[filepath];
     }
 
-    imageFilepathsToID[filepath] = nextImageID;
+    textureFilepathsToID[filepath] = nextImageID;
     nextImageID++;
 
-    return imageFilepathsToID[filepath];
+    return textureFilepathsToID[filepath];
 }
 
 void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, const Material& mat) {
@@ -45,7 +46,7 @@ void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, co
 void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue) {
     /*
      * Steps:
-     * 1. Create images
+     * 1. Create textures
      * 2. Build models buffers
      * 3. Build BLASes
      * 4. Create instances
@@ -54,7 +55,7 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
      */
 
     // Step 1
-    for (const auto& pair : imageFilepathsToID) {
+    for (const auto& pair : textureFilepathsToID) {
         const std::string& filepath = pair.first;
         textures.push_back(reina::graphics::Image(logicalDevice, physicalDevice, cmdPool, queue, filepath));
     }
@@ -112,8 +113,8 @@ void reina::scene::Scene::destroy(VkDevice logicalDevice) {
         blas.destroy(logicalDevice);
     }
 
-    for (auto& image : textures) {
-        image.destroy(logicalDevice);
+    for (auto& texture : textures) {
+        texture.destroy(logicalDevice);
     }
 }
 
