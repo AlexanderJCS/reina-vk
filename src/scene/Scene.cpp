@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Instances.h"
+
 reina::scene::Scene::Scene() {
 
 }
@@ -80,6 +82,8 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
                 instanceToCreate.transform
                 );
     }
+
+    instances = Instances{logicalDevice, physicalDevice, instancesVec};
 
     // Step 5
     tlas = vktools::createTlas(logicalDevice, physicalDevice, cmdPool, queue, instancesVec);
