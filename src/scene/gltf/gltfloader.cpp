@@ -4,10 +4,10 @@
 #include <glm/glm.hpp>
 
 #include <filesystem>
-#include <unordered_set>
 
 #include <fastgltf/core.hpp>
 #include <iostream>
+#include <unordered_set>
 
 fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     namespace fg = fastgltf;
@@ -182,4 +182,62 @@ reina::scene::ModelData reina::scene::gltf::MeshTBN::toModelData() {
     }
 
     return modelData;
+}
+
+std::unordered_map<uint32_t, uint32_t> reina::scene::gltf::addMeshesToScene(reina::scene::Scene& scene, std::vector<reina::scene::gltf::MeshTBN> modelData) {
+    std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
+
+    for (uint32_t i = 0; i < modelData.size(); i++) {
+        uint32_t sceneID = scene.defineObject(modelData[i].toModelData());
+        gltfIdToSceneId[i] = sceneID;
+    }
+
+    return gltfIdToSceneId;
+}
+
+glm::mat4 toGlmMat4(const fastgltf::math::fmat4x4& mat) {
+    glm::mat4 result(1.0f);  // identity
+
+    for (int row = 0; row < 4; ++row) {
+        for (int col = 0; col < 4; ++col) {
+            result[col][row] = mat[row][col];  // glm is column-major
+        }
+    }
+
+    return result;
+}
+
+void reina::scene::gltf::addInstancesToScene(fastgltf::Asset& asset, reina::scene::Scene& scene, const std::unordered_map<uint32_t, uint32_t>& gltfIdToSceneId) {
+    size_t sceneIdx = asset.defaultScene.value_or(0);
+
+    fastgltf::iterateSceneNodes(
+            asset,
+            sceneIdx,
+            fastgltf::math::fmat4x4(),
+            [&](fastgltf::Node& node, const fastgltf::math::fmat4x4& matrix) {
+                if (node.meshIndex.has_value()) {
+                    uint32_t sceneID = gltfIdToSceneId.at(static_cast<uint32_t>(node.meshIndex.value()));
+                    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
+
+                    scene.addInstance(sceneID, toGlmMat4(matrix), diffuseMaterial);
+                }
+            });
+}
+
+reina::scene::Scene reina::scene::gltf::loadScene(const std::string& filepath) {
+    auto asset = loadGltf(filepath);
+
+    std::vector<MeshTBN> meshes;
+    bool loadedMeshes = loadMeshTBNs(asset, meshes);
+
+    if (!loadedMeshes) {
+        throw std::runtime_error("Could not load meshes");
+    }
+
+    Scene scene;
+    auto gltfIdToSceneId = addMeshesToScene(scene, meshes);
+
+    addInstancesToScene(asset, scene, gltfIdToSceneId);
+
+    return scene;
 }

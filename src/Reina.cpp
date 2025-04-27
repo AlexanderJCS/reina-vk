@@ -189,7 +189,7 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    scene = reina::scene::Scene();
+    scene = reina::scene::gltf::loadScene("scenes/box/untitled.glb");
 
     uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
@@ -197,11 +197,6 @@ Reina::Reina() {
     reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
 //    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
     scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
-
-    auto asset = reina::scene::gltf::loadGltf("scenes/box/untitled.glb");
-    std::vector<reina::scene::gltf::MeshTBN> meshTBNs;
-    reina::scene::gltf::loadMeshTBNs(asset, meshTBNs);
-    scene.addObject(meshTBNs[0].toModelData(), glm::mat4(1.0f), diffuseMaterial);
 
     scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
     rtPushConsts.getPushConstants().totalEmissiveWeight = scene.getEmissiveWeight();
