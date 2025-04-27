@@ -53,6 +53,13 @@ namespace reina::scene {
         uint32_t defineObject(const std::string& filepath);
 
         /**
+         * Define an object to be referenced by instances
+         * @param modelData The model data of the object
+         * @return The object ID
+         */
+        uint32_t defineObject(const ModelData& modelData);
+
+        /**
          * Define an image to be referenced by materials
          * @param image The image
          * @return The image ID
@@ -65,6 +72,13 @@ namespace reina::scene {
          * @return The Object ID
          */
         uint32_t addObject(const std::string& filepath, glm::mat4 transform, const Material& mat);
+
+        /**
+         * A combination of defineObject and addInstance. Intended for when only one instance is required; saves on
+         * verbosity of defining an object then adding an instance.
+         * @return The Object ID
+         */
+        uint32_t addObject(const ModelData& modelData, glm::mat4 transform, const Material& mat);
 
         /**
          * Add an instance to the scene. References an object with ObjectID

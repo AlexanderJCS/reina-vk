@@ -8,6 +8,10 @@ uint32_t reina::scene::Scene::defineObject(const std::string& filepath) {
     return models.addModel(filepath);
 }
 
+uint32_t reina::scene::Scene::defineObject(const reina::scene::ModelData &modelData) {
+    return models.addModel(modelData);
+}
+
 uint32_t reina::scene::Scene::defineTexture(const std::string& filepath) {
     // TODO: make it so that validation layer warnings do not occur if there are no textures in the scene
     if (textureFilepathsToID.find(filepath) != textureFilepathsToID.end()) {
@@ -138,9 +142,17 @@ const std::vector<reina::graphics::Image> &reina::scene::Scene::getTextures() co
     return textures;
 }
 
-uint32_t
-reina::scene::Scene::addObject(const std::string& filepath, glm::mat4 transform, const reina::scene::Material& mat) {
+uint32_t reina::scene::Scene::addObject(const std::string& filepath, glm::mat4 transform,
+                                        const reina::scene::Material& mat) {
     uint32_t objectID = defineObject(filepath);
+    addInstance(objectID, transform, mat);
+
+    return objectID;
+}
+
+uint32_t reina::scene::Scene::addObject(const reina::scene::ModelData &modelData, glm::mat4 transform,
+                                        const reina::scene::Material &mat) {
+    uint32_t objectID = defineObject(modelData);
     addInstance(objectID, transform, mat);
 
     return objectID;

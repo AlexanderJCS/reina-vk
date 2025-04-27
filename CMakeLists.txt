@@ -33,6 +33,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tinyobjloader)
 
+FetchContent_Declare(
+        fastgltf
+        GIT_REPOSITORY https://github.com/spnda/fastgltf.git
+        GIT_TAG        v0.8.0
+)
+FetchContent_MakeAvailable(fastgltf)
+
 # tomlplusplus
 FetchContent_Declare(
         tomlplusplus
@@ -72,7 +79,6 @@ add_executable(reina_vk src/main.cpp
         src/core/CmdBuffer.h
         src/graphics/Image.cpp
         src/graphics/Image.h
-        src/graphics/Image.cpp
         src/scene/Instances.cpp
         src/scene/Instances.h
         src/Reina.cpp
@@ -82,7 +88,9 @@ add_executable(reina_vk src/main.cpp
         src/scene/Scene.cpp
         src/scene/Scene.h
         polyglot/bloom.h
-        polyglot/tonemapping.h)
+        polyglot/tonemapping.h
+        src/scene/gltf/gltfloader.h
+        src/scene/gltf/gltfloader.cpp)
 
 # Link libraries using keyword signature
 target_link_libraries(reina_vk
@@ -90,6 +98,7 @@ target_link_libraries(reina_vk
         Vulkan::Vulkan
         glfw
         assimp::assimp
+        fastgltf
 )
 
 # Include directories for FetchContent libraries
