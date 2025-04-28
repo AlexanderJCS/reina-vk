@@ -59,7 +59,7 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     return std::move(assetOrErr.get());
 }
 
-bool reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes) {
+void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes) {
     // — Gather meshes used by default scene
     std::unordered_set<size_t> used;
     size_t sceneIdx = asset.defaultScene.value_or(0);                  // defaultScene :contentReference[oaicite:5]{index=5}
@@ -88,10 +88,10 @@ bool reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
             if (auto a = prim.findAttribute("NORMAL")) {
                 const auto& acc = asset.accessors[a->accessorIndex];
                 fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
-                        asset, acc,
-                        [&](fastgltf::math::fvec3 n, size_t i) {
-                            m.vertices[i].normal = n;
-                        });
+                    asset, acc,
+                    [&](fastgltf::math::fvec3 n, size_t i) {
+                        m.vertices[i].normal = n;
+                    });
             }
             // — TANGENT: may be Vec4 (x,y,z + w sign) or fallback Vec3
             if (auto tanIt = prim.findAttribute("TANGENT"); tanIt != prim.attributes.end()) {
@@ -100,29 +100,29 @@ bool reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
                 // Vec4 case: apply w as bitangent sign
                 if (acc.type == fastgltf::AccessorType::Vec4) {
                     fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
-                            asset, acc,
-                            [&](const fastgltf::math::fvec4& t, std::size_t i) {
-                                // tangent.xyz
-                                m.vertices[i].tangent  = { t.x(), t.y(), t.z() };
-                                // bitangent = cross(normal, tangent) * w
-                                m.vertices[i].bitangent =
-                                        fastgltf::math::cross(m.vertices[i].normal,
-                                                              m.vertices[i].tangent)
-                                        * t.w();
-                            }
+                        asset, acc,
+                        [&](const fastgltf::math::fvec4& t, std::size_t i) {
+                            // tangent.xyz
+                            m.vertices[i].tangent  = { t.x(), t.y(), t.z() };
+                            // bitangent = cross(normal, tangent) * w
+                            m.vertices[i].bitangent =
+                                    fastgltf::math::cross(m.vertices[i].normal,
+                                                          m.vertices[i].tangent)
+                                    * t.w();
+                        }
                     );
                 }
                     // Vec3 fallback: no handedness, assume w == +1
                 else if (acc.type == fastgltf::AccessorType::Vec3) {
                     fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
-                            asset, acc,
-                            [&](const fastgltf::math::fvec3& t, std::size_t i) {
-                                m.vertices[i].tangent   = t;
-                                // bitangent = cross(normal, tangent)
-                                m.vertices[i].bitangent =
-                                        fastgltf::math::cross(m.vertices[i].normal,
-                                                              m.vertices[i].tangent);
-                            }
+                        asset, acc,
+                        [&](const fastgltf::math::fvec3& t, std::size_t i) {
+                            m.vertices[i].tangent   = t;
+                            // bitangent = cross(normal, tangent)
+                            m.vertices[i].bitangent =
+                                    fastgltf::math::cross(m.vertices[i].normal,
+                                                          m.vertices[i].tangent);
+                        }
                     );
                 }
                 else {
@@ -134,24 +134,21 @@ bool reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
             if (auto a = prim.findAttribute("TEXCOORD_0")) {
                 const auto& acc = asset.accessors[a->accessorIndex];
                 fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(
-                        asset, acc,
-                        [&](fastgltf::math::fvec2 uv, size_t i) {
-                            m.vertices[i].uv = uv;
-                        });
+                    asset, acc,
+                    [&](fastgltf::math::fvec2 uv, size_t i) {
+                        m.vertices[i].uv = uv;
+                    });
             }
             // — INDICES
             if (prim.indicesAccessor.has_value()) {
                 const auto& acc = asset.accessors[*prim.indicesAccessor];
                 m.indices.resize(acc.count);
-                fastgltf::copyFromAccessor<uint32_t>(
-                        asset, acc, m.indices.data());
+                fastgltf::copyFromAccessor<uint32_t>(asset, acc, m.indices.data());
             }
 
             outMeshes.emplace_back(std::move(m));
         }
     }
-
-    return true;
 }
 
 reina::scene::ModelData reina::scene::gltf::MeshTBN::toModelData() {
@@ -286,11 +283,7 @@ reina::scene::Scene reina::scene::gltf::loadScene(const std::string& filepath) {
     auto asset = loadGltf(filepath);
 
     std::vector<MeshTBN> meshes;
-    bool loadedMeshes = loadMeshTBNs(asset, meshes);
-
-    if (!loadedMeshes) {
-        throw std::runtime_error("Could not load meshes");
-    }
+    loadMeshTBNs(asset, meshes);
 
     Scene scene;
     auto gltfModelIdToSceneId = addMeshesToScene(scene, meshes);

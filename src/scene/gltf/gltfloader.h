@@ -24,7 +24,7 @@ namespace reina::scene::gltf {
     };
 
     fastgltf::Asset loadGltf(const std::string& filepath);
-    bool loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes);
+    void loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes);
     std::unordered_map<uint32_t, uint32_t> addMeshesToScene(reina::scene::Scene& scene, std::vector<reina::scene::gltf::MeshTBN> modelData);
     void addInstancesToScene(fastgltf::Asset& asset, reina::scene::Scene& scene, const std::unordered_map<uint32_t, uint32_t>& gltfIdToSceneId);
     reina::scene::Scene loadScene(const std::string& filepath);
