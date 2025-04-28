@@ -181,24 +181,6 @@ reina::scene::ModelData reina::scene::gltf::MeshTBN::toModelData() {
     return modelData;
 }
 
-std::span<const std::byte> getBufferData(const fastgltf::Buffer& buf) {
-    return std::visit([](auto&& src) -> std::span<const std::byte> {
-        using T = std::decay_t<decltype(src)>;
-        if constexpr (std::is_same_v<T, fastgltf::sources::ByteView>) {
-            return src.bytes;
-        }
-        else if constexpr (std::is_same_v<T, fastgltf::sources::Vector>) {
-            return { src.bytes.data(), src.bytes.size() };
-        }
-        else if constexpr (std::is_same_v<T, fastgltf::sources::Array>) {
-            return { reinterpret_cast<const std::byte*>(src.bytes.data()), src.bytes.size() };
-        }
-        else {
-            throw std::runtime_error("Unsupported DataSource in fastgltf::Buffer");
-        }
-    }, buf.data);
-}
-
 std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset, reina::scene::Scene& scene) {
     std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
 
