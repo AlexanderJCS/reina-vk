@@ -193,7 +193,9 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
         const fastgltf::Image& img = asset.images[i];
 
         std::visit(fastgltf::visitor{
-            [](auto& arg) {},
+            [](auto& arg) {
+                throw std::runtime_error("Could not parse texture; internal gLTF data type not supported");
+                },
             [&](fastgltf::sources::URI& uri) {
                 if (uri.fileByteOffset != 0) {
                     throw std::runtime_error("Image must have no offset");
