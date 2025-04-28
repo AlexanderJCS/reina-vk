@@ -18,7 +18,8 @@ namespace reina::scene::gltf {
 
     struct MeshTBN {
         std::vector<VertexTBN> vertices;
-        std::vector<uint32_t>  indices;
+        std::vector<uint32_t> indices;
+        int materialIdx;
 
         reina::scene::ModelData toModelData();
     };
@@ -26,7 +27,11 @@ namespace reina::scene::gltf {
     fastgltf::Asset loadGltf(const std::string& filepath);
     void loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes);
     std::unordered_map<uint32_t, uint32_t> addMeshesToScene(reina::scene::Scene& scene, std::vector<reina::scene::gltf::MeshTBN> modelData);
-    void addInstancesToScene(fastgltf::Asset& asset, reina::scene::Scene& scene, const std::unordered_map<uint32_t, uint32_t>& gltfIdToSceneId);
+    void addInstancesToScene(fastgltf::Asset &asset, reina::scene::Scene &scene,
+                             const std::unordered_map<uint32_t, uint32_t> &gltfIdToSceneId,
+                             const std::vector<reina::scene::Material> &materials);
+    std::vector<reina::scene::Material>
+    materialsFromMeshTBNs(fastgltf::Asset &asset, const std::vector<MeshTBN> &meshes, std::unordered_map<uint32_t, uint32_t> gltfTexIdToSceneId);
     reina::scene::Scene loadScene(const std::string& filepath);
 }
 
