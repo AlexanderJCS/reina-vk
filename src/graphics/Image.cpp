@@ -6,8 +6,6 @@
 #include <stb_image.h>
 
 #include "../tools/vktools.h"
-#include "../core/CmdBuffer.h"
-#include "../core/Buffer.h"
 
 reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath) {
     // read image with stb: https://solarianprogrammer.com/2019/06/10/c-programming-reading-writing-images-stb_image-libraries/
@@ -20,16 +18,39 @@ reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalD
         throw std::runtime_error("Could not load image at path: " + filepath);
     }
 
+    load(logicalDevice, physicalDevice, cmdPool, queue, imgData, imageWidth, imageHeight);
+    stbi_image_free(imgData);
+}
+
+reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool,
+                              VkQueue queue, std::span<const std::byte> imageData) {
+    int imageWidth, imageHeight, channels;
+    stbi_set_flip_vertically_on_load(true);
+    uint8_t* imgData = stbi_load_from_memory(
+            reinterpret_cast<const stbi_uc*>(imageData.data()),
+            static_cast<int>(imageData.size_bytes()),
+            &imageWidth, &imageHeight, &channels, 4
+            );
+
+    if (imgData == nullptr) {
+        throw std::runtime_error("Failed to load image from memory: " + std::string(stbi_failure_reason()));
+    }
+
+    load(logicalDevice, physicalDevice, cmdPool, queue, imgData, imageWidth, imageHeight);
+    stbi_image_free(imgData);
+}
+
+void reina::graphics::Image::load(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, uint8_t *imgData, int imageWidth, int imageHeight) {
     width = static_cast<uint32_t>(imageWidth);
     height = static_cast<uint32_t>(imageHeight);
 
     std::vector<uint8_t> imgDataVec = std::vector<uint8_t>(imgData, imgData + width * height * 4);
 
     reina::core::Buffer stagingBuffer = reina::core::Buffer{
-        logicalDevice, physicalDevice, imgDataVec,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            logicalDevice, physicalDevice, imgDataVec,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     };
 
     VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;  // Do not use gamma correction since it is already assumed to have it
@@ -43,17 +64,17 @@ reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalD
 
     transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
     VkBufferImageCopy region{
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource{
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        },
-        .imageOffset = {0, 0, 0},
-        .imageExtent = {width, height, 1}
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource{
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, 1}
     };
 
     vkCmdCopyBufferToImage(cmdBuffer.getHandle(), stagingBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
@@ -62,8 +83,8 @@ reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalD
 
     cmdBuffer.destroy(logicalDevice);
     stagingBuffer.destroy(logicalDevice);
-    stbi_image_free(imgData);
 }
+
 
 reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
         : width(width), height(height), image(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE), imageMemory(VK_NULL_HANDLE) {

@@ -9,8 +9,11 @@
 #include <iostream>
 #include <unordered_set>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+
 fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
-    namespace fg = fastgltf;
     const std::filesystem::path path{filepath};
 
     if (!std::filesystem::exists(path)) {
@@ -18,40 +21,42 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     }
 
     // 1) Map the file into memory
-    auto bufferOrErr = fg::MappedGltfFile::FromPath(path);
+    auto bufferOrErr = fastgltf::MappedGltfFile::FromPath(path);
     if (!bufferOrErr) {
         throw std::runtime_error(
                 "Failed to open glTF file: " + filepath + "\nError: " +
-                std::string(fg::getErrorMessage(bufferOrErr.error()))
+                std::string(fastgltf::getErrorMessage(bufferOrErr.error()))
         );
     }
 
     // 2) Set up parser & options
     static constexpr auto supportedExts =
-            fg::Extensions::KHR_mesh_quantization   |
-            fg::Extensions::KHR_texture_transform  |
-            fg::Extensions::KHR_materials_variants;
+            fastgltf::Extensions::KHR_mesh_quantization |
+            fastgltf::Extensions::KHR_texture_transform |
+            fastgltf::Extensions::KHR_materials_variants;
 
     constexpr auto loadOpts =
-            fg::Options::DontRequireValidAssetMember |
-            fg::Options::AllowDouble              |
-            fg::Options::LoadExternalBuffers      |
-            fg::Options::LoadExternalImages       |
-            fg::Options::GenerateMeshIndices;
+            fastgltf::Options::DontRequireValidAssetMember |
+            fastgltf::Options::AllowDouble |
+            fastgltf::Options::LoadExternalBuffers |
+            fastgltf::Options::LoadExternalImages |
+            fastgltf::Options::GenerateMeshIndices |
+            fastgltf::Options::LoadExternalImages |
+            fastgltf::Options::LoadExternalBuffers;
 
-    fg::Parser parser(supportedExts);
+    fastgltf::Parser parser(supportedExts);
 
     // 3) Auto-detect file type and parse
-    auto fileType = fg::determineGltfFileType(bufferOrErr.get());
+    auto fileType = fastgltf::determineGltfFileType(bufferOrErr.get());
     auto assetOrErr =
-            (fileType == fg::GltfType::GLB)
+            (fileType == fastgltf::GltfType::GLB)
             ? parser.loadGltfBinary(bufferOrErr.get(), path.parent_path(), loadOpts)
             : parser.loadGltf     (bufferOrErr.get(), path.parent_path(), loadOpts);
 
-    if (assetOrErr.error() != fg::Error::None) {
+    if (assetOrErr.error() != fastgltf::Error::None) {
         throw std::runtime_error(
                 "Failed to parse glTF: " +
-                std::string(fg::getErrorMessage(assetOrErr.error()))
+                std::string(fastgltf::getErrorMessage(assetOrErr.error()))
         );
     }
 
@@ -184,6 +189,68 @@ reina::scene::ModelData reina::scene::gltf::MeshTBN::toModelData() {
     return modelData;
 }
 
+std::span<const std::byte> getBufferData(const fastgltf::Buffer& buf) {
+    return std::visit([](auto&& src) -> std::span<const std::byte> {
+        using T = std::decay_t<decltype(src)>;
+        if constexpr (std::is_same_v<T, fastgltf::sources::ByteView>) {
+            return src.bytes;
+        }
+        else if constexpr (std::is_same_v<T, fastgltf::sources::Vector>) {
+            return { src.bytes.data(), src.bytes.size() };
+        }
+        else if constexpr (std::is_same_v<T, fastgltf::sources::Array>) {
+            return { reinterpret_cast<const std::byte*>(src.bytes.data()), src.bytes.size() };
+        }
+        else {
+            throw std::runtime_error("Unsupported DataSource in fastgltf::Buffer");
+        }
+    }, buf.data);
+}
+
+std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset, reina::scene::Scene& scene) {
+    std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
+
+    for (uint32_t i = 0; i < asset.images.size(); i++) {
+        const fastgltf::Image& img = asset.images[i];
+
+        if (std::holds_alternative<fastgltf::sources::URI>(img.data)) {
+            fastgltf::URI uri = std::get<fastgltf::sources::URI>(img.data).uri;
+            if (!uri.isLocalPath()) {
+                throw std::runtime_error("Non-local URIs are not supported for texture loading");
+            }
+
+            std::string path = uri.fspath().string();
+
+            uint32_t sceneID = scene.defineTexture(path);
+            gltfIdToSceneId[i] = sceneID;
+        } else if (std::holds_alternative<fastgltf::sources::BufferView>(img.data)) {
+            auto bv = std::get<fastgltf::sources::BufferView>(img.data);
+            const auto& view = asset.bufferViews[bv.bufferViewIndex];
+            const auto& buf  = asset.buffers[view.bufferIndex];
+
+            std::span<const std::byte> bufferData = getBufferData(buf);
+            std::span<const std::byte> imageData = bufferData.subspan(view.byteOffset, view.byteLength);
+
+            int w, h, comp;
+            if (!stbi_info_from_memory(
+                    reinterpret_cast<const stbi_uc*>(imageData.data()),
+                    static_cast<int>(imageData.size_bytes()),
+                    &w, &h, &comp
+                    )) {
+                throw std::runtime_error("Invalid texture data");
+            }
+
+//            auto bytesSpan = buf.data          // DataSource for the buffer
+//                    .getBufferSpan() // e.g. a span<std::byte>
+//                    .subspan(view.byteOffset, view.byteLength);
+        } else {
+            throw std::runtime_error("URIs is not supported for gLTF loading");
+        }
+    }
+
+    return gltfIdToSceneId;
+}
+
 std::unordered_map<uint32_t, uint32_t> reina::scene::gltf::addMeshesToScene(reina::scene::Scene& scene, std::vector<reina::scene::gltf::MeshTBN> modelData) {
     std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
 
@@ -235,9 +302,9 @@ reina::scene::Scene reina::scene::gltf::loadScene(const std::string& filepath) {
     }
 
     Scene scene;
-    auto gltfIdToSceneId = addMeshesToScene(scene, meshes);
-
-    addInstancesToScene(asset, scene, gltfIdToSceneId);
+    auto gltfModelIdToSceneId = addMeshesToScene(scene, meshes);
+    auto gltfTexIdToSceneId = addTexturesToScene(asset, scene);
+    addInstancesToScene(asset, scene, gltfModelIdToSceneId);
 
     return scene;
 }
