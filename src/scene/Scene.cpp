@@ -14,14 +14,14 @@ uint32_t reina::scene::Scene::defineObject(const reina::scene::ModelData &modelD
 
 uint32_t reina::scene::Scene::defineTexture(const std::string& filepath) {
     // TODO: make it so that validation layer warnings do not occur if there are no textures in the scene
-    if (textureFilepathsToID.find(filepath) != textureFilepathsToID.end()) {
-        return textureFilepathsToID[filepath];
-    }
+    texturesToCreate.emplace_back(filepath);
+    return static_cast<uint32_t>(texturesToCreate.size() - 1);
+}
 
-    textureFilepathsToID[filepath] = nextImageID;
-    nextImageID++;
 
-    return textureFilepathsToID[filepath];
+uint32_t reina::scene::Scene::defineTexture(std::byte* imageData, size_t imageLengthBytes) {
+    texturesToCreate.emplace_back(RawImageData{imageData, imageLengthBytes});
+    return static_cast<uint32_t>(texturesToCreate.size() - 1);
 }
 
 void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, const Material& mat) {
@@ -55,9 +55,25 @@ void reina::scene::Scene::build(VkDevice logicalDevice, VkPhysicalDevice physica
      */
 
     // Step 1
-    for (const auto& pair : textureFilepathsToID) {
-        const std::string& filepath = pair.first;
-        textures.emplace_back(logicalDevice, physicalDevice, cmdPool, queue, filepath);
+    for (const auto& texToCreate : texturesToCreate) {
+        std::visit(
+            [&](auto&& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    textures.emplace_back(logicalDevice, physicalDevice, cmdPool, queue, arg);
+                } else {
+                    textures.emplace_back(
+                            logicalDevice,
+                            physicalDevice,
+                            cmdPool,
+                            queue,
+                            arg.imageData,
+                            arg.imageLengthBytes
+                    );
+                }
+            },
+            texToCreate
+        );
     }
 
     // Step 2

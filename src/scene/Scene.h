@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <variant>
 #include <glm/glm.hpp>
 
 #include "../graphics/Image.h"
@@ -39,6 +40,11 @@ namespace reina::scene {
             uint32_t objectID;
             glm::mat4 transform;
         };
+
+        struct RawImageData {
+            std::byte* imageData;
+            size_t imageLengthBytes;
+        };
     }
 
     class Scene {
@@ -60,11 +66,18 @@ namespace reina::scene {
         uint32_t defineObject(const ModelData& modelData);
 
         /**
-         * Define an image to be referenced by materials
+         * Define a texture to be referenced by materials
          * @param image The image
          * @return The image ID
          */
         uint32_t defineTexture(const std::string& filepath);
+
+        /**
+         * Define a texture to be referenced by materials
+         * @param image The image data
+         * @return The image ID
+         */
+         uint32_t defineTexture(std::byte* imageData, size_t imageLengthBytes);
 
         /**
          * A combination of defineObject and addInstance. Intended for when only one instance is required; saves on
@@ -102,8 +115,7 @@ namespace reina::scene {
 
     private:
         Models models;
-        uint32_t nextImageID = 0;
-        std::unordered_map<std::string, uint32_t> textureFilepathsToID;
+        std::vector<std::variant<std::string, RawImageData>> texturesToCreate;
         std::vector<InstanceToCreate> instancesToCreate;
         std::vector<InstanceProperties> instanceProperties;
         std::vector<reina::graphics::Blas> blases;

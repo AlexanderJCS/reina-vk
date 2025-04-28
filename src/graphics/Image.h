@@ -3,14 +3,15 @@
 
 #include <vulkan/vulkan.h>
 #include <string>
-#include <span>
+#include <vector>
 
 namespace reina::graphics {
     class Image {
     public:
         Image() = default;
         Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath);
-        Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, std::span<const std::byte> imageData);
+        Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool,
+              VkQueue queue, std::byte *imageData, size_t imageLengthBytes);
         Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps);
 
         [[nodiscard]] VkImage getImage() const;

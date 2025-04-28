@@ -9,9 +9,6 @@
 #include <iostream>
 #include <unordered_set>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 
 fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     const std::filesystem::path path{filepath};
@@ -40,9 +37,7 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
             fastgltf::Options::AllowDouble |
             fastgltf::Options::LoadExternalBuffers |
             fastgltf::Options::LoadExternalImages |
-            fastgltf::Options::GenerateMeshIndices |
-            fastgltf::Options::LoadExternalImages |
-            fastgltf::Options::LoadExternalBuffers;
+            fastgltf::Options::GenerateMeshIndices;
 
     fastgltf::Parser parser(supportedExts);
 
@@ -211,41 +206,37 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
     std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
 
     for (uint32_t i = 0; i < asset.images.size(); i++) {
+        // https://vkguide.dev/docs/new_chapter_5/gltf_textures/
         const fastgltf::Image& img = asset.images[i];
 
-        if (std::holds_alternative<fastgltf::sources::URI>(img.data)) {
-            fastgltf::URI uri = std::get<fastgltf::sources::URI>(img.data).uri;
-            if (!uri.isLocalPath()) {
-                throw std::runtime_error("Non-local URIs are not supported for texture loading");
-            }
+        std::visit(fastgltf::visitor{
+            [](auto& arg) {},
+            [&](fastgltf::sources::URI& uri) {
+                if (uri.fileByteOffset != 0) {
+                    throw std::runtime_error("Image must have no offset");
+                } if (!uri.uri.isLocalPath()) {
+                    throw std::runtime_error("Non-local URIs are not supported for texture loading");
+                }
 
-            std::string path = uri.fspath().string();
+                std::string path = uri.uri.fspath().string();
 
-            uint32_t sceneID = scene.defineTexture(path);
-            gltfIdToSceneId[i] = sceneID;
-        } else if (std::holds_alternative<fastgltf::sources::BufferView>(img.data)) {
-            auto bv = std::get<fastgltf::sources::BufferView>(img.data);
-            const auto& view = asset.bufferViews[bv.bufferViewIndex];
-            const auto& buf  = asset.buffers[view.bufferIndex];
+                uint32_t texIDScene = scene.defineTexture(path);
+                gltfIdToSceneId[i] = texIDScene;
+            },
+            [&](fastgltf::sources::Vector& vector) {
+                scene.defineTexture(vector.bytes.data(), vector.bytes.size());
+            },
+            [&](fastgltf::sources::BufferView& view) {
+                auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+                auto& buffer = asset.buffers[bufferView.bufferIndex];
 
-            std::span<const std::byte> bufferData = getBufferData(buf);
-            std::span<const std::byte> imageData = bufferData.subspan(view.byteOffset, view.byteLength);
-
-            int w, h, comp;
-            if (!stbi_info_from_memory(
-                    reinterpret_cast<const stbi_uc*>(imageData.data()),
-                    static_cast<int>(imageData.size_bytes()),
-                    &w, &h, &comp
-                    )) {
-                throw std::runtime_error("Invalid texture data");
-            }
-
-//            auto bytesSpan = buf.data          // DataSource for the buffer
-//                    .getBufferSpan() // e.g. a span<std::byte>
-//                    .subspan(view.byteOffset, view.byteLength);
-        } else {
-            throw std::runtime_error("URIs is not supported for gLTF loading");
-        }
+                std::visit(fastgltf::visitor{
+                   [](auto& arg) {},
+                   [&](fastgltf::sources::Vector& vector) {
+                       scene.defineTexture(vector.bytes.data() + bufferView.byteOffset, bufferView.byteLength);
+                   }}, buffer.data);
+            },
+        }, img.data);
     }
 
     return gltfIdToSceneId;
