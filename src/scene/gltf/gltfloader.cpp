@@ -238,17 +238,7 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
                             gltfIdToSceneId[i] = texIDScene;
                         },
                         [&](fastgltf::sources::Array& array) {
-                            std::cout << array.bytes.size_bytes() << " " << bufferView.byteLength << " " << bufferView.byteOffset << "\n";
-
                             auto ptr = array.bytes.data() + bufferView.byteOffset;
-
-//                            for (int k = 0; k < bufferView.byteLength; k++) {
-//                               std::string s = std::format("{:x}", static_cast<uint8_t>(ptr[k]));
-//                               std::cout << s << " ";
-//                                if ((k + 1) % 4 == 0) {
-//                                    std::cout << "\n";
-//                                }
-//                            }
 
                             uint32_t texIDScene = scene.defineTexture(ptr, bufferView.byteLength);
                             gltfIdToSceneId[i] = texIDScene;
@@ -312,11 +302,18 @@ std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fa
         Material material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
 
         if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
-            material.textureID = static_cast<int>(
-                    gltfTexIdToSceneId.at(
-                            static_cast<uint32_t>(gltfMaterial.pbrData.baseColorTexture.value().textureIndex)
-                            )
-                    );
+            std::cout << gltfMaterial.pbrData.baseColorTexture.value().textureIndex << "\n";
+
+            try {
+                material.textureID = static_cast<int>(
+                        gltfTexIdToSceneId.at(
+                                static_cast<uint32_t>(gltfMaterial.pbrData.baseColorTexture.value().textureIndex)
+                        )
+                );
+            } catch (const std::out_of_range& e) {
+                std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
+                material.textureID = -1;  // Fallback
+            }
         }
 
         materials.push_back(material);
