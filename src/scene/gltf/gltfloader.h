@@ -32,7 +32,7 @@ namespace reina::scene::gltf {
                              const std::vector<reina::scene::Material> &materials);
     std::vector<reina::scene::Material>
     materialsFromMeshTBNs(fastgltf::Asset &asset, const std::vector<MeshTBN> &meshes, std::unordered_map<uint32_t, uint32_t> gltfTexIdToSceneId);
-    reina::scene::Scene loadScene(const std::string& filepath);
+    reina::scene::Scene loadScene(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath);
 }
 
 #endif  // REINA_VK_GLTFLOADER_H

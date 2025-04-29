@@ -25,7 +25,7 @@ reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalD
 reina::graphics::Image::Image(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool,
                               VkQueue queue, std::byte* imageData, size_t imageLengthBytes) {
     int imageWidth, imageHeight, channels;
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
     uint8_t* imgData = stbi_load_from_memory(
             reinterpret_cast<const stbi_uc*>(imageData),
             static_cast<int>(imageLengthBytes),

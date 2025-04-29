@@ -85,8 +85,6 @@ private:
     reina::tools::SaveManager saveManager;
 
     uint32_t originalSamplesPerPixel = 0;
-
-    std::vector<reina::graphics::Image> textures;
 };
 
 

@@ -234,13 +234,13 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
 
                             auto ptr = array.bytes.data() + bufferView.byteOffset;
 
-                            for (int k = 0; k < bufferView.byteLength; k++) {
-                               std::string s = std::format("{:x}", static_cast<uint8_t>(ptr[k]));
-                               std::cout << s << " ";
-                                if ((k + 1) % 4 == 0) {
-                                    std::cout << "\n";
-                                }
-                            }
+//                            for (int k = 0; k < bufferView.byteLength; k++) {
+//                               std::string s = std::format("{:x}", static_cast<uint8_t>(ptr[k]));
+//                               std::cout << s << " ";
+//                                if ((k + 1) % 4 == 0) {
+//                                    std::cout << "\n";
+//                                }
+//                            }
 
                             uint32_t texIDScene = scene.defineTexture(ptr, bufferView.byteLength);
                             gltfIdToSceneId[i] = texIDScene;
@@ -317,7 +317,7 @@ std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fa
     return materials;
 }
 
-reina::scene::Scene reina::scene::gltf::loadScene(const std::string& filepath) {
+reina::scene::Scene reina::scene::gltf::loadScene(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath) {
     auto asset = loadGltf(filepath);
 
     std::vector<MeshTBN> meshes;
@@ -328,6 +328,10 @@ reina::scene::Scene reina::scene::gltf::loadScene(const std::string& filepath) {
     auto gltfTexIdToSceneId = addTexturesToScene(asset, scene);
     auto materials = materialsFromMeshTBNs(asset, meshes, gltfTexIdToSceneId);
     addInstancesToScene(asset, scene, gltfModelIdToSceneId, materials);
+    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
+
+    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
+    scene.build(logicalDevice, physicalDevice, cmdPool, queue);
 
     return scene;
 }

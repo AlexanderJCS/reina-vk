@@ -84,9 +84,7 @@ Reina::Reina() {
     cmdBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
-    textures = std::vector<reina::graphics::Image>{
-            reina::graphics::Image{logicalDevice, physicalDevice, commandPool, graphicsQueue, "textures/cornell_texture.png"},
-    };
+    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocado.glb");
 
     rtDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
@@ -104,7 +102,7 @@ Reina::Reina() {
                     reina::core::Binding{10, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{11, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
                     reina::core::Binding{12, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
-                    reina::core::Binding{13, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(textures.size()), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+                    reina::core::Binding{13, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(scene.getTextures().size()), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
             }
     };
 
@@ -188,16 +186,14 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    scene = reina::scene::gltf::loadScene("scenes/box/box.glb");
+//    uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
-    uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
-
-    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
-    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
+//    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
+//    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
 //    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
-    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
+//    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
 
-    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
+//    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
     rtPushConsts.getPushConstants().totalEmissiveWeight = scene.getEmissiveWeight();
 
     VkDeviceSize imageSize = renderWidth * renderHeight * 4;  // RGBA8
@@ -311,6 +307,7 @@ void Reina::renderLoop() {
         cmdBuffer.begin();
 
         // todo: these transitions should be done when initialized
+        std::vector<reina::graphics::Image> textures = scene.getTextures();
         for (reina::graphics::Image& texture : textures) {
             texture.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         }
@@ -588,10 +585,6 @@ void Reina::present(uint32_t imageIndex) {
 Reina::~Reina() {
     for (VkFramebuffer framebuffer : framebuffers) {
         vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
-    }
-
-    for (reina::graphics::Image& texture : textures) {
-        texture.destroy(logicalDevice);
     }
 
     pingImage.destroy(logicalDevice);
