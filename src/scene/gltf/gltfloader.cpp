@@ -136,12 +136,20 @@ void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
             }
             // — TEXCOORD_0
             if (auto a = prim.findAttribute("TEXCOORD_0")) {
-                const auto& acc = asset.accessors[a->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(
-                    asset, acc,
-                    [&](fastgltf::math::fvec2 uv, size_t i) {
-                        m.vertices[i].uv = uv;
-                    });
+                if (a != prim.attributes.end()) {
+                    const auto& acc = asset.accessors[a->accessorIndex];
+
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(
+                            asset, acc,
+                            [&](fastgltf::math::fvec2 uv, size_t i) {
+                                m.vertices[i].uv = uv;
+                            });
+                } else {
+                    // Fallback with UV (0, 0)
+                    for (auto& vertex : m.vertices) {
+                        vertex.uv = fastgltf::math::fvec2(0, 0);
+                    }
+                }
             }
             // — INDICES
             if (prim.indicesAccessor.has_value()) {

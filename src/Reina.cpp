@@ -84,7 +84,7 @@ Reina::Reina() {
     cmdBuffer = reina::core::CmdBuffer{logicalDevice, commandPool, false, true};
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
-    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocado.glb");
+    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/box/box.glb");
 
     rtDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
