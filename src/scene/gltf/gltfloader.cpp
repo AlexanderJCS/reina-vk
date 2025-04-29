@@ -195,7 +195,7 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
         std::visit(fastgltf::visitor{
             [](auto& arg) {
                 throw std::runtime_error("Could not parse texture; internal gLTF data type not supported");
-                },
+            },
             [&](fastgltf::sources::URI& uri) {
                 if (uri.fileByteOffset != 0) {
                     throw std::runtime_error("URI image must have no offset");
@@ -230,7 +230,18 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
                             gltfIdToSceneId[i] = texIDScene;
                         },
                         [&](fastgltf::sources::Array& array) {
+                            std::cout << array.bytes.size_bytes() << " " << bufferView.byteLength << " " << bufferView.byteOffset << "\n";
+
                             auto ptr = array.bytes.data() + bufferView.byteOffset;
+
+                            for (int k = 0; k < bufferView.byteLength; k++) {
+                               std::string s = std::format("{:x}", static_cast<uint8_t>(ptr[k]));
+                               std::cout << s << " ";
+                                if ((k + 1) % 4 == 0) {
+                                    std::cout << "\n";
+                                }
+                            }
+
                             uint32_t texIDScene = scene.defineTexture(ptr, bufferView.byteLength);
                             gltfIdToSceneId[i] = texIDScene;
                         }

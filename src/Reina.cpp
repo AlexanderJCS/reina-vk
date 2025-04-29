@@ -188,7 +188,7 @@ Reina::Reina() {
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
 
-    scene = reina::scene::gltf::loadScene("scenes/box/untitled.glb");
+    scene = reina::scene::gltf::loadScene("scenes/box/box.glb");
 
     uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
