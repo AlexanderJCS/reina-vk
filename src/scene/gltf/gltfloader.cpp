@@ -62,7 +62,7 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
 void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes) {
     // — Gather meshes used by default scene
     std::unordered_set<size_t> used;
-    size_t sceneIdx = asset.defaultScene.value_or(0);                  // defaultScene :contentReference[oaicite:5]{index=5}
+    size_t sceneIdx = asset.defaultScene.value_or(0);
     fastgltf::iterateSceneNodes(asset, sceneIdx, fastgltf::math::fmat4x4(1.0f),
                                 [&](fastgltf::Node& node, const fastgltf::math::fmat4x4&) {
                                     if (node.meshIndex.has_value()) used.insert(*node.meshIndex);
@@ -190,7 +190,7 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
 
     for (uint32_t i = 0; i < asset.images.size(); i++) {
         // https://vkguide.dev/docs/new_chapter_5/gltf_textures/
-        const fastgltf::Image& img = asset.images[i];
+        fastgltf::Image& img = asset.images[i];
 
         std::visit(fastgltf::visitor{
             [](auto& arg) {
@@ -198,7 +198,7 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
                 },
             [&](fastgltf::sources::URI& uri) {
                 if (uri.fileByteOffset != 0) {
-                    throw std::runtime_error("Image must have no offset");
+                    throw std::runtime_error("URI image must have no offset");
                 } if (!uri.uri.isLocalPath()) {
                     throw std::runtime_error("Non-local URIs are not supported for texture loading");
                 }
@@ -212,16 +212,29 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
                 uint32_t texIDScene = scene.defineTexture(vector.bytes.data(), vector.bytes.size());
                 gltfIdToSceneId[i] = texIDScene;
             },
+            [&](fastgltf::sources::Array& array) {
+                uint32_t texIDScene = scene.defineTexture(array.bytes.data(), array.bytes.size());
+                gltfIdToSceneId[i] = texIDScene;
+            },
             [&](fastgltf::sources::BufferView& view) {
                 auto& bufferView = asset.bufferViews[view.bufferViewIndex];
                 auto& buffer = asset.buffers[bufferView.bufferIndex];
 
                 std::visit(fastgltf::visitor{
-                   [](auto& arg) {},
-                   [&](fastgltf::sources::Vector& vector) {
-                       uint32_t texIDScene = scene.defineTexture(vector.bytes.data() + bufferView.byteOffset, bufferView.byteLength);
-                       gltfIdToSceneId[i] = texIDScene;
-                   }}, buffer.data);
+                        [](auto&&) {
+                            throw std::runtime_error("Unsupported buffer data source");
+                        },
+                        [&](fastgltf::sources::Vector& vector) {
+                            auto ptr = vector.bytes.data() + bufferView.byteOffset;
+                            uint32_t texIDScene = scene.defineTexture(ptr, bufferView.byteLength);
+                            gltfIdToSceneId[i] = texIDScene;
+                        },
+                        [&](fastgltf::sources::Array& array) {
+                            auto ptr = array.bytes.data() + bufferView.byteOffset;
+                            uint32_t texIDScene = scene.defineTexture(ptr, bufferView.byteLength);
+                            gltfIdToSceneId[i] = texIDScene;
+                        }
+                }, buffer.data);
             },
         }, img.data);
     }
