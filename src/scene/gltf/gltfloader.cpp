@@ -263,11 +263,10 @@ std::unordered_map<uint32_t, uint32_t> reina::scene::gltf::addMeshesToScene(rein
 }
 
 glm::mat4 toGlmMat4(const fastgltf::math::fmat4x4& mat) {
-    glm::mat4 result(1.0f);  // identity
-
+    glm::mat4 result(1.0f);
     for (int row = 0; row < 4; ++row) {
         for (int col = 0; col < 4; ++col) {
-            result[col][row] = mat[row][col];  // glm is column-major
+            result[row][col] = mat[row][col];
         }
     }
 
@@ -279,17 +278,21 @@ void reina::scene::gltf::addInstancesToScene(fastgltf::Asset &asset, reina::scen
                                              const std::vector<reina::scene::Material>& materials) {
     size_t sceneIdx = asset.defaultScene.value_or(0);
 
+    // 1) Use a _true_ identity
     fastgltf::iterateSceneNodes(
             asset,
             sceneIdx,
-            fastgltf::math::fmat4x4(),
-            [&](fastgltf::Node& node, const fastgltf::math::fmat4x4& matrix) {
-                if (node.meshIndex.has_value()) {
-                    uint32_t sceneID = gltfIdToSceneId.at(static_cast<uint32_t>(node.meshIndex.value()));
-                    Material material = materials[node.meshIndex.value()];
+            fastgltf::math::fmat4x4(1.0f),
+            [&](fastgltf::Node& node, const auto& matrix) {
+                if (!node.meshIndex.has_value()) {
+                    return;
+                };
 
-                    scene.addInstance(sceneID, toGlmMat4(matrix), material);
-                }
+                glm::mat4 glmMat = toGlmMat4(matrix);
+
+                uint32_t sceneID = gltfIdToSceneId.at(*node.meshIndex);
+                Material material = materials[*node.meshIndex];
+                scene.addInstance(sceneID, glmMat, material);
             });
 }
 
@@ -299,11 +302,9 @@ std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fa
     for (const MeshTBN& mesh : meshes) {
         const auto& gltfMaterial = asset.materials[mesh.materialIdx];
 
-        Material material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
+        Material material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
 
         if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
-            std::cout << gltfMaterial.pbrData.baseColorTexture.value().textureIndex << "\n";
-
             try {
                 material.textureID = static_cast<int>(
                         gltfTexIdToSceneId.at(
