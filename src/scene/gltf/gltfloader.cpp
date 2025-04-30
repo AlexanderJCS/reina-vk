@@ -143,8 +143,12 @@ void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
                             asset, acc,
                             [&](fastgltf::math::fvec2 uv, size_t i) {
                                 m.vertices[i].uv = uv;
+                                if (uv.x() > 1 || uv.x() < 0 || uv.y() > 1 || uv.y() < 0) {
+                                    std::cout << "Warning: UV outside of the range of [0, 1]\n";
+                                }
                             });
                 } else {
+                    std::cerr << "Warning: falling back to UV coords (0, 0) since none were found" << std::endl;
                     // Fallback with UV (0, 0)
                     for (auto& vertex : m.vertices) {
                         vertex.uv = fastgltf::math::fvec2(0, 0);
@@ -300,20 +304,24 @@ std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fa
     std::vector<Material> materials;
 
     for (const MeshTBN& mesh : meshes) {
-        const auto& gltfMaterial = asset.materials[mesh.materialIdx];
+        Material material = Material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
 
-        Material material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
+        if (mesh.materialIdx != -1) {
+            const auto& gltfMaterial = asset.materials[mesh.materialIdx];
 
-        if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
-            try {
-                material.textureID = static_cast<int>(
-                        gltfTexIdToSceneId.at(
-                                static_cast<uint32_t>(gltfMaterial.pbrData.baseColorTexture.value().textureIndex)
-                        )
-                );
-            } catch (const std::out_of_range& e) {
-                std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
-                material.textureID = -1;  // Fallback
+            material = Material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
+
+            if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
+                try {
+                    material.textureID = static_cast<int>(
+                            gltfTexIdToSceneId.at(
+                                    static_cast<uint32_t>(gltfMaterial.pbrData.baseColorTexture.value().textureIndex)
+                            )
+                    );
+                } catch (const std::out_of_range& e) {
+                    std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
+                    material.textureID = -1;  // Fallback
+                }
             }
         }
 
