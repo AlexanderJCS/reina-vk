@@ -304,7 +304,7 @@ std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fa
     std::vector<Material> materials;
 
     for (const MeshTBN& mesh : meshes) {
-        Material material = Material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
+        Material material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
 
         if (mesh.materialIdx != -1) {
             const auto& gltfMaterial = asset.materials[mesh.materialIdx];
