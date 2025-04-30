@@ -16,6 +16,10 @@ void main() {
     }
 
     vec2 uv = hitInfo.uv;
+    // Before doing bump mapping modulus the UV by 1 to effectively wrap the UV coordinates. I can't change the image
+    //  sampler configuration since then the UV check to discard out of bounds UV coordinates would not work.
+    uv = mod(uv, 1.0);
+
     if (props.bumpMapTexID >= 0) {
         uv = bumpMapping(uv, normalize(gl_WorldRayDirectionEXT), hitInfo.tbn, textures[props.bumpMapTexID]);
     }
