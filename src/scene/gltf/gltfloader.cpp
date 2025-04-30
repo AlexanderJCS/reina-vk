@@ -143,9 +143,6 @@ void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
                             asset, acc,
                             [&](fastgltf::math::fvec2 uv, size_t i) {
                                 m.vertices[i].uv = uv;
-                                if (uv.x() > 1 || uv.x() < 0 || uv.y() > 1 || uv.y() < 0) {
-                                    std::cout << "Warning: UV outside of the range of [0, 1]\n";
-                                }
                             });
                 } else {
                     std::cerr << "Warning: falling back to UV coords (0, 0) since none were found" << std::endl;
@@ -201,7 +198,7 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
     std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
 
     for (uint32_t i = 0; i < asset.images.size(); i++) {
-        // https://vkguide.dev/docs/new_chapter_5/gltf_textures/
+        // Modified from: https://vkguide.dev/docs/new_chapter_5/gltf_textures/
         fastgltf::Image& img = asset.images[i];
 
         std::visit(fastgltf::visitor{
@@ -313,11 +310,7 @@ std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fa
 
             if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
                 try {
-                    material.textureID = static_cast<int>(
-                            gltfTexIdToSceneId.at(
-                                    static_cast<uint32_t>(gltfMaterial.pbrData.baseColorTexture.value().textureIndex)
-                            )
-                    );
+                    material.textureID = static_cast<int>(gltfTexIdToSceneId.at(static_cast<uint32_t>(asset.textures[gltfMaterial.pbrData.baseColorTexture.value().textureIndex].imageIndex.value())));
                 } catch (const std::out_of_range& e) {
                     std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
                     material.textureID = -1;  // Fallback
