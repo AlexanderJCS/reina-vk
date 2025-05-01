@@ -2,6 +2,7 @@
 #include "fastgltf/tools.hpp"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <filesystem>
 
@@ -62,6 +63,11 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
 void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes) {
     // — Gather meshes used by default scene
     std::unordered_set<size_t> used;
+
+    if (asset.scenes.empty()) {
+        throw std::runtime_error("No scenes supplied in gLTF file");
+    }
+
     size_t sceneIdx = asset.defaultScene.value_or(0);
     fastgltf::iterateSceneNodes(asset, sceneIdx, fastgltf::math::fmat4x4(1.0f),
                                 [&](fastgltf::Node& node, const fastgltf::math::fmat4x4&) {
@@ -279,7 +285,6 @@ void reina::scene::gltf::addInstancesToScene(fastgltf::Asset &asset, reina::scen
                                              const std::vector<reina::scene::Material>& materials) {
     size_t sceneIdx = asset.defaultScene.value_or(0);
 
-    // 1) Use a _true_ identity
     fastgltf::iterateSceneNodes(
             asset,
             sceneIdx,
@@ -289,7 +294,16 @@ void reina::scene::gltf::addInstancesToScene(fastgltf::Asset &asset, reina::scen
                     return;
                 };
 
-                glm::mat4 glmMat = toGlmMat4(matrix);
+                glm::mat4 glmMat = glm::make_mat4(matrix.data());
+
+                // print mat4
+                for (int row = 0; row < 4; ++row) {
+                    std::cout << "  ";
+                    for (int col = 0; col < 4; ++col) {
+                        std::cout << glmMat[col][row] << " ";
+                    }
+                    std::cout << "\n";
+                }
 
                 uint32_t sceneID = gltfIdToSceneId.at(*node.meshIndex);
                 Material material = materials[*node.meshIndex];
