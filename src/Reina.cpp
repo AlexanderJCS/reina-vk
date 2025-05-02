@@ -47,7 +47,7 @@ void save(const std::string& filename, VkDevice logicalDevice, VkQueue graphicsQ
 }
 
 
-Reina::Reina() {
+Reina::Reina(){
     auto config = toml::parse_file("config/config.toml");
 
     // init
@@ -85,10 +85,13 @@ Reina::Reina() {
     cmdBuffer.endWaitSubmit(logicalDevice, graphicsQueue);  // since the command buffer automatically begins upon creation, and we don't want that in this specific case
 
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/main1_sponza/NewSponza_Main_glTF_003.gltf");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/sponza_modified/sponza.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/empty/empty.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/2CylinderEngine/2CylinderEngine.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/MorphPrimitivesTest/MorphPrimitivesTest.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/Lantern/Lantern.glb");
-    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/car_scene_mini/car_scene_mini.glb");
-//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/FlightHelmet/FlightHelmet.gltf");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/car_scene_mini/car_scene_mini.glb");
+    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/FlightHelmet/FlightHelmet.gltf");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocados.glb");
 
     rtDescriptorSet = reina::core::DescriptorSet{
@@ -113,7 +116,7 @@ Reina::Reina() {
 
     glm::vec3 pos = glm::vec3(0, 1.3f, 8.4f);
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
-    camera = reina::graphics::Camera{renderWindow, glm::radians(15.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
+    camera = reina::graphics::Camera{renderWindow, glm::radians(35.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
 
     originalSamplesPerPixel = config.at_path("sampling.samples_per_pixel").value<uint32_t>().value();
 

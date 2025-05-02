@@ -60,7 +60,7 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     return std::move(assetOrErr.get());
 }
 
-void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTBN>& outMeshes) {
+std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>> reina::scene::gltf::loadPrimitives(fastgltf::Asset& asset) {
     // — Gather meshes used by default scene
     std::unordered_set<size_t> used;
 
@@ -74,11 +74,13 @@ void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
                                     if (node.meshIndex.has_value()) used.insert(*node.meshIndex);
                                 });
 
+    std::unordered_map<uint32_t, std::vector<Primitive>> meshIdToPrimitives;
+
     // — For each used mesh → each primitive
     for (auto mi : used) {
         const auto& mesh = asset.meshes[mi];
         for (const auto& prim : mesh.primitives) {
-            MeshTBN m;
+            Primitive m;
 
             // - MATERIAL
             m.materialIdx = static_cast<int>(prim.materialIndex.value_or(-1));
@@ -96,6 +98,10 @@ void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
             }
             // — NORMAL
             if (auto a = prim.findAttribute("NORMAL")) {
+                if (a == prim.attributes.end()) {
+                    throw std::runtime_error("Meshes without vertex normals are not supported");
+                }
+
                 const auto& acc = asset.accessors[a->accessorIndex];
                 fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
                     asset, acc,
@@ -165,12 +171,14 @@ void reina::scene::gltf::loadMeshTBNs(fastgltf::Asset& asset, std::vector<MeshTB
                 fastgltf::copyFromAccessor<uint32_t>(asset, acc, m.indices.data());
             }
 
-            outMeshes.emplace_back(std::move(m));
+            meshIdToPrimitives[mi].emplace_back(std::move(m));
         }
     }
+
+    return meshIdToPrimitives;
 }
 
-reina::scene::ModelData reina::scene::gltf::MeshTBN::toModelData() {
+reina::scene::ModelData reina::scene::gltf::Primitive::toModelData() const {
     reina::scene::ModelData modelData;
 
     for (const VertexTBN& vertex : vertices) {
@@ -258,31 +266,22 @@ std::unordered_map<uint32_t, uint32_t> addTexturesToScene(fastgltf::Asset& asset
     return gltfIdToSceneId;
 }
 
-std::unordered_map<uint32_t, uint32_t> reina::scene::gltf::addMeshesToScene(reina::scene::Scene& scene, std::vector<reina::scene::gltf::MeshTBN> modelData) {
-    std::unordered_map<uint32_t, uint32_t> gltfIdToSceneId;
+std::unordered_map<uint32_t, std::vector<uint32_t>> reina::scene::gltf::addMeshesToScene(reina::scene::Scene& scene, const std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>>& meshIdToPrimitive) {
+    std::unordered_map<uint32_t, std::vector<uint32_t>> meshIdToSceneObjectId;
 
-    for (uint32_t i = 0; i < modelData.size(); i++) {
-        uint32_t sceneID = scene.defineObject(modelData[i].toModelData());
-        gltfIdToSceneId[i] = sceneID;
-    }
-
-    return gltfIdToSceneId;
-}
-
-glm::mat4 toGlmMat4(const fastgltf::math::fmat4x4& mat) {
-    glm::mat4 result(1.0f);
-    for (int row = 0; row < 4; ++row) {
-        for (int col = 0; col < 4; ++col) {
-            result[row][col] = mat[row][col];
+    for (const auto& [meshID, primitives] : meshIdToPrimitive) {
+        for (const Primitive& primitive : primitives) {
+            uint32_t sceneID = scene.defineObject(primitive.toModelData());
+            meshIdToSceneObjectId[meshID].push_back(sceneID);
         }
     }
 
-    return result;
+    return meshIdToSceneObjectId;
 }
 
 void reina::scene::gltf::addInstancesToScene(fastgltf::Asset &asset, reina::scene::Scene& scene,
-                                             const std::unordered_map<uint32_t, uint32_t>& gltfIdToSceneId,
-                                             const std::vector<reina::scene::Material>& materials) {
+                                             const std::unordered_map<uint32_t, std::vector<uint32_t>>& gltfIdToSceneId,
+                                             const std::unordered_map<uint32_t, std::vector<reina::scene::Material>>& gltfModelIdToMaterials) {
     size_t sceneIdx = asset.defaultScene.value_or(0);
 
     fastgltf::iterateSceneNodes(
@@ -294,61 +293,54 @@ void reina::scene::gltf::addInstancesToScene(fastgltf::Asset &asset, reina::scen
                     return;
                 };
 
+                std::vector<uint32_t> objectIDsScene = gltfIdToSceneId.at(*node.meshIndex);
+                std::vector<Material> materials = gltfModelIdToMaterials.at(*node.meshIndex);
+
                 glm::mat4 glmMat = glm::make_mat4(matrix.data());
 
-                // print mat4
-                for (int row = 0; row < 4; ++row) {
-                    std::cout << "  ";
-                    for (int col = 0; col < 4; ++col) {
-                        std::cout << glmMat[col][row] << " ";
-                    }
-                    std::cout << "\n";
+                for (size_t primitiveIdx = 0; primitiveIdx < objectIDsScene.size(); primitiveIdx++) {
+                    scene.addInstance(objectIDsScene[primitiveIdx], glmMat, materials[primitiveIdx]);
                 }
-
-                uint32_t sceneID = gltfIdToSceneId.at(*node.meshIndex);
-                Material material = materials[*node.meshIndex];
-                scene.addInstance(sceneID, glmMat, material);
             });
 }
 
-std::vector<reina::scene::Material> reina::scene::gltf::materialsFromMeshTBNs(fastgltf::Asset &asset, const std::vector<MeshTBN>& meshes, std::unordered_map<uint32_t, uint32_t> gltfTexIdToSceneId) {
-    std::vector<Material> materials;
+std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::gltf::materialsFromMeshTBNs(fastgltf::Asset &asset, const std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>>& meshIdToPrimitives, std::unordered_map<uint32_t, uint32_t> gltfTexIdToSceneId) {
+    std::unordered_map<uint32_t, std::vector<Material>> meshIdToMaterials;
 
-    for (const MeshTBN& mesh : meshes) {
-        Material material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
+    for (const auto& [meshID, primitives] : meshIdToPrimitives) {
+        for (const Primitive& primitive : primitives) {
+            Material material{0, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
 
-        if (mesh.materialIdx != -1) {
-            const auto& gltfMaterial = asset.materials[mesh.materialIdx];
+            if (primitive.materialIdx != -1) {
+                const auto& gltfMaterial = asset.materials[primitive.materialIdx];
 
-            material = Material{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
-
-            if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
-                try {
-                    material.textureID = static_cast<int>(gltfTexIdToSceneId.at(static_cast<uint32_t>(asset.textures[gltfMaterial.pbrData.baseColorTexture.value().textureIndex].imageIndex.value())));
-                } catch (const std::out_of_range& e) {
-                    std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
-                    material.textureID = -1;  // Fallback
+                if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
+                    try {
+                        material.textureID = static_cast<int>(gltfTexIdToSceneId.at(static_cast<uint32_t>(asset.textures[gltfMaterial.pbrData.baseColorTexture.value().textureIndex].imageIndex.value())));
+                    } catch (const std::out_of_range& e) {
+                        std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
+                        material.textureID = -1;  // Fallback
+                    }
                 }
             }
-        }
 
-        materials.push_back(material);
+            meshIdToMaterials[meshID].push_back(material);
+        }
     }
 
-    return materials;
+    return meshIdToMaterials;
 }
 
 reina::scene::Scene reina::scene::gltf::loadScene(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkCommandPool cmdPool, VkQueue queue, const std::string& filepath) {
     auto asset = loadGltf(filepath);
 
-    std::vector<MeshTBN> meshes;
-    loadMeshTBNs(asset, meshes);
+    auto meshIdToPrimitives = loadPrimitives(asset);
 
     Scene scene;
-    auto gltfModelIdToSceneId = addMeshesToScene(scene, meshes);
+    auto gltfModelIdToSceneId = addMeshesToScene(scene, meshIdToPrimitives);
     auto gltfTexIdToSceneId = addTexturesToScene(asset, scene);
-    auto materials = materialsFromMeshTBNs(asset, meshes, gltfTexIdToSceneId);
-    addInstancesToScene(asset, scene, gltfModelIdToSceneId, materials);
+    auto gltfModelIdToMaterials = materialsFromMeshTBNs(asset, meshIdToPrimitives, gltfTexIdToSceneId);
+    addInstancesToScene(asset, scene, gltfModelIdToSceneId, gltfModelIdToMaterials);
     reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
 
     scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
