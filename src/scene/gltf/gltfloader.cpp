@@ -112,7 +112,6 @@ std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>> reina::
             // — TANGENT: may be Vec4 (x,y,z + w sign) or fallback Vec3
             if (auto tanIt = prim.findAttribute("TANGENT"); tanIt != prim.attributes.end()) {
                 const auto& acc = asset.accessors[tanIt->accessorIndex];
-
                 // Vec4 case: apply w as bitangent sign
                 if (acc.type == fastgltf::AccessorType::Vec4) {
                     fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
@@ -128,7 +127,7 @@ std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>> reina::
                         }
                     );
                 }
-                    // Vec3 fallback: no handedness, assume w == +1
+                // Vec3 fallback: no handedness, assume w == +1
                 else if (acc.type == fastgltf::AccessorType::Vec3) {
                     fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
                         asset, acc,
@@ -320,6 +319,13 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
                     } catch (const std::out_of_range& e) {
                         std::cerr << "Warning: Texture ID not found. Exception: " << e.what() << std::endl;
                         material.textureID = -1;  // Fallback
+                    }
+                } if (gltfMaterial.normalTexture.has_value()) {
+                    try {
+                        material.normalMapID = static_cast<int>(gltfTexIdToSceneId.at(static_cast<uint32_t>(asset.textures[gltfMaterial.normalTexture.value().textureIndex].imageIndex.value())));
+                    }  catch (const std::out_of_range& e) {
+                        std::cerr << "Warning: Normal Texture ID not found. Exception: " << e.what() << std::endl;
+                        material.normalMapID = -1;  // Fallback
                     }
                 }
             }
