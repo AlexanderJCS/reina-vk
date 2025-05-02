@@ -42,6 +42,7 @@ struct HitInfo {
     vec3 objectPosition;
     vec3 worldPosition;
     vec3 worldNormal;
+    vec3 worldNormalGeometry;
     vec3 color;
     vec2 uv;
     bool frontFace;
@@ -75,9 +76,10 @@ HitInfo getObjectHitInfo() {
     // Transform from object space to world space:
     result.worldPosition = gl_ObjectToWorldEXT * vec4(result.objectPosition, 1.0f);
 
+    vec3 objectNormalGeometry = normalize(cross(v1 - v0, v2 - v0));
     vec3 objectNormal;
     if (!props.interpNormals) {
-        objectNormal = normalize(cross(v1 - v0, v2 - v0));
+        objectNormal = objectNormalGeometry;
     } else {
         const uint tbnsIndexOffset = props.tbnsIndicesOffset;
         const uint tbn0Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0];
@@ -109,9 +111,11 @@ HitInfo getObjectHitInfo() {
 
     // Transform normals from object space to world space
     result.worldNormal = normalize(mat3(gl_ObjectToWorldEXT) * objectNormal);
+    result.worldNormalGeometry = normalize(mat3(gl_ObjectToWorldEXT) * objectNormalGeometry);
 
     result.frontFace = dot(gl_WorldRayDirectionEXT, result.worldNormal) < 0;
-    result.worldNormal = faceforward(result.worldNormal, gl_WorldRayDirectionEXT, result.worldNormal);
+    result.worldNormal = faceforward(result.worldNormal, gl_WorldRayDirectionEXT, result.worldNormalGeometry);
+    result.worldNormalGeometry = faceforward(result.worldNormalGeometry, gl_WorldRayDirectionEXT, result.worldNormalGeometry);
 
     // TBN stuff
     result.tbn = mat3(1.0);

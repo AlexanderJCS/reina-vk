@@ -76,14 +76,14 @@ void main() {
         // specular reflection
         pld.rayDirection = reflect(unitDir, worldNormal);
         pld.color = vec3(1);
-        pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);
+        pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     } else {
         pld.insideDielectric = hitInfo.frontFace;
 
         // refract
         pld.rayDirection = refract(unitDir, worldNormal, ri);
         pld.color = albedo;
-        pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormal, unitDir);
+        pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, unitDir);
     }
 
     pld.accumulatedDistance += mix(0, length(hitInfo.worldPosition - gl_WorldRayOriginEXT), previouslyInsideDielectric);

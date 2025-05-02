@@ -88,11 +88,11 @@ Reina::Reina(){
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/sponza_modified/sponza.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/empty/empty.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/2CylinderEngine/2CylinderEngine.glb");
-//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/MorphPrimitivesTest/MorphPrimitivesTest.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/Corset/Corset.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/Lantern/Lantern.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/car_scene_mini/car_scene_mini.glb");
-    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/FlightHelmet/FlightHelmet.gltf");
-//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocados.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/FlightHelmet/FlightHelmet.gltf");
+    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocados.glb");
 
     rtDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,

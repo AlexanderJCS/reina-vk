@@ -25,10 +25,10 @@ void main() {
         uv = bumpMapping(uv, normalize(gl_WorldRayDirectionEXT), hitInfo.tbn, textures[props.bumpMapTexID]);
     }
 
-//    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-//        skip(hitInfo);  // skip if uv is out of bounds
-//        return;
-//    }
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        skip(hitInfo);  // skip if uv is out of bounds
+        return;
+    }
 
     vec3 worldNormal = hitInfo.worldNormal;
     if (props.normalMapTexID >= 0) {
@@ -39,12 +39,6 @@ void main() {
 
     #ifdef DEBUG_SHOW_NORMALS
         pld.color = worldNormal * 0.5 + 0.5;
-
-        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-            pld.color = vec3(0, 0, 1);
-        } else {
-            pld.color = vec3(uv, 0);
-        }
     #else
         pld.color = props.albedo;
         if (props.textureID >= 0) {
@@ -60,7 +54,7 @@ void main() {
     #endif
 
     pld.emission = props.emission;
-    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);  // use hitInfo.worldNormal since using tangent-space calculations may not prevent self-intersection
+    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     pld.rayDirection = diffuseReflection(worldNormal, pld.rngState);
     pld.rayHitSky = false;
     pld.skip = false;

@@ -48,7 +48,7 @@ void main() {
     #endif
 
     pld.emission = props.emission;
-    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormal);  // use hitInfo.worldNormal since using tangent-space calculations may not prevent self-intersection
+    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     pld.rayDirection = reflect(normalize(gl_WorldRayDirectionEXT), normalize(worldNormal)) + props.fuzzOrRefIdx * randomUnitVec(pld.rngState);
     pld.rayHitSky = false;
     pld.skip = false;
