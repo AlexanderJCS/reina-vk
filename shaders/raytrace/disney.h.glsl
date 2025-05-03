@@ -113,7 +113,7 @@ vec3 calculateTint(vec3 baseColor) {
     return (luminance > 0.0) ? baseColor / luminance : vec3(1.0);
 }
 
-vec3 evalulateSheen(const InstanceProperties props, const vec3 wo, const vec3 wm, const vec3 wi) {
+vec3 evaluateSheen(const InstanceProperties props, const vec3 wo, const vec3 wm, const vec3 wi) {
     if (props.sheen <= 0.0) {
         return vec3(0.0);
     }
@@ -212,8 +212,7 @@ float schlickR0FromRelativeIOR(float eta) {
     return pow(eta - 1.0f, 2.0) / pow(eta + 1.0f, 2.0);
 }
 
-float dielectric(float cosThetaI, float ni, float nt)
-{
+float dielectric(float cosThetaI, float ni, float nt) {
     // Copied from PBRT. This function calculates the full Fresnel term for a dielectric material.
     // https://github.com/schuttejoe/Selas/blob/56a7fab5a479ec93d7f641bb64b8170f3b0d3095/Source/Core/Shading/Fresnel.cpp#L79
 
@@ -243,8 +242,7 @@ float dielectric(float cosThetaI, float ni, float nt)
     return (rParallel * rParallel + rPerpendicuar * rPerpendicuar) / 2;
 }
 
-vec3 disneyFresnel(const InstanceProperties props, const vec3 wo, const vec3 wm, const vec3 wi)
-{
+vec3 disneyFresnel(const InstanceProperties props, const vec3 wo, const vec3 wm, const vec3 wi) {
     float dotHV = Absf(Dot(wm, wo));
 
     vec3 tint = CalculateTint(props.baseColor);
@@ -266,7 +264,7 @@ struct DisneyBRDF {
     vec3 f;
 };
 
-vec3 evaluateDisneyBRDF(const InstanceProperties props, const vec3 wo, const vec3 wm, const vec3 wi) {
+DisneyBRDF evaluateDisneyBRDF(const InstanceProperties props, const vec3 wo, const vec3 wm, const vec3 wi) {
     float fPdf = 0.0f;
     float rPdf = 0.0f;
 
@@ -282,7 +280,7 @@ vec3 evaluateDisneyBRDF(const InstanceProperties props, const vec3 wo, const vec
     float gl = separableSmithGGXG1(wi, wm, params.ax, params.ay);
     float gv = separableSmithGGXG1(wo, wm, params.ax, params.ay);
 
-    vec3 f = disneyFresnel(surface, wo, wm, wi);
+    vec3 f = disneyFresnel(props, wo, wm, wi);
 
     ggxVndfAnisotropicPdf(wi, wm, wo, params.ax, params.ay, fPdf, rPdf);
     fPdf *= (1.0f / (4 * abs(dot(wo, wm))));
@@ -343,6 +341,33 @@ float evaluateDisneyDiffuse(const InstanceProperties props, const vec3 wo, const
 // =========================================================================
 //                                  Together
 // ========================================================================
+struct LobePDFsResult {
+    float pSpecular;
+    float pSpecTrans;
+    float pDiffuse;
+    float pClearcoat;
+};
+
+LobePDFsResult calculateLobePdfs(const InstanceProperties props) {
+    float metallicBRDF   = props.metallic;
+    float specularBSDF   = (1.0f - props.metallic) * props.specTrans;
+    float dielectricBRDF = (1.0f - props.specTrans) * (1.0f - props.metallic);
+
+    float specularWeight     = metallicBRDF + dielectricBRDF;
+    float transmissionWeight = specularBSDF;
+    float diffuseWeight      = dielectricBRDF;
+    float clearcoatWeight    = clamp(props.clearcoat, 0.0, 1.0);
+
+    float norm = 1.0f / (specularWeight + transmissionWeight + diffuseWeight + clearcoatWeight);
+
+    return LobePDFsResult(
+        norm * specularWeight,
+        norm * transmissionWeight,
+        norm * diffuseWeight,
+        norm * clearcoatWeight
+    );
+}
+
 struct DisneyEval {
     float forwardPdf;
     float reversePdf;
@@ -350,9 +375,9 @@ struct DisneyEval {
 };
 
 DisneyEval evaluateDisney(const InstanceProperties props, vec3 v, vec3 l, bool thin) {
-    vec3 wo = Normalize(MatrixMultiply(v, surface.worldToTangent));
-    vec3 wi = Normalize(MatrixMultiply(l, surface.worldToTangent));
-    vec3 wm = Normalize(wo + wi);
+    vec3 wo = normalize(MatrixMultiply(v, surface.worldToTangent));
+    vec3 wi = normalize(MatrixMultiply(l, surface.worldToTangent));
+    vec3 wm = normalize(wo + wi);
 
     float dotNV = cosTheta(wo);
     float dotNL = cosTheta(wi);
@@ -361,8 +386,7 @@ DisneyEval evaluateDisney(const InstanceProperties props, vec3 v, vec3 l, bool t
     float forwardPdf = 0.0f;
     float reversePdf = 0.0f;
 
-    float pBRDF, pDiffuse, pClearcoat, pSpecTrans;
-    calculateLobePdfs(props, pBRDF, pDiffuse, pClearcoat, pSpecTrans);
+    LobePDFsResult lobePDFs = calculateLobePdfs(props);
 
     vec3 baseColor = props.baseColor;
     float metallic = props.metallic;
@@ -383,8 +407,8 @@ DisneyEval evaluateDisney(const InstanceProperties props, vec3 v, vec3 l, bool t
 
         float clearcoat = evaluateDisneyClearcoat(props.clearcoat, props.clearcoatGloss, wo, wm, wi, forwardClearcoatPdfW, reverseClearcoatPdfW);
         reflectance += vec3(clearcoat);
-        forwardPdf += pClearcoat * forwardClearcoatPdfW;
-        reversePdf += pClearcoat * reverseClearcoatPdfW;
+        forwardPdf += lobePDFs.pClearcoat * forwardClearcoatPdfW;
+        reversePdf += lobePDFs.pClearcoat * reverseClearcoatPdfW;
     }
 
     // -- Diffuse
@@ -397,42 +421,149 @@ DisneyEval evaluateDisney(const InstanceProperties props, vec3 v, vec3 l, bool t
 
         reflectance += diffuseWeight * (diffuse * props.baseColor + sheen);
 
-        forwardPdf += pDiffuse * forwardDiffusePdfW;
-        reversePdf += pDiffuse * reverseDiffusePdfW;
+        forwardPdf += lobePDFs.pDiffuse * forwardDiffusePdfW;
+        reversePdf += lobePDFs.pDiffuse * reverseDiffusePdfW;
     }
 
-    // -- transmission
+    // -- Transmission
     if (transWeight > 0.0f) {
         // Scale roughness based on IOR (Burley 2015, Figure 15).
-        float rscaled = thin ? ThinTransmissionRoughness(surface.ior, props.roughness) : props.roughness;
-        float tax, tay;
-        calculateAnisotropicParams(rscaled, props.anisotropic, tax, tay);
+        float rscaled = thin ? thinTransmissionRoughness(surface.ior, props.roughness) : props.roughness;
+        AnisotropicParams t = calculateAnisotropicParams(rscaled, props.anisotropic);
 
-        vec3 transmission = EvaluateDisneySpecTransmission(props, wo, wm, wi, tax, tay, thin);
+        vec3 transmission = evaluateDisneySpecTransmission(props, wo, wm, wi, t.ax, t.ay, thin);
         reflectance += transWeight * transmission;
 
         float forwardTransmissivePdfW;
         float reverseTransmissivePdfW;
-        ggxVndfAnisotropicPdf(wi, wm, wo, tax, tay, forwardTransmissivePdfW, reverseTransmissivePdfW);
+        ggxVndfAnisotropicPdf(wi, wm, wo, t.ax, t.ay, forwardTransmissivePdfW, reverseTransmissivePdfW);
 
         float dotLH = dot(wm, wi);
         float dotVH = dot(wm, wo);
-        forwardPdf += pSpecTrans * forwardTransmissivePdfW / (pow(dotLH + surface.relativeIOR * dotVH, 2.0));
-        reversePdf += pSpecTrans * reverseTransmissivePdfW / (pow(dotVH + surface.relativeIOR * dotLH, 2.0));
+        forwardPdf += lobePDFs.pSpecTrans * forwardTransmissivePdfW / (pow(dotLH + props.fuzzOrRefIdx * dotVH, 2.0));
+        reversePdf += lobePDFs.pSpecTrans * reverseTransmissivePdfW / (pow(dotVH + props.fuzzOrRefIdx * dotLH, 2.0));
     }
 
     // -- specular
     if (upperHemisphere) {
-        float forwardMetallicPdfW;
-        float reverseMetallicPdfW;
-        vec3 specular = evaluateDisneyBRDF(surface, wo, wm, wi, forwardMetallicPdfW, reverseMetallicPdfW);
+        DisneyBRDF brdf = evaluateDisneyBRDF(props, wo, wm, wi);
 
-        reflectance += specular;
-        forwardPdf += pBRDF * forwardMetallicPdfW / (4 * abs(dot(wo, wm)));
-        reversePdf += pBRDF * reverseMetallicPdfW / (4 * abs(dot(wi, wm)));
+        reflectance += brdf.f;
+        forwardPdf += lobePDFs.pSpecular * brdf.fPdf / (4 * abs(dot(wo, wm)));
+        reversePdf += lobePDFs.pSpecular * brdf.rPdf / (4 * abs(dot(wi, wm)));
     }
 
     reflectance = reflectance * Absf(dotNL);
 
     return reflectance;
+}
+
+// =========================================================================
+//                               Sampling
+// =========================================================================
+
+BsdfSample SampleDisneySpecTransmission(CSampler s, const SurfaceParameters& surface, float3 v, bool thin) {
+    float3 wo = MatrixMultiply(v, surface.worldToTangent);
+    if(CosTheta(wo) == 0.0) {
+        sample.forwardPdfW = 0.0f;
+        sample.reversePdfW = 0.0f;
+        sample.reflectance = vec3(0);
+        sample.wi = vec3(0);
+        return false;
+    }
+
+    // -- Scale roughness based on IOR
+    float rscaled = thin ? ThinTransmissionRoughness(surface.ior, surface.roughness) : surface.roughness;
+
+    AnisotropicParams t = calculateAnisotropicParams(rscaled, surface.anisotropic);
+
+    // -- Sample visible distribution of normals
+    float r0 = s->UniformFloat();
+    float r1 = s->UniformFloat();
+    float3 wm = sampleGgxVndfAnisotropic(wo, tax, tay, r0, r1);
+
+    float dotVH = Dot(wo, wm);
+    if(wm.y < 0.0f) {
+        dotVH = -dotVH;
+    }
+
+    float ni = wo.y > 0.0f ? 1.0f : surface.fuzzOrRefIdx;
+    float nt = wo.y > 0.0f ? surface.fuzzOrRefIdx : 1.0f;
+    float relativeIOR = ni / nt;
+
+    // -- Disney uses the full dielectric Fresnel equation for transmission. We also importance sample F
+    // -- to switch between refraction and reflection at glancing angles.
+    float F = dielectric(dotVH, 1.0f, surface.fuzzOrRefIdx);
+
+    // -- Since we're sampling the distribution of visible normals the pdf cancels out with a number of other terms.
+    // -- We are left with the weight G2(wi, wo, wm) / G1(wi, wm) and since Disney uses a separable masking function
+    // -- we get G1(wi, wm) * G1(wo, wm) / G1(wi, wm) = G1(wo, wm) as our weight.
+    float G1v = SeparableSmithGGXG1(wo, wm, tax, tay);
+
+    float pdf;
+
+    float3 wi;
+    if (sampler->UniformFloat() <= F) {
+        wi = Normalize(Reflect(wm, wo));
+
+        sample.flags = SurfaceEventFlags::eScatterEvent;
+        sample.reflectance = G1v * surface.baseColor;
+
+        float jacobian = (4 * abs(dot(wo, wm)));
+        pdf = F / jacobian;
+    }
+    else {
+        if (thin) {
+            // -- When the surface is thin so it refracts into and then out of the surface during this shading event.
+            // -- So the ray is just reflected then flipped and we use the sqrt of the surface color.
+            wi = Reflect(wm, wo);
+            wi.y = -wi.y;
+            sample.reflectance = G1v * Sqrt(surface.baseColor);
+
+            // -- Since this is a thin surface we are not ending up inside of a volume so we treat this as a scatter event.
+            sample.flags = SurfaceEventFlags::eScatterEvent;
+        }
+        else {
+            if (Transmit(wm, wo, relativeIOR, wi)) {
+                sample.flags = SurfaceEventFlags::eTransmissionEvent;
+                sample.medium.phaseFunction = dotVH > 0.0f ? MediumPhaseFunction::eIsotropic : MediumPhaseFunction::eVacuum;
+                sample.medium.extinction = CalculateExtinction(surface.transmittanceColor, surface.scatterDistance);
+            }
+            else {
+                sample.flags = SurfaceEventFlags::eScatterEvent;
+                wi = reflect(wm, wo);
+            }
+
+            sample.reflectance = G1v * surface.baseColor;
+        }
+
+        wi = normalize(wi);
+
+        float dotLH = Absf(Dot(wi, wm));
+        float jacobian = dotLH / (Square(dotLH + surface.relativeIOR * dotVH));
+        pdf = (1.0f - F) / jacobian;
+    }
+
+    if(cosTheta(wi) == 0.0f) {
+        sample.forwardPdfW = 0.0f;
+        sample.reversePdfW = 0.0f;
+        sample.reflectance = float3::Zero_;
+        sample.wi = float3::Zero_;
+        return false;
+    }
+
+    if(surface.roughness < 0.01f) {
+        // -- This is a hack to allow us to sample the correct IBL texture when a path bounced off a smooth surface.
+        sample.flags |= SurfaceEventFlags::eDiracEvent;
+    }
+
+    // -- calculate VNDF pdf terms and apply Jacobian and Fresnel sampling adjustments
+    ggxVndfAnisotropicPdf(wi, wm, wo, tax, tay, sample.forwardPdfW, sample.reversePdfW);
+    sample.forwardPdfW *= pdf;
+    sample.reversePdfW *= pdf;
+
+    // -- convert wi back to world space
+    sample.wi = normalize(MatrixMultiply(wi, MatrixTranspose(surface.worldToTangent)));
+
+    return true;
 }
