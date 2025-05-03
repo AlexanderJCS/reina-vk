@@ -92,7 +92,17 @@ Reina::Reina(){
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/Lantern/Lantern.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/car_scene_mini/car_scene_mini.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/FlightHelmet/FlightHelmet.gltf");
-    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocados.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocados.glb");
+
+    scene = reina::scene::Scene();
+    uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
+
+    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
+    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
+    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
+    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
+
+    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
 
     rtDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
@@ -114,9 +124,9 @@ Reina::Reina(){
             }
     };
 
-    glm::vec3 pos = glm::vec3(0, 1.3f, 8.4f);
+    glm::vec3 pos = glm::vec3(0, 1.0f, 5.35f);
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
-    camera = reina::graphics::Camera{renderWindow, glm::radians(35.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
+    camera = reina::graphics::Camera{renderWindow, glm::radians(25.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
 
     originalSamplesPerPixel = config.at_path("sampling.samples_per_pixel").value<uint32_t>().value();
 
@@ -193,15 +203,6 @@ Reina::Reina(){
     fragmentShader.destroy(logicalDevice);
 
     syncObjects = vktools::createSyncObjects(logicalDevice);
-
-//    uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
-
-//    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
-//    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
-//    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
-//    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
-
-//    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
     rtPushConsts.getPushConstants().totalEmissiveWeight = scene.getEmissiveWeight();
 
     VkDeviceSize imageSize = renderWidth * renderHeight * 4;  // RGBA8
