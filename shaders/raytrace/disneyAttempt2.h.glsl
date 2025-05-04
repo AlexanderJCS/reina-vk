@@ -3,6 +3,10 @@
 
 #include "shaderCommon.h.glsl"
 
+// ============================================================================
+//                                 Diffuse
+// ============================================================================
+
 float FD90(float roughness, vec3 h, vec3 wo) {
     return 0.5 + 2 * roughness * abs(dot(h, wo)) * abs(dot(h, wo));
 }
@@ -40,9 +44,7 @@ vec3 fBaseDiffuse(vec3 baseColor, float roughness, vec3 n, vec3 wi, vec3 wo, vec
     return baseColor / k_pi * FDin * FDout * NdotL;
 }
 
-vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h, out float pdf) {
-    pdf = 0;
-
+vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h) {
     // hard-coded for now
     const float roughness = 0.5;
     const float subsurface = 0.5;
@@ -51,6 +53,17 @@ vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h, out float pdf) {
     vec3 fSubsurface = fSubsurface(baseColor, roughness, wi, wo, n, h);
 
     return mix(baseDiffuse, fSubsurface, subsurface);
+}
+
+float diffusePDF(vec3 wi, vec3 n) {
+    // Lambertian PDF
+    float cosTheta = dot(n, wi);
+
+    if (cosTheta <= 0.0) {
+        return 0.0;
+    }
+
+    return cosTheta * k_inv_pi;
 }
 
 #endif
