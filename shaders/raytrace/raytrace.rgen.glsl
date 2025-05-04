@@ -45,7 +45,7 @@ vec2 randomGaussian(inout uint rngState) {
  * returned vec4 is the PDF of choosing the output ray direction. The xyz components are already adjusted for the PDF
  * of the light source.
  */
-vec4 directLight(vec3 rayOrigin, vec3 rayIn, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
+vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
@@ -54,9 +54,7 @@ vec4 directLight(vec3 rayOrigin, vec3 rayIn, vec3 surfaceNormal, vec3 albedo, in
         return vec4(0, 0, 0, target.pdf);
     }
 
-    //vec3 baseDiffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
-    float pdfFromBrdf = 0;
-    vec3 disneyBRDF = diffuse(albedo, surfaceNormal, direction, -rayIn, normalize(rayIn + direction), pdfFromBrdf);
+    vec3 lambertBRDF = albedo / k_pi;
 
     float cosThetai = dot(surfaceNormal, direction);
     cosThetai = target.cullBackface ? max(cosThetai, 0.0) : abs(cosThetai);
@@ -65,7 +63,7 @@ vec4 directLight(vec3 rayOrigin, vec3 rayIn, vec3 surfaceNormal, vec3 albedo, in
     geometryTermNumerator = target.cullBackface ? max(geometryTermNumerator, 0.0) : abs(geometryTermNumerator);
     float geometryTerm = geometryTermNumerator / (dist * dist);
 
-    vec3 light = target.emission * disneyBRDF * cosThetai * geometryTerm / target.pdf;
+    vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / target.pdf;
 
     return vec4(light, target.pdf);
 }
