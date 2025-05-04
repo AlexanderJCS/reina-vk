@@ -8,6 +8,8 @@
 #include "nee.h.glsl"
 #include "pdf.h.glsl"
 
+#include "disneyAttempt2.h.glsl"
+
 #include "raytrace.h"
 
 // Binding BINDING_IMAGEDATA in set 0 is a storage image with four 32-bit floating-point channels,
@@ -43,7 +45,7 @@ vec2 randomGaussian(inout uint rngState) {
  * returned vec4 is the PDF of choosing the output ray direction. The xyz components are already adjusted for the PDF
  * of the light source.
  */
-vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
+vec4 directLight(vec3 rayOrigin, vec3 rayIn, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
@@ -52,7 +54,9 @@ vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rng
         return vec4(0, 0, 0, target.pdf);
     }
 
-    vec3 lambertBRDF = albedo / k_pi;
+    //vec3 baseDiffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
+    float pdfFromBrdf = 0;
+    vec3 disneyBRDF = diffuse(albedo, surfaceNormal, direction, -rayIn, normalize(rayIn + direction), pdfFromBrdf);
 
     float cosThetai = dot(surfaceNormal, direction);
     cosThetai = target.cullBackface ? max(cosThetai, 0.0) : abs(cosThetai);
@@ -61,7 +65,7 @@ vec4 directLight(vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rng
     geometryTermNumerator = target.cullBackface ? max(geometryTermNumerator, 0.0) : abs(geometryTermNumerator);
     float geometryTerm = geometryTermNumerator / (dist * dist);
 
-    vec3 light = target.emission * lambertBRDF * cosThetai * geometryTerm / target.pdf;
+    vec3 light = target.emission * disneyBRDF * cosThetai * geometryTerm / target.pdf;
 
     return vec4(light, target.pdf);
 }
@@ -87,6 +91,8 @@ vec3 traceSegments(Ray ray) {
             0                      // Location of payload
         );
 
+        vec3 rayIn = ray.direction;  // wi is the old wo
+
         ray.origin = pld.rayOrigin;
         ray.direction = pld.rayDirection;
 
@@ -106,7 +112,7 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            vec4 direct = pld.materialID == 0 ? directLight(pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
+            vec4 direct = pld.materialID == 0 ? directLight(pld.rayOrigin, rayIn, pld.surfaceNormal, pld.color, pld.rngState) : vec4(0);
 
             float pdfDirect = direct.w;
             float pdfIndirect = pdfLambertian(pld.surfaceNormal, pld.rayDirection);

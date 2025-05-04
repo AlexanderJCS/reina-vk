@@ -37,5 +37,6 @@ float random(inout uint rngState) {
 }
 
 const float k_pi = 3.14159265;
+const float k_inv_pi = 0.31830989;
 
 #endif  // #ifndef REINA_SHADER_COMMON_H
