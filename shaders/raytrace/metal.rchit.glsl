@@ -49,7 +49,7 @@ void main() {
 
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
-    pld.rayDirection = reflect(normalize(gl_WorldRayDirectionEXT), normalize(worldNormal)) + props.fuzzOrRefIdx * randomUnitVec(pld.rngState);
+    pld.rayDirection = fuzzyReflection(gl_WorldRayDirectionEXT, worldNormal, props.fuzz, pld.rngState);
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;

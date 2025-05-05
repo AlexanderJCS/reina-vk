@@ -206,6 +206,14 @@ vec3 randomUnitVec(inout uint rngState) {
     }
 }
 
+vec3 addFuzz(vec3 ray, float fuzz, inout uint rngState) {
+    return ray + fuzz * randomUnitVec(rngState);
+}
+
+vec3 fuzzyReflection(vec3 rayIn, vec3 normal, float fuzz, inout uint rngState) {
+    return reflect(normalize(rayIn), normalize(normal)) + fuzz * randomUnitVec(pld.rngState);
+}
+
 vec3 diffuseReflection(vec3 normal, inout uint rngState) {
     const float theta = 2.0 * k_pi * random(rngState);  // Random in [0, 2pi]
     const float u = 2.0 * random(rngState) - 1.0;   // Random in [-1, 1]

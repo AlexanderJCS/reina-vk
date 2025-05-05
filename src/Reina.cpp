@@ -97,10 +97,12 @@ Reina::Reina(){
     scene = reina::scene::Scene();
     uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
-    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, false, 0.0f, true};
-    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
+    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true};
+    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true};
+    reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false};
     scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
     scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
+//    scene.addObject("models/stanford_bunny.obj", glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 0, 0)), diffuseMaterial);
 
     scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
 

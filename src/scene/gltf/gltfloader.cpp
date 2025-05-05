@@ -308,7 +308,7 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
 
     for (const auto& [meshID, primitives] : meshIdToPrimitives) {
         for (const Primitive& primitive : primitives) {
-            Material material{0, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, true, 0.0f, false};
+            Material material{0, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, 0.0f, true, 0.0f, false};
 
             if (primitive.materialIdx != -1) {
                 const auto& gltfMaterial = asset.materials[primitive.materialIdx];
@@ -347,7 +347,7 @@ reina::scene::Scene reina::scene::gltf::loadScene(VkDevice logicalDevice, VkPhys
     auto gltfTexIdToSceneId = addTexturesToScene(asset, scene);
     auto gltfModelIdToMaterials = materialsFromMeshTBNs(asset, meshIdToPrimitives, gltfTexIdToSceneId);
     addInstancesToScene(asset, scene, gltfModelIdToSceneId, gltfModelIdToMaterials);
-    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, false, 0.0f, true};
+    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true};
 
     scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
     scene.build(logicalDevice, physicalDevice, cmdPool, queue);

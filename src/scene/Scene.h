@@ -27,7 +27,8 @@ namespace reina::scene {
 
         glm::vec3 albedo;
         glm::vec3 emission;
-        float fuzzOrRefIdx;
+        float fuzz;
+        float ior;
         bool interpNormals;
         float absorption;
         bool cullBackface;

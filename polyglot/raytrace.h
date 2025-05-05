@@ -21,7 +21,8 @@ struct InstanceProperties {
     vec3 emission;
     uint tbnsIndicesOffset;
     uint texIndicesOffset;
-    float fuzzOrRefIdx;
+    float fuzz;
+    float ior;
     bool interpNormals;
     float absorption;
     int textureID;

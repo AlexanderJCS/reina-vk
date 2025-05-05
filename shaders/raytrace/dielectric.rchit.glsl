@@ -41,7 +41,7 @@ void main() {
     HitInfo hitInfo = getObjectHitInfo();
     InstanceProperties props = instanceProperties[gl_InstanceCustomIndexEXT];
 
-    float ri = hitInfo.frontFace ? 1.0 / props.fuzzOrRefIdx : props.fuzzOrRefIdx;
+    float ri = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
     vec3 unitDir = normalize(gl_WorldRayDirectionEXT);
     float cosTheta = min(dot(-unitDir, hitInfo.worldNormal), 1.0);
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -74,14 +74,14 @@ void main() {
 
     if (cannotRefract || reflectivity > random(pld.rngState)) {
         // specular reflection
-        pld.rayDirection = reflect(unitDir, worldNormal);
+        pld.rayDirection = fuzzyReflection(unitDir, worldNormal, props.fuzz, pld.rngState);
         pld.color = vec3(1);
         pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     } else {
         pld.insideDielectric = hitInfo.frontFace;
 
         // refract
-        pld.rayDirection = refract(unitDir, worldNormal, ri);
+        pld.rayDirection = addFuzz(refract(unitDir, worldNormal, ri), props.fuzz, pld.rngState);
         pld.color = albedo;
         pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, unitDir);
     }
