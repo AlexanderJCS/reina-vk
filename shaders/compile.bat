@@ -4,6 +4,7 @@ glslc -O -I "../polyglot" -fshader-stage=rchit --target-env=vulkan1.3 ./raytrace
 glslc -O -I "../polyglot" -fshader-stage=rchit --target-env=vulkan1.3 ./raytrace/metal.rchit.glsl -o ./raytrace/metal.rchit.spv
 glslc -O -I "../polyglot" -fshader-stage=rchit --target-env=vulkan1.3 ./raytrace/dielectric.rchit.glsl -o ./raytrace/dielectric.rchit.spv
 glslc -O -I "../polyglot" -fshader-stage=rmiss --target-env=vulkan1.3 ./raytrace/shadow.rmiss.glsl -o ./raytrace/shadow.rmiss.spv
+glslc -O -I "../polyglot" -fshader-stage=rchit --target-env=vulkan1.3 ./raytrace/disney.rchit.glsl -o ./raytrace/disney.rchit.spv
 
 glslc -O -I "../polyglot" -fshader-stage=vert --target-env=vulkan1.3 ./raster/display.vert.glsl -o ./raster/display.vert.spv
 glslc -O -I "../polyglot" -fshader-stage=frag --target-env=vulkan1.3 ./raster/display.frag.glsl -o ./raster/display.frag.spv

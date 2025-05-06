@@ -66,4 +66,14 @@ float diffusePDF(vec3 wi, vec3 n) {
     return cosTheta * k_inv_pi;
 }
 
+vec3 sampleDiffuse(vec3 normal, inout uint rngState) {
+    // Cosine hemisphere sampling
+    const float theta = 2.0 * k_pi * random(rngState);  // Random in [0, 2pi]
+    const float u = 2.0 * random(rngState) - 1.0;   // Random in [-1, 1]
+    const float r = sqrt(1.0 - u * u);
+    const vec3 direction = normal + vec3(r * cos(theta), r * sin(theta), u);
+
+    return normalize(direction);
+}
+
 #endif

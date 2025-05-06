@@ -97,7 +97,7 @@ Reina::Reina(){
     scene = reina::scene::Scene();
     uint32_t texID = scene.defineTexture("textures/2k_earth_daymap.png");
 
-    reina::scene::Material diffuseMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true};
+    reina::scene::Material diffuseMaterial{3, -1, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true};
     reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true};
     reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false};
     scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), diffuseMaterial);
@@ -153,7 +153,8 @@ Reina::Reina(){
             reina::graphics::Shader(logicalDevice, "shaders/raytrace/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR),
             reina::graphics::Shader(logicalDevice, "shaders/raytrace/lambertian.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
             reina::graphics::Shader(logicalDevice, "shaders/raytrace/metal.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
-            reina::graphics::Shader(logicalDevice, "shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/dielectric.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR),
+            reina::graphics::Shader(logicalDevice, "shaders/raytrace/disney.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
     };
 
     rtPipeline = vktools::createRtPipeline(logicalDevice, rtDescriptorSet, shaders, rtPushConsts);
