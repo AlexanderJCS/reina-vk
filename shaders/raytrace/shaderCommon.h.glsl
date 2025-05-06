@@ -23,6 +23,7 @@ struct HitPayload {
     vec3 surfaceNormal; // The normal of the surface hit by the ray.
     uint materialID;    // 0 for lambertian, 1 for metal, 2 for dielectric
     bool skip;          // If true, the raygen shader knows to skip this ray
+    float pdf;          // Probability density function for the ray direction
     float accumulatedDistance;  // Used for Beer's law. The distance the ray has traveled inside any media.
     bool insideDielectric;  // Apply color for this iteration
 };

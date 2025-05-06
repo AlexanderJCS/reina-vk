@@ -4,6 +4,7 @@
 
 #include "closestHitCommon.h.glsl"
 #include "nee.h.glsl"
+#include "disneyAttempt2.h.glsl"
 #include "texutils.h.glsl"
 
 void main() {
@@ -53,14 +54,21 @@ void main() {
     }
     #endif
 
+    vec3 rayDir = vec3(0);
+    float pdf = 0.0;
+    // Diffuse
+    rayDir = sampleDiffuse(worldNormal, pld.rngState);
+    pdf = pdfDiffuse(worldNormal, rayDir);
+
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
-    pld.rayDirection = diffuseReflection(worldNormal, pld.rngState);
+    pld.rayDirection = rayDir;
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;
-    pld.materialID = 0;
+    pld.materialID = 3;
     pld.surfaceNormal = worldNormal;
+
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

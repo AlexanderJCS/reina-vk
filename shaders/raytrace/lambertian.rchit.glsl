@@ -5,6 +5,8 @@
 #include "closestHitCommon.h.glsl"
 #include "nee.h.glsl"
 #include "texutils.h.glsl"
+#include "pdf.h.glsl"
+
 
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
@@ -61,6 +63,7 @@ void main() {
     pld.insideDielectric = false;
     pld.materialID = 0;
     pld.surfaceNormal = worldNormal;
+    pld.pdf = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

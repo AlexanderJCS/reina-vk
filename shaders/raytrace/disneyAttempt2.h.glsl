@@ -55,7 +55,7 @@ vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h) {
     return mix(baseDiffuse, fSubsurface, subsurface);
 }
 
-float diffusePDF(vec3 wi, vec3 n) {
+float pdfDiffuse(vec3 wi, vec3 n) {
     // Lambertian PDF
     float cosTheta = dot(n, wi);
 

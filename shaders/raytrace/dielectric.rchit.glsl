@@ -104,4 +104,5 @@ void main() {
     pld.skip = false;
     pld.materialID = 2;
     pld.surfaceNormal = worldNormal;
+    pld.pdf = 0.0;  // Not used in this shader
 }
