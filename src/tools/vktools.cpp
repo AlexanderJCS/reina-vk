@@ -1081,29 +1081,23 @@ VkInstance vktools::createInstance() {
         .ppEnabledExtensionNames = extensions.data()
     };
 
-    // Structures to add into the pNext chain when validation layers are enabled.
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-//    VkValidationFeaturesEXT validationFeatures{};
+    VkValidationFeaturesEXT validationFeatures{};
     if (consts::ENABLE_VALIDATION_LAYERS) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(consts::VALIDATION_LAYERS.size());
         createInfo.ppEnabledLayerNames = consts::VALIDATION_LAYERS.data();
 
-        // Set up debug messenger create info.
         populateDebugMessengerCreateInfo(debugCreateInfo);
 
-        // Set up validation features.
-//        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
-//                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
-//        };
-//        validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-//        validationFeatures.enabledValidationFeatureCount = enabledFeatures.size();
-//        validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
+        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
+                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+        };
+        validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+        validationFeatures.enabledValidationFeatureCount = enabledFeatures.size();
+        validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
 
-        // Chain the structures.
-        // Here we attach validationFeatures after the debug messenger.
-//        validationFeatures.pNext = debugCreateInfo.pNext;  // in case debugCreateInfo already chains something
-//        debugCreateInfo.pNext = &validationFeatures;
-        // Now attach the debug messenger chain to the instance create info.
+        validationFeatures.pNext = debugCreateInfo.pNext;  // in case debugCreateInfo already chains something
+        debugCreateInfo.pNext = &validationFeatures;
         createInfo.pNext = &debugCreateInfo;
     }
 

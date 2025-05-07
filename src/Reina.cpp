@@ -352,15 +352,20 @@ void Reina::renderLoop() {
             draw(imageIndex);
         }
 
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
+        VkPipelineStageFlags waitStages[] = {
+//                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT
+        };
 
         VkSubmitInfo submitInfo{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .waitSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
-                .pWaitSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.imageAvailableSemaphore,
-                .pWaitDstStageMask = waitStages,
-                .signalSemaphoreCount = static_cast<uint32_t>(renderWindow.isMinimized() ? 0 : 1),
-                .pSignalSemaphores = renderWindow.isMinimized() ? VK_NULL_HANDLE : &syncObjects.renderFinishedSemaphore
+                .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .waitSemaphoreCount   = renderWindow.isMinimized() ? 0u : 1u,
+                .pWaitSemaphores      = renderWindow.isMinimized() ? nullptr : &syncObjects.imageAvailableSemaphore,
+                .pWaitDstStageMask    = waitStages,
+                .commandBufferCount   = 1,
+                .pCommandBuffers      = &cmdBufferHandle,
+                .signalSemaphoreCount = renderWindow.isMinimized() ? 0u : 1u,
+                .pSignalSemaphores    = renderWindow.isMinimized() ? nullptr : &syncObjects.renderFinishedSemaphore
         };
 
         cmdBuffer.endSubmit(logicalDevice, graphicsQueue, submitInfo);
@@ -473,6 +478,16 @@ void Reina::applyBloom() {
             1
     );
 
+    vkCmdPipelineBarrier(
+            cmdBuffer.getHandle(),
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            0, nullptr
+    );
+
     pingImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     pongImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
@@ -485,6 +500,16 @@ void Reina::applyBloom() {
             (renderWidth + workgroupWidth - 1) / workgroupWidth,
             (renderHeight + workgroupHeight - 1) / workgroupHeight,
             1
+    );
+
+    vkCmdPipelineBarrier(
+            cmdBuffer.getHandle(),
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            0, nullptr
     );
 
     pongImage.transition(cmdBuffer.getHandle(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
@@ -530,6 +555,16 @@ void Reina::applyTonemapping() {
             (renderHeight + workgroupHeight - 1) / workgroupHeight,
             1
     );
+
+    vkCmdPipelineBarrier(
+            cmdBuffer.getHandle(),
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            0, nullptr
+            );
 }
 
 void Reina::draw(uint32_t& imageIndex) {

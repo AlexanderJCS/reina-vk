@@ -79,6 +79,8 @@ void reina::core::CmdBuffer::destroy(VkDevice logicalDevice) {
 }
 
 void reina::core::CmdBuffer::begin() {
+    vkResetCommandBuffer(cmdBuffer, 0);  // reset before beginning
+
     VkCommandBufferBeginInfo beginInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .flags = oneTime ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : static_cast<VkCommandBufferUsageFlags>(0)
