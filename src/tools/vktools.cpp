@@ -1082,22 +1082,22 @@ VkInstance vktools::createInstance() {
     };
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    VkValidationFeaturesEXT validationFeatures{};
+//    VkValidationFeaturesEXT validationFeatures{};
     if (consts::ENABLE_VALIDATION_LAYERS) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(consts::VALIDATION_LAYERS.size());
         createInfo.ppEnabledLayerNames = consts::VALIDATION_LAYERS.data();
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
 
-        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
-                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
-        };
-        validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-        validationFeatures.enabledValidationFeatureCount = enabledFeatures.size();
-        validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
+//        std::array<VkValidationFeatureEnableEXT, 1> enabledFeatures = {
+//                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+//        };
+//        validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+//        validationFeatures.enabledValidationFeatureCount = enabledFeatures.size();
+//        validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
 
-        validationFeatures.pNext = debugCreateInfo.pNext;  // in case debugCreateInfo already chains something
-        debugCreateInfo.pNext = &validationFeatures;
+//        validationFeatures.pNext = debugCreateInfo.pNext;  // in case debugCreateInfo already chains something
+//        debugCreateInfo.pNext = &validationFeatures;
         createInfo.pNext = &debugCreateInfo;
     }
 
