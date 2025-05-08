@@ -45,7 +45,7 @@ vec2 randomGaussian(inout uint rngState) {
  * returned vec4 is the PDF of choosing the output ray direction. The xyz components are already adjusted for the PDF
  * of the light source.
  */
-vec4 directLight(uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
+vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
@@ -60,7 +60,14 @@ vec4 directLight(uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal
     } else if (materialID == 3) {
         // vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
         vec3 h = normalize(direction + target.normal);
-        brdf = diffuse(albedo, surfaceNormal, direction, -rayIn, h);
+        // hard-coded for now
+        const float roughness = 0.2;
+        const float subsurface = 0.5;
+
+        const float anisotropic = 0.0;
+
+//        brdf = diffuse(roughness, subsurface, albedo, surfaceNormal, direction, -rayIn, h);
+        brdf = metal(tbn, albedo, anisotropic, roughness, surfaceNormal, direction, -rayIn, h);
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -121,7 +128,7 @@ vec3 traceSegments(Ray ray) {
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipPdfRay
-                ? directLight(pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState)
+                ? directLight(pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState)
                 : vec4(0.0, 0.0, 0.0, 0.0);
 
             float pdfDirect = direct.w;

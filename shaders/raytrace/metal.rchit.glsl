@@ -56,6 +56,7 @@ void main() {
     pld.materialID = 1;
     pld.surfaceNormal = worldNormal;
     pld.pdf = 0.0;  // Not used in this shader
+    pld.tbn = hitInfo.tbn;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

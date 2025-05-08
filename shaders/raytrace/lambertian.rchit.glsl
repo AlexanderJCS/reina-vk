@@ -64,6 +64,7 @@ void main() {
     pld.materialID = 0;
     pld.surfaceNormal = worldNormal;
     pld.pdf = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
+    pld.tbn = hitInfo.tbn;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

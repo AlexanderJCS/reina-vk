@@ -26,6 +26,7 @@ struct HitPayload {
     float pdf;          // Probability density function for the ray direction
     float accumulatedDistance;  // Used for Beer's law. The distance the ray has traveled inside any media.
     bool insideDielectric;  // Apply color for this iteration
+    mat3 tbn;           // World to tangent space matrix
 };
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.

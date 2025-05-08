@@ -56,9 +56,18 @@ void main() {
 
     vec3 rayDir = vec3(0);
     float pdf = 0.0;
+
+    const float roughness = 0.2;
+    const float subsurface = 0.5;
+    const float anisotropic = 0.0;
+
     // Diffuse
-    rayDir = sampleDiffuse(worldNormal, pld.rngState);
-    pdf = pdfDiffuse(worldNormal, rayDir);
+//    rayDir = sampleDiffuse(worldNormal, pld.rngState);
+//    pdf = pdfDiffuse(worldNormal, rayDir);
+
+    // vec3 sampleMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, inout uint rngState) {
+    rayDir = sampleMetal(hitInfo.tbn, props.albedo, anisotropic, roughness, worldNormal, gl_WorldRayDirectionEXT, pld.rngState);
+    pdf = pdfMetal(hitInfo.tbn, props.albedo, anisotropic, roughness, worldNormal, rayDir);
 
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
@@ -68,7 +77,7 @@ void main() {
     pld.insideDielectric = false;
     pld.materialID = 3;
     pld.surfaceNormal = worldNormal;
-
+    pld.tbn = hitInfo.tbn;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
