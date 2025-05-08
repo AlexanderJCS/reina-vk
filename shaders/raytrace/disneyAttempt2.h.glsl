@@ -76,4 +76,55 @@ vec3 sampleDiffuse(vec3 normal, inout uint rngState) {
     return normalize(direction);
 }
 
+// ============================================================================
+//                                    Metal
+// ============================================================================
+
+vec3 evalFm(vec3 baseColor, vec3 h, vec3 wo) {
+    return baseColor + (1 - baseColor) * pow(1 - abs(dot(h, wo)), 5);
+}
+
+vec3 evalDm(vec3 hl, float alphax, float alphay, float roughness, float aspect, float anisotropic) {
+    float constant = (k_pi * alphax * alphay);
+    float otherTerm = pow(1 + (pow(hl.x, 2) / pow(alphax, 2) + pow(hl.y, 2) / pow(alphay, 2)), 2);
+
+    return 1 / (constant * otherTerm);
+}
+
+float lambda(vec3 wl, float alphax, float alphay) {
+    float sqrtTerm = sqrt(1 + (pow(wl.x * alphax, 2) + pow(wl.y * alphay, 2)) / pow(wl.z, 2) - 1);
+    return (sqrtTerm - 1) / 2;
+}
+
+float smithG(vec3 wl, float alphax, float alphay) {
+    // wl is in tangent space
+    return 1 / (1 + lambda(wl, alphax, alphay));
+}
+
+vec3 evalGm(vec3 wi, vec3 wo, float alphax, float alphay) {
+    float g1 = smithG(wi, alphax, alphay);
+    float g2 = smithG(wo, alphax, alphay);
+    return g1 * g2;
+}
+
+vec3 fMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h) {
+    const float alphamin = 0.0001;
+
+    float aspect = sqrt(1 - 0.9 * anisotropic);
+    float alphax = max(alphamin, roughness * roughness / aspect);
+    float alphay = max(alphamin, roughness * roughness * aspect);
+
+    vec3 fm = evalFm(baseColor, h, wo);
+    vec3 dm = evalDm(h, alphax, alphay, roughness, aspect, anisotropic);
+
+    // TODO: confirm that this is correct (i.e., I don't need to multiply by the transpose of the TBN)
+    vec3 wiTangent = vec3(tbn * wi);
+    vec3 woTangent = vec3(tbn * wo);
+
+    vec3 gm = evalGm(wiTangent, woTangent, alphax, alphay);
+
+    float NdotWi = abs(dot(n, wi));
+    return fm * dm * gm / (4 * NdotWi);
+}
+
 #endif
