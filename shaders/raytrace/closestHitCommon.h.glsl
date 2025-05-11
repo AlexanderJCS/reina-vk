@@ -119,32 +119,30 @@ HitInfo getObjectHitInfo() {
 
     // TBN stuff
     result.tbn = mat3(1.0);
-    if (props.normalMapTexID != -1) {  // Only calculate TBN matrices if needed
-        const uint tbnsIndexOffset = props.tbnsIndicesOffset;
-        mat3 vertex1 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
-        mat3 vertex2 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
-        mat3 vertex3 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2]];
+    const uint tbnsIndexOffset = props.tbnsIndicesOffset;
+    mat3 vertex1 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 0]];
+    mat3 vertex2 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1]];
+    mat3 vertex3 = tbns[tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2]];
 
-        vec3 tangent = normalize(vertex1[0] * barycentrics.x + vertex2[0] * barycentrics.y + vertex3[0] * barycentrics.z);
-        vec3 bitangent = normalize(vertex1[1] * barycentrics.x + vertex2[1] * barycentrics.y + vertex3[1] * barycentrics.z);
-        vec3 normal = normalize(vertex1[2] * barycentrics.x + vertex2[2] * barycentrics.y + vertex3[2] * barycentrics.z);
+    vec3 tangent = normalize(vertex1[0] * barycentrics.x + vertex2[0] * barycentrics.y + vertex3[0] * barycentrics.z);
+    vec3 bitangent = normalize(vertex1[1] * barycentrics.x + vertex2[1] * barycentrics.y + vertex3[1] * barycentrics.z);
+    vec3 normal = normalize(vertex1[2] * barycentrics.x + vertex2[2] * barycentrics.y + vertex3[2] * barycentrics.z);
 
-        mat3 M = mat3(gl_ObjectToWorldEXT);
-        mat3 N = transpose(inverse(M));
+    mat3 M = mat3(gl_ObjectToWorldEXT);
+    mat3 N = transpose(inverse(M));
 
-        vec3 worldT = normalize(M * tangent);
-        vec3 worldB = normalize(M * bitangent);
-        vec3 worldN = normalize(N * normal);
+    vec3 worldT = normalize(M * tangent);
+    vec3 worldB = normalize(M * bitangent);
+    vec3 worldN = normalize(N * normal);
 
-        // Re-orthagonalization
-        worldT = normalize(worldT - worldN * dot(worldN, worldT));
-        worldB = normalize(worldB - worldN * dot(worldN, worldB));
+    // Re-orthagonalization
+    worldT = normalize(worldT - worldN * dot(worldN, worldT));
+    worldB = normalize(worldB - worldN * dot(worldN, worldB));
 
-        worldB *= -1.0;
-        worldN *= result.frontFace ? 1.0 : -1.0;
+    worldB *= -1.0;
+    worldN *= result.frontFace ? 1.0 : -1.0;
 
-        result.tbn = mat3(worldT, worldB, worldN);
-    }
+    result.tbn = mat3(worldT, worldB, worldN);
 
     return result;
 }

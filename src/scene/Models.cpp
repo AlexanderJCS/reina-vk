@@ -8,6 +8,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <iostream>
 
 reina::scene::Models::Models(const std::vector<std::string>& modelFilepaths) {
     // Copy the data to allVertices and allIndicesOffset
