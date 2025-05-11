@@ -43,6 +43,11 @@ float D(vec3 m, vec2 alpha) {
 }
 
 float pdfGGXReflection(vec3 i, vec3 o, vec2 alpha) {
+    // TODO: chatgpt said there's something wrong with this:
+    //  Your pdfGGXReflection attempts a more complex “anisotropic” form but is not algebraically equivalent to the
+    //  standard Jacobian‐corrected VNDF PDF above. In particular, it omits the G1(v)G1(v) term in the numerator and the
+    //  factor of 4(v⋅m)4(v⋅m) in the denominator, instead folding them into an alternate empirical expression.
+
     // https://dl.acm.org/doi/10.1145/3610543.3626163
 
     vec3 m = normalize(i + o);
@@ -142,7 +147,7 @@ vec3 evalFm(vec3 baseColor, vec3 h, vec3 wo) {
 
 float evalDm(vec3 hl, float alphax, float alphay, float roughness, float aspect, float anisotropic) {
     float constant = (k_pi * alphax * alphay);
-    float otherTerm = pow(1 + (pow(hl.x, 2) / pow(alphax, 2) + pow(hl.y, 2) / pow(alphay, 2)), 2);
+    float otherTerm = pow(1 + (pow(hl.x, 2) / pow(alphax, 2) + pow(hl.y, 2) / pow(alphay, 2)) + pow(hl.z, 2), 2);
 
     return 1 / (constant * otherTerm);
 }
