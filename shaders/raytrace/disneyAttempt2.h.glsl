@@ -147,13 +147,13 @@ vec3 evalFm(vec3 baseColor, vec3 h, vec3 wo) {
 
 float evalDm(vec3 hl, float alphax, float alphay, float roughness, float aspect, float anisotropic) {
     float constant = (k_pi * alphax * alphay);
-    float otherTerm = pow(1 + (pow(hl.x, 2) / pow(alphax, 2) + pow(hl.y, 2) / pow(alphay, 2)) + pow(hl.z, 2), 2);
+    float otherTerm = pow(pow(hl.x, 2) / pow(alphax, 2) + pow(hl.y, 2) / pow(alphay, 2) + pow(hl.z, 2), 2);
 
     return 1 / (constant * otherTerm);
 }
 
 float lambda(vec3 wl, float alphax, float alphay) {
-    float sqrtTerm = sqrt(1 + (pow(wl.x * alphax, 2) + pow(wl.y * alphay, 2)) / pow(wl.z, 2) - 1);
+    float sqrtTerm = sqrt(1 + (pow(wl.x * alphax, 2) + pow(wl.y * alphay, 2)) / pow(wl.z, 2));
     return (sqrtTerm - 1) / 2;
 }
 
@@ -176,11 +176,12 @@ vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n,
     float alphay = max(alphamin, roughness * roughness * aspect);
 
     vec3 fm = evalFm(baseColor, h, wo);
-    float dm = evalDm(h, alphax, alphay, roughness, aspect, anisotropic);
 
     vec3 wiTangent = vec3(transpose(tbn) * wi);
     vec3 woTangent = vec3(transpose(tbn) * wo);
+    vec3 hTangent = vec3(transpose(tbn) * h);
 
+    float dm = evalDm(hTangent, alphax, alphay, roughness, aspect, anisotropic);
     float gm = evalGm(wiTangent, woTangent, alphax, alphay);
 
     float NdotWi = abs(dot(n, wi));
