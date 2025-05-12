@@ -65,8 +65,8 @@ void main() {
 //    rayDir = sampleDiffuse(worldNormal, pld.rngState);
 //    pdf = pdfDiffuse(worldNormal, rayDir);
 
-    rayDir = sampleMetal(hitInfo.tbn, props.albedo, anisotropic, roughness, worldNormal, gl_WorldRayDirectionEXT, pld.rngState);
-    pdf = pdfMetal(hitInfo.tbn, gl_WorldRayDirectionEXT, rayDir, anisotropic, roughness);
+    rayDir = sampleMetal(hitInfo.tbn, props.albedo, anisotropic, roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
+    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, anisotropic, roughness);
 
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
