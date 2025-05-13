@@ -50,8 +50,10 @@ vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 sur
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
 
+    float pdf = target.pdf * dist * dist / max(dot(target.normal, -direction), 0.0001);
+
     if (shadowRayOccluded(rayOrigin, direction, dist)) {
-        return vec4(0, 0, 0, target.pdf);
+        return vec4(0, 0, 0, pdf);
     }
 
     vec3 brdf;
@@ -78,7 +80,7 @@ vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 sur
 
     vec3 light = target.emission * brdf * cosThetai * geometryTerm / target.pdf;
 
-    return vec4(light, target.pdf);
+    return vec4(light, pdf);
 }
 
 vec3 traceSegments(Ray ray) {

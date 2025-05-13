@@ -43,11 +43,6 @@ float D(vec3 m, vec2 alpha) {
 }
 
 float pdfGGXReflection(vec3 i, vec3 o, vec2 alpha) {
-    // TODO: chatgpt said there's something wrong with this:
-    //  Your pdfGGXReflection attempts a more complex “anisotropic” form but is not algebraically equivalent to the
-    //  standard Jacobian‐corrected VNDF PDF above. In particular, it omits the G1(v)G1(v) term in the numerator and the
-    //  factor of 4(v⋅m)4(v⋅m) in the denominator, instead folding them into an alternate empirical expression.
-
     // https://dl.acm.org/doi/10.1145/3610543.3626163
 
     vec3 m = normalize(i + o);
@@ -64,7 +59,7 @@ float pdfGGXReflection(vec3 i, vec3 o, vec2 alpha) {
     }
 
     // Numerically stable form of the previous PDF for i.z < 0
-    return ndf * (t - i.z) / (2.0 * len2 ); // = Eq . 7 * || dm / do ||
+    return ndf * (t - i.z) / (2.0 * len2); // = Eq . 7 * || dm / do ||
 }
 
 
