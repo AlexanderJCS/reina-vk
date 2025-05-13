@@ -57,7 +57,7 @@ void main() {
     vec3 rayDir = vec3(0);
     float pdf = 0.0;
 
-    const float roughness = 0.3;
+    const float roughness = 0.0;
     const float subsurface = 0.5;
     const float anisotropic = 0.0;
 

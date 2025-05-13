@@ -61,7 +61,7 @@ vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 sur
         // vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
         vec3 h = normalize(direction + target.normal);
         // hard-coded for now
-        const float roughness = 0.3;
+        const float roughness = 0.0;
         const float subsurface = 0.5;
         const float anisotropic = 0.0;
 
@@ -149,11 +149,6 @@ vec3 traceSegments(Ray ray) {
                     weightIndirect = 1 - weightDirect;
                 }
             }
-
-//            if (pld.materialID == 3) {
-//                weightDirect = 0;
-//                weightIndirect = 1;
-//            }
 
             prevSkip = skipPdfRay;
             vec3 combinedContribution = direct.rgb * weightDirect + indirect * weightIndirect;

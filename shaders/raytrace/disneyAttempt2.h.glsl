@@ -171,7 +171,7 @@ float evalGm(vec3 wi, vec3 wo, float alphax, float alphay) {
 vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h) {
     const float alphamin = 0.0001;
 
-    float aspect = sqrt(1 - 0.9 * anisotropic);
+    float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float alphax = max(alphamin, roughness * roughness / aspect);
     float alphay = max(alphamin, roughness * roughness * aspect);
 
@@ -185,7 +185,9 @@ vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n,
     float gm = evalGm(wiTangent, woTangent, alphax, alphay);
 
     float NdotWi = abs(dot(n, wi));
-    return fm * dm * gm / (4 * NdotWi);
+    float NdotWo = abs(dot(n, wo));
+
+    return fm * dm * gm / (4.0 * NdotWi * NdotWo);
 }
 
 vec3 sampleMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, inout uint rngState) {
