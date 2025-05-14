@@ -68,6 +68,7 @@ void main() {
     rayDir = sampleMetal(hitInfo.tbn, props.albedo, anisotropic, roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
     pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, anisotropic, roughness);
 
+    pld.pdf = pdf;
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     pld.rayDirection = rayDir;
