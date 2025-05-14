@@ -63,7 +63,7 @@ vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 sur
         // vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
         vec3 h = normalize(direction + target.normal);
         // hard-coded for now
-        const float roughness = 0.0;
+        const float roughness = 0.1;
         const float subsurface = 0.5;
         const float anisotropic = 0.0;
 
@@ -89,6 +89,8 @@ vec3 traceSegments(Ray ray) {
 
     bool firstBounce = true;
     bool prevSkip = false;
+    float prevBRDF_PDF = 0.0;
+
     for (int tracedSegments = 0; tracedSegments < pushConstants.maxBounces; tracedSegments++) {
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
@@ -148,7 +150,7 @@ vec3 traceSegments(Ray ray) {
                     weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
                 } else {
                     weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
-                    weightIndirect = 1 - weightDirect;
+                    weightIndirect = balanceHeuristic(prevBRDF_PDF, pdfDirect);
                 }
             }
 
@@ -157,6 +159,8 @@ vec3 traceSegments(Ray ray) {
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;
+
+            prevBRDF_PDF = pdfIndirect;
         }
 
         firstBounce = false;
