@@ -182,6 +182,7 @@ vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n,
     float NdotWi = abs(dot(n, wi));
     float NdotWo = abs(dot(n, wo));
 
+    // TODO: check if I should be multiplying by NdotWo
     return fm * dm * gm / (4.0 * NdotWi * NdotWo);
 }
 
@@ -229,6 +230,55 @@ float pdfMetal(
     vec2 alpha = vec2(alphax, alphay);
 
     return pdfGGXReflection(wiTangent, woTangent, alpha);
+}
+
+// ============================================================================
+//                                 Clearcoat
+// ============================================================================
+
+float lambdac(vec3 wl) {
+    float sqrtTerm = sqrt(1 + (pow(wl.x * 0.25, 2) + pow(wl.y * 0.25, 2) / pow(wl.z, 2)));
+
+    return (sqrtTerm - 1) / 2;
+}
+
+float evalGc(vec3 wiTangent, vec3 woTangent) {
+    float gcwo = 1 / (1 + lambdac(woTangent));
+    float gcwi = 1 / (1 + lambdac(wiTangent));
+
+    return gcwo * gcwi;
+}
+
+float evalDc(float alphag, vec3 hl) {
+    float numerator = alphag * alphag - 1;
+    float denominator = k_pi * log(alphag * alphag) * (1 + (alphag * alphag - 1) * (hl.z * hl.z));
+
+    return numerator / denominator;
+}
+
+float evalR0(float ior) {
+    return (ior - 1) * (ior - 1) / ((ior + 1) * (ior + 1));
+}
+
+float evalFc(vec3 h, vec3 wo) {
+    float r0ior = evalR0(1.5);
+
+    return r0ior + (1 - r0ior) * pow(1 - abs(dot(h, wo)), 5);
+}
+
+vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h, vec3 n) {
+    float alphag = (1 - clearcoatGloss) * 0.1 + clearcoatGloss * 0.001;
+
+    vec3 hTangent = vec3(transpose(tbn) * h);
+    vec3 wiTangent = vec3(transpose(tbn) * wi);
+    vec3 woTangent = vec3(transpose(tbn) * wo);
+
+    float fc = evalFc(h, wo);
+    float gc = evalGc(wiTangent, woTangent);
+    float dc = evalDc(alphag, hTangent);
+
+    // TODO: check if I should be multiplying by NdotWo
+    return vec3(fc * gc * dc / (4.0 * abs(dot(n, wi))));
 }
 
 #endif
