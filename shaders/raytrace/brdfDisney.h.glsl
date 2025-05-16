@@ -62,6 +62,24 @@ float pdfGGXReflection(vec3 i, vec3 o, vec2 alpha) {
     return ndf * (t - i.z) / (2.0 * len2); // = Eq . 7 * || dm / do ||
 }
 
+// ============================================================================
+//                                     GTR
+// ============================================================================
+vec3 sampleGTR1(float roughness, inout uint rngState) {
+    // https://github.com/knightcrawler25/GLSL-PathTracer/blob/291c1fdc3f97b2a2602c946b41cecca9c3092af7/src/shaders/common/sampling.glsl#L34
+
+    float a = max(0.001, roughness);
+    float a2 = a * a;
+
+    float phi = random(rngState) * 2 * k_pi;
+
+    float cosTheta = sqrt((1.0 - pow(a2, 1.0 - random(rngState))) / (1.0 - a2));
+    float sinTheta = clamp(sqrt(1.0 - (cosTheta * cosTheta)), 0.0, 1.0);
+    float sinPhi = sin(phi);
+    float cosPhi = cos(phi);
+
+    return vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+}
 
 // ============================================================================
 //                                 Diffuse
@@ -204,29 +222,19 @@ vec3 sampleMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, v
     return wo;
 }
 
-float pdfMetal(
-    mat3 tbn,           // columns = T, B, N
-    vec3 wi_world,      // incoming dir (pointing toward surface), |wi_world|=1
-    vec3 wo_world,      // outgoing/reflected dir, |wo_world|=1
-    float anisotropic,  // Disney anisotropy [0,1]
-    float roughness     // Disney roughness [0,1]
-) {
-    // 1) build anisotropic alpha’s (same as in your sampler)
+float pdfMetal(mat3 tbn, vec3 wi_world, vec3 wo_world, float anisotropic, float roughness) {
     const float alpha_min = 1e-4;
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float alphax = max(alpha_min, roughness*roughness / aspect);
     float alphay = max(alpha_min, roughness*roughness * aspect);
-    
-    // 2) transform both wi, wo into tangent‐space
+
     vec3 wiTangent = vec3(transpose(tbn) * wi_world);
     vec3 woTangent = vec3(transpose(tbn) * wo_world);
-    
-    // 3) if either is below the hemisphere, PDF = 0
+
     if (wiTangent.z <= 0.0 || woTangent.z <= 0.0) {
         return 0.0;
     }
 
-    // 4) pack alpha as vec2 for anisotropic D
     vec2 alpha = vec2(alphax, alphay);
 
     return pdfGGXReflection(wiTangent, woTangent, alpha);
