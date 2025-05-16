@@ -74,14 +74,14 @@ void main() {
 
     if (cannotRefract || reflectivity > random(pld.rngState)) {
         // specular reflection
-        pld.rayDirection = fuzzyReflection(unitDir, worldNormal, props.fuzz, pld.rngState);
+        pld.rayDirection = fuzzyReflection(unitDir, worldNormal, props.roughness, pld.rngState);
         pld.color = vec3(1);
         pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     } else {
         pld.insideDielectric = hitInfo.frontFace;
 
         // refract
-        pld.rayDirection = addFuzz(refract(unitDir, worldNormal, ri), props.fuzz, pld.rngState);
+        pld.rayDirection = addFuzz(refract(unitDir, worldNormal, ri), props.roughness, pld.rngState);
         pld.color = albedo;
         pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, unitDir);
     }
@@ -106,4 +106,5 @@ void main() {
     pld.surfaceNormal = worldNormal;
     pld.pdf = 0.0;  // Not used in this shader
     pld.tbn = hitInfo.tbn;
+    pld.props = props;
 }

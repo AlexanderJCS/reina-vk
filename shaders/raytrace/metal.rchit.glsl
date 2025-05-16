@@ -49,7 +49,7 @@ void main() {
 
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
-    pld.rayDirection = fuzzyReflection(gl_WorldRayDirectionEXT, worldNormal, props.fuzz, pld.rngState);
+    pld.rayDirection = fuzzyReflection(gl_WorldRayDirectionEXT, worldNormal, props.roughness, pld.rngState);
     pld.rayHitSky = false;
     pld.skip = false;
     pld.insideDielectric = false;
@@ -57,6 +57,7 @@ void main() {
     pld.surfaceNormal = worldNormal;
     pld.pdf = 0.0;  // Not used in this shader
     pld.tbn = hitInfo.tbn;
+    pld.props = props;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

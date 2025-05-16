@@ -21,7 +21,7 @@ struct InstanceProperties {
     vec3 emission;
     uint tbnsIndicesOffset;
     uint texIndicesOffset;
-    float fuzz;
+    float roughness;
     float ior;
     bool interpNormals;
     float absorption;
@@ -29,6 +29,9 @@ struct InstanceProperties {
     int normalMapTexID;
     int bumpMapTexID;
     uint cullBackface;
+    float anisotropic;
+    float subsurface;
+    float clearcoatGloss;
 };
 
 struct RtPushConsts {

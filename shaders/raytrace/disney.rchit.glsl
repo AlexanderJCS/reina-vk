@@ -4,7 +4,7 @@
 
 #include "closestHitCommon.h.glsl"
 #include "nee.h.glsl"
-#include "disneyAttempt2.h.glsl"
+#include "brdfDisney.h.glsl"
 #include "texutils.h.glsl"
 
 void main() {
@@ -57,16 +57,12 @@ void main() {
     vec3 rayDir = vec3(0);
     float pdf = 0.0;
 
-    const float roughness = 0.1;
-    const float subsurface = 0.5;
-    const float anisotropic = 0.0;
-
     // Diffuse
 //    rayDir = sampleDiffuse(worldNormal, pld.rngState);
 //    pdf = pdfDiffuse(worldNormal, rayDir);
 
-    rayDir = sampleMetal(hitInfo.tbn, props.albedo, anisotropic, roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
-    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, anisotropic, roughness);
+    rayDir = sampleMetal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
+    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
 
     pld.pdf = pdf;
     pld.emission = props.emission;
@@ -78,6 +74,7 @@ void main() {
     pld.materialID = 3;
     pld.surfaceNormal = worldNormal;
     pld.tbn = hitInfo.tbn;
+    pld.props = props;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

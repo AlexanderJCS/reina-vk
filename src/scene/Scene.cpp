@@ -31,14 +31,17 @@ void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, co
             mat.emission,
             models.getModelRange(objectID).tbnsIndexOffset,
             models.getModelRange(objectID).texIndexOffset,
-            mat.fuzz,
+            mat.roughness,
             mat.ior,
             mat.interpNormals,
             mat.absorption,
             mat.textureID,
             mat.normalMapID,
             mat.bumpMapID,
-            mat.cullBackface ? 1u : 0u
+            mat.cullBackface ? 1u : 0u,
+            mat.anisotropic,
+            mat.subsurface,
+            mat.clearcoatGloss
             );
 
     instancesToCreate.emplace_back(instanceProperties.size() - 1, mat.materialIdx, objectID, transform);

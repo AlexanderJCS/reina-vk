@@ -8,7 +8,7 @@
 #include "nee.h.glsl"
 #include "pdf.h.glsl"
 
-#include "disneyAttempt2.h.glsl"
+#include "brdfDisney.h.glsl"
 
 #include "raytrace.h"
 
@@ -45,7 +45,7 @@ vec2 randomGaussian(inout uint rngState) {
  * returned vec4 is the PDF of choosing the output ray direction. The xyz components are already adjusted for the PDF
  * of the light source.
  */
-vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
+vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
@@ -64,13 +64,8 @@ vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 sur
         vec3 h = normalize(direction - rayIn);
 
         // hard-coded for now
-        const float roughness = 0.1;
-        const float subsurface = 0.5;
-        const float anisotropic = 0.0;
-
-//        brdf = diffuse(roughness, subsurface, albedo, surfaceNormal, direction, -rayIn, h);
-        // vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h)
-        brdf = metal(tbn, albedo, anisotropic, roughness, surfaceNormal, -rayIn, direction, h);
+//        brdf = diffuse(roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
+        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -91,7 +86,6 @@ vec3 traceSegments(Ray ray) {
 
     bool firstBounce = true;
     bool prevSkip = false;
-    float prevBRDF_PDF = 0.0;
 
     for (int tracedSegments = 0; tracedSegments < pushConstants.maxBounces; tracedSegments++) {
         vec3 rayIn = ray.direction;  // wi is the old wo
@@ -129,40 +123,38 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            bool skipPdfRay = bool(pld.materialID != 0 && pld.materialID != 3);
+            bool skipNEE = bool(pld.materialID != 0 && pld.materialID != 3);
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
-            vec4 direct = !skipPdfRay
-                ? directLight(pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState)
+            vec4 direct = !skipNEE
+                ? directLight(pld.props, pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState)
                 : vec4(0.0, 0.0, 0.0, 0.0);
 
-            float pdfDirect = direct.w;
-            float pdfIndirect = pld.pdf;
+            float pdfNEE = direct.w;
+            float pdfBRDF = pld.pdf;
 
-            float weightDirect = 0.0;
-            float weightIndirect = 1.0;
+            float weightNEE = 0.0;
+            float weightBRDF = 1.0;
 
-            if (!skipPdfRay) {
+            if (!skipNEE) {
                 if (firstBounce || prevSkip) {
-                    weightDirect = 1.0;
-                    weightIndirect = 1.0;
+                    weightNEE = 1.0;
+                    weightBRDF = 1.0;
                 } else if (tracedSegments + 1 == pushConstants.maxBounces) {  // last bounce
                     // todo: you can increase performance by not computing the direct lighting contribution when this case occurs
-                    weightDirect = 0.0;
-                    weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
+                    weightNEE = 0.0;
+                    weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);
                 } else {
-                    weightDirect = balanceHeuristic(pdfDirect, pdfIndirect);
-                    weightIndirect = balanceHeuristic(pdfIndirect, pdfDirect);
+                    weightNEE = balanceHeuristic(pdfNEE, pdfBRDF);
+                    weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);
                 }
             }
 
-            prevSkip = skipPdfRay;
-            vec3 combinedContribution = direct.rgb * weightDirect + indirect * weightIndirect;
+            prevSkip = skipNEE;
+            vec3 combinedContribution = direct.rgb * weightNEE + indirect * weightBRDF;
 
             incomingLight += combinedContribution * accumulatedRayColor;
             accumulatedRayColor *= pld.color;
-
-            prevBRDF_PDF = pdfIndirect;
         }
 
         firstBounce = false;

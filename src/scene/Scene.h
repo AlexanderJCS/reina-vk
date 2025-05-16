@@ -27,11 +27,15 @@ namespace reina::scene {
 
         glm::vec3 albedo;
         glm::vec3 emission;
-        float fuzz;
+        float roughness;
         float ior;
         bool interpNormals;
         float absorption;
         bool cullBackface;
+
+        float anisotropic;
+        float subsurface;
+        float clearcoatGloss;
     };
 
     namespace {

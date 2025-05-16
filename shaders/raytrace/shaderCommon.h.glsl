@@ -3,6 +3,8 @@
 
 #extension GL_EXT_scalar_block_layout : require
 
+#include "raytrace.h"
+
 layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;
 
 layout(binding = 2, set = 0, scalar) buffer Vertices {
@@ -27,6 +29,7 @@ struct HitPayload {
     float accumulatedDistance;  // Used for Beer's law. The distance the ray has traveled inside any media.
     bool insideDielectric;  // Apply color for this iteration
     mat3 tbn;           // World to tangent space matrix
+    InstanceProperties props;
 };
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.
