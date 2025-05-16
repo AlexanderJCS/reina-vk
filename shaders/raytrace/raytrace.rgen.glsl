@@ -61,14 +61,16 @@ vec4 directLight(mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 sur
         brdf = albedo / k_pi;
     } else if (materialID == 3) {
         // vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
-        vec3 h = normalize(direction + target.normal);
+        vec3 h = normalize(direction - rayIn);
+
         // hard-coded for now
         const float roughness = 0.1;
         const float subsurface = 0.5;
         const float anisotropic = 0.0;
 
 //        brdf = diffuse(roughness, subsurface, albedo, surfaceNormal, direction, -rayIn, h);
-        brdf = metal(tbn, albedo, anisotropic, roughness, surfaceNormal, direction, -rayIn, h);
+        // vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h)
+        brdf = metal(tbn, albedo, anisotropic, roughness, surfaceNormal, -rayIn, direction, h);
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -92,6 +94,8 @@ vec3 traceSegments(Ray ray) {
     float prevBRDF_PDF = 0.0;
 
     for (int tracedSegments = 0; tracedSegments < pushConstants.maxBounces; tracedSegments++) {
+        vec3 rayIn = ray.direction;  // wi is the old wo
+
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
             gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
@@ -105,8 +109,6 @@ vec3 traceSegments(Ray ray) {
             10000.0,               // Maximum t-value
             0                      // Location of payload
         );
-
-        vec3 rayIn = ray.direction;  // wi is the old wo
 
         ray.origin = pld.rayOrigin;
         ray.direction = pld.rayDirection;
