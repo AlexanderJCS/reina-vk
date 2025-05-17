@@ -89,7 +89,7 @@ vec3 sampleGTR1_attempt2(float alpha, inout uint rngState) {
 
     float a = max(0.001, alpha);
 
-    float coshElevation = sqrt((1 - pow(a * a, 1 - r1)) / (1 - a * a));
+    float coshElevation = sqrt((1 - exp(r1*log(a*a))) / (1 - a*a));
     float hElevation = acos(coshElevation);
     float hAzimuth = 2.0 * k_pi * r2;
 

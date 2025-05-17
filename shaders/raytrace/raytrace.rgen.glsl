@@ -56,7 +56,7 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         brdf = albedo / k_pi;
     } else if (materialID == 3) {
         // vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
-        vec3 h = normalize(direction - rayIn);
+        vec3 h = normalize(direction + -rayIn);
 
         // hard-coded for now
 //        brdf = diffuse(roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
@@ -70,8 +70,9 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
 
     float geometryTermNumerator = dot(target.normal, -direction);
     geometryTermNumerator = target.cullBackface ? max(geometryTermNumerator, 0.0) : abs(geometryTermNumerator);
+    float geometryTerm = geometryTermNumerator / (dist * dist);
 
-    vec3 light = target.emission * brdf * cosThetai / pdf;
+    vec3 light = target.emission * brdf * cosThetai * geometryTerm / target.pdf;
 
     return vec4(light, pdf);
 }
