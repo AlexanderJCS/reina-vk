@@ -81,6 +81,13 @@ vec3 sampleGTR1(float roughness, inout uint rngState) {
     return vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
 }
 
+float pdfGTR1(float roughness, vec3 h) {
+    float numerator = roughness * roughness - 1;
+    float denominator = k_pi * log(roughness * roughness) * (1 + (roughness * roughness - 1) * (h.z * h.z));
+
+    return numerator / denominator;
+}
+
 // ============================================================================
 //                                 Diffuse
 // ============================================================================
@@ -245,7 +252,12 @@ float pdfMetal(mat3 tbn, vec3 wi_world, vec3 wo_world, float anisotropic, float 
 // ============================================================================
 
 float lambdac(vec3 wl) {
-    float sqrtTerm = sqrt(1 + (pow(wl.x * 0.25, 2) + pow(wl.y * 0.25, 2) / pow(wl.z, 2)));
+    float sqrtTerm = sqrt(
+        1.0
+        + (pow(wl.x * 0.25, 2)
+        + pow(wl.y * 0.25, 2))
+        / pow(wl.z, 2)
+    );
 
     return (sqrtTerm - 1) / 2;
 }
@@ -285,21 +297,37 @@ vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h, vec3 n)
     float gc = evalGc(wiTangent, woTangent);
     float dc = evalDc(alphag, hTangent);
 
-    // TODO: check if I should be multiplying by NdotWo
-    return vec3(fc * gc * dc / (4.0 * abs(dot(n, wi))));
+    // TODO: check if I should be dividing by NdotWo
+    return vec3(fc * gc * dc / (4.0 * abs(dot(n, wi)) * abs(dot(n, wo))));
 }
 
 vec3 sampleClearcoat(mat3 tbn, float clearcoatGloss, vec3 wi, inout uint rngState) {
     float alphag = (1 - clearcoatGloss) * 0.1 + clearcoatGloss * 0.001;
 
-    vec3 wiTangent = vec3(transpose(tbn) * wi);
     vec3 h = sampleGTR1(alphag, rngState);
 
-    // transform h back to world space
+    // transform h to world space
     h = normalize(vec3(tbn * h));
     vec3 wo = reflect(-wi, h);
 
     return wo;
+}
+
+float pdfClearcoat(mat3 tbn, vec3 wi, vec3 wo, vec3 h, float clearcoatGloss) {
+    float alphag = (1 - clearcoatGloss) * 0.1 + clearcoatGloss * 0.001;
+
+    vec3 wiTangent = vec3(transpose(tbn) * wi);
+    vec3 woTangent = vec3(transpose(tbn) * wo);
+    vec3 hTangent = vec3(transpose(tbn) * h);
+
+    if (wiTangent.z <= 0.0 || woTangent.z <= 0.0) {
+        return 0.0;
+    }
+
+    float ph = pdfGTR1(alphag, hTangent) * h.z;  // h.z = n dot h
+
+    // p(wo) = p(h) / (4 * wo dot h)
+    return ph / (4.0 * abs(dot(woTangent, hTangent)));
 }
 
 #endif

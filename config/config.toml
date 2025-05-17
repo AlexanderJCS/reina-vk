@@ -18,7 +18,7 @@ save_on_times = []  # list of floats. unit: seconds
 [postprocessing.bloom]
 radius = 5.0  # percent width of the image. standard deviation of gaussian blur
 threshold = 1.0  # threshold at which to apply bloom
-intensity = 0.0  # [0, 1], but recommended to be less than 0.05
+intensity = 0.05  # [0, 1], but recommended to be less than 0.05
 
 [postprocessing.tonemap]
 exposure = 1  # exposure. 0 is no change. calculated by color_out = color_in * 2^exposure

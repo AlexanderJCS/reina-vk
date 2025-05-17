@@ -66,7 +66,9 @@ void main() {
 //    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
 
     rayDir = sampleClearcoat(hitInfo.tbn, props.clearcoatGloss, -gl_WorldRayDirectionEXT, pld.rngState);
-    pdf = 0;
+    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+
+    pdf = pdfClearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, h, props.clearcoatGloss);
 
     pld.pdf = pdf;
     pld.emission = props.emission;

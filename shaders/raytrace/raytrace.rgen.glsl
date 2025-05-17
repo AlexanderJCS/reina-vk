@@ -65,7 +65,9 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
 
         // hard-coded for now
 //        brdf = diffuse(roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
-        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
+//        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
+        // vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h, vec3 n)
+        brdf = clearcoat(tbn, -rayIn, direction, props.clearcoatGloss, h, surfaceNormal);
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -123,7 +125,7 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            bool skipNEE = bool(pld.materialID != 0);
+            bool skipNEE = bool(pld.materialID != 0 && pld.materialID != 3);
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipNEE
@@ -143,7 +145,7 @@ vec3 traceSegments(Ray ray) {
                 } else if (tracedSegments + 1 == pushConstants.maxBounces) {  // last bounce
                     // todo: you can increase performance by not computing the direct lighting contribution when this case occurs
                     weightNEE = 0.0;
-                    weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);
+                    weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);  // TODO: should this be 1?
                 } else {
                     weightNEE = balanceHeuristic(pdfNEE, pdfBRDF);
                     weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);
