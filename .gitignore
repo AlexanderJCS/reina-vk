@@ -1,5 +1,8 @@
+imcmp/
+
 cmake-build-*
 scenes
+
 
 .idea
 .idea/
