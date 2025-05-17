@@ -283,10 +283,10 @@ float evalR0(float ior) {
 float evalFc(vec3 h, vec3 wo) {
     float r0ior = evalR0(1.5);
 
-    return r0ior + (1 - r0ior) * pow(1 - abs(dot(h, wo)), 5);
+    return r0ior + (1 - r0ior) * pow(1 - dot(h, wo), 5);
 }
 
-vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h, vec3 n) {
+vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h) {
     float alphag = (1 - clearcoatGloss) * 0.1 + clearcoatGloss * 0.001;
 
     vec3 hTangent = vec3(transpose(tbn) * h);
@@ -298,7 +298,7 @@ vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h, vec3 n)
     float dc = evalDc(alphag, hTangent);
 
     // TODO: check if I should be dividing by NdotWo
-    return vec3(fc * gc * dc / (4.0 * abs(dot(n, wi)) * abs(dot(n, wo))));
+    return vec3(fc * gc * dc / (4.0 * abs(wiTangent.z) * abs(woTangent.z)));
 }
 
 vec3 sampleClearcoat(mat3 tbn, float clearcoatGloss, vec3 wi, inout uint rngState) {
