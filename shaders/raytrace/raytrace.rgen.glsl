@@ -139,7 +139,7 @@ vec3 traceSegments(Ray ray) {
                 } else if (tracedSegments + 1 == pushConstants.maxBounces) {  // last bounce
                     // todo: you can increase performance by not computing the direct lighting contribution when this case occurs
                     weightNEE = 0.0;
-                    weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);  // TODO: should this be 1?
+                    weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);
                 } else {
                     weightNEE = balanceHeuristic(pdfNEE, pdfBRDF);
                     weightBRDF = balanceHeuristic(pdfBRDF, pdfNEE);
