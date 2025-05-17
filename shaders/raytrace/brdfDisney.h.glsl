@@ -65,20 +65,39 @@ float pdfGGXReflection(vec3 i, vec3 o, vec2 alpha) {
 // ============================================================================
 //                                     GTR
 // ============================================================================
-vec3 sampleGTR1(float roughness, inout uint rngState) {
-    // https://github.com/knightcrawler25/GLSL-PathTracer/blob/291c1fdc3f97b2a2602c946b41cecca9c3092af7/src/shaders/common/sampling.glsl#L34
+vec3 sampleGTR1(float rgh, inout uint rngState) {
+    float r1 = random(rngState);
+    float r2 = random(rngState);
 
-    float a = max(0.001, roughness);
+    float a = max(0.001, rgh);
     float a2 = a * a;
 
-    float phi = random(rngState) * 2 * k_pi;
+    float phi = r1 * k_pi * 2;
 
-    float cosTheta = sqrt((1.0 - pow(a2, 1.0 - random(rngState))) / (1.0 - a2));
-    float sinTheta = clamp(sqrt(1.0 - (cosTheta * cosTheta)), 0.0, 1.0);
+    float tan2Theta = a2 * r2 / (1.0 - r2);
+    float cosTheta = 1.0 / sqrt(1.0 + tan2Theta);
+    float sinTheta = sqrt(max(0.0, 1.0 - cosTheta*cosTheta));
     float sinPhi = sin(phi);
     float cosPhi = cos(phi);
 
     return vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+}
+
+vec3 sampleGTR1_attempt2(float alpha, inout uint rngState) {
+    float r1 = random(rngState);
+    float r2 = random(rngState);
+
+    float a = max(0.001, alpha);
+
+    float coshElevation = sqrt((1 - pow(a * a, 1 - r1)) / (1 - a * a));
+    float hElevation = acos(coshElevation);
+    float hAzimuth = 2.0 * k_pi * r2;
+
+    return vec3(
+        sin(hElevation) * cos(hAzimuth),
+        sin(hElevation) * sin(hAzimuth),
+        coshElevation
+    );
 }
 
 float pdfGTR1(float roughness, vec3 h) {
@@ -253,10 +272,7 @@ float pdfMetal(mat3 tbn, vec3 wi_world, vec3 wo_world, float anisotropic, float 
 
 float lambdac(vec3 wl) {
     float sqrtTerm = sqrt(
-        1.0
-        + (pow(wl.x * 0.25, 2)
-        + pow(wl.y * 0.25, 2))
-        / pow(wl.z, 2)
+        1.0 + (pow(wl.x * 0.25, 2) + pow(wl.y * 0.25, 2)) / pow(wl.z, 2)
     );
 
     return (sqrtTerm - 1) / 2;
@@ -295,20 +311,20 @@ vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h) {
 
     float fc = evalFc(h, wo);
     float gc = evalGc(wiTangent, woTangent);
+//    float gc = smithG(wiTangent.z, 0.25) * smithG(woTangent.z, 0.25);
     float dc = evalDc(alphag, hTangent);
 
-    // TODO: check if I should be dividing by NdotWo
-    return vec3(fc * gc * dc / (4.0 * abs(wiTangent.z) * abs(woTangent.z)));
+    return vec3(fc * gc * dc) / (4.0 * wiTangent.z);
 }
 
 vec3 sampleClearcoat(mat3 tbn, float clearcoatGloss, vec3 wi, inout uint rngState) {
     float alphag = (1 - clearcoatGloss) * 0.1 + clearcoatGloss * 0.001;
 
-    vec3 h = sampleGTR1(alphag, rngState);
+    vec3 h = normalize(sampleGTR1_attempt2(alphag, rngState));
 
     // transform h to world space
     h = normalize(vec3(tbn * h));
-    vec3 wo = reflect(-wi, h);
+    vec3 wo = normalize(reflect(-wi, h));
 
     return wo;
 }
@@ -324,10 +340,10 @@ float pdfClearcoat(mat3 tbn, vec3 wi, vec3 wo, vec3 h, float clearcoatGloss) {
         return 0.0;
     }
 
-    float ph = pdfGTR1(alphag, hTangent) * hTangent.z;  // h.z = n dot h
+    float dc = evalDc(alphag, hTangent) * hTangent.z;  // h.z = n dot h
 
     // p(wo) = p(h) / (4 * wo dot h)
-    return ph / (4.0 * abs(dot(woTangent, hTangent)));
+    return dc / (4.0 * abs(dot(woTangent, hTangent)));
 }
 
 #endif
