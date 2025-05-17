@@ -324,7 +324,7 @@ float pdfClearcoat(mat3 tbn, vec3 wi, vec3 wo, vec3 h, float clearcoatGloss) {
         return 0.0;
     }
 
-    float ph = pdfGTR1(alphag, hTangent) * h.z;  // h.z = n dot h
+    float ph = pdfGTR1(alphag, hTangent) * hTangent.z;  // h.z = n dot h
 
     // p(wo) = p(h) / (4 * wo dot h)
     return ph / (4.0 * abs(dot(woTangent, hTangent)));
