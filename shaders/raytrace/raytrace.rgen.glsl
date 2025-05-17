@@ -40,11 +40,6 @@ vec2 randomGaussian(inout uint rngState) {
     return r * vec2(cos(theta), sin(theta));
 }
 
-/**
- * Calculates the direct light contribution from a randomly chosen emissive point. Note: the 4th component of the
- * returned vec4 is the PDF of choosing the output ray direction. The xyz components are already adjusted for the PDF
- * of the light source.
- */
 vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
@@ -75,9 +70,8 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
 
     float geometryTermNumerator = dot(target.normal, -direction);
     geometryTermNumerator = target.cullBackface ? max(geometryTermNumerator, 0.0) : abs(geometryTermNumerator);
-    float geometryTerm = geometryTermNumerator / (dist * dist);
 
-    vec3 light = target.emission * brdf * cosThetai * geometryTerm / target.pdf;
+    vec3 light = target.emission * brdf * cosThetai / pdf;
 
     return vec4(light, pdf);
 }

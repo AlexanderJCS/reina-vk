@@ -43,15 +43,15 @@ void main() {
     #else
         pld.color = props.albedo;
         if (props.textureID >= 0) {
-        vec4 texColor = texture(textures[props.textureID], uv);
-        if (texColor.a < 0.999 && random(pld.rngState) > texColor.a) {
-            // transparency
-            skip(hitInfo);
-            return;
-        }
+            vec4 texColor = texture(textures[props.textureID], uv);
+            if (texColor.a < 0.999 && random(pld.rngState) > texColor.a) {
+                // transparency
+                skip(hitInfo);
+                return;
+            }
 
-        pld.color *= texColor.rgb;
-    }
+            pld.color *= texColor.rgb;
+        }
     #endif
 
     vec3 rayDir = vec3(0);
@@ -70,6 +70,8 @@ void main() {
     vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
 
     pdf = pdfClearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, h, props.clearcoatGloss);
+
+    pld.color = clearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.clearcoatGloss, h);
 
     pld.pdf = pdf;
     pld.emission = props.emission;

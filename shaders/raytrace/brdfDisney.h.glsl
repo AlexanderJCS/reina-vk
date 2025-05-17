@@ -278,9 +278,17 @@ float lambdac(vec3 wl) {
     return (sqrtTerm - 1) / 2;
 }
 
+float separableSmithGGXG1(vec3 w, float a) {
+    // https://schuttejoe.github.io/post/disneybsdf/
+    float a2 = a * a;
+    float absDotNV = w.z;
+
+    return 2.0f / (1.0f + sqrt(a2 + (1 - a2) * absDotNV * absDotNV));
+}
+
 float evalGc(vec3 wiTangent, vec3 woTangent) {
-    float gcwo = 1 / (1 + lambdac(woTangent));
-    float gcwi = 1 / (1 + lambdac(wiTangent));
+    float gcwo = separableSmithGGXG1(wiTangent, 0.25);
+    float gcwi = separableSmithGGXG1(woTangent, 0.25);
 
     return gcwo * gcwi;
 }
@@ -314,7 +322,7 @@ vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h) {
 //    float gc = smithG(wiTangent.z, 0.25) * smithG(woTangent.z, 0.25);
     float dc = evalDc(alphag, hTangent);
 
-    return vec3(fc * gc * dc) / (4.0 * wiTangent.z);
+    return vec3(0.25 * fc * gc * dc);
 }
 
 vec3 sampleClearcoat(mat3 tbn, float clearcoatGloss, vec3 wi, inout uint rngState) {
