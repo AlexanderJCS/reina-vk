@@ -289,4 +289,17 @@ vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h, vec3 n)
     return vec3(fc * gc * dc / (4.0 * abs(dot(n, wi))));
 }
 
+vec3 sampleClearcoat(mat3 tbn, float clearcoatGloss, vec3 wi, inout uint rngState) {
+    float alphag = (1 - clearcoatGloss) * 0.1 + clearcoatGloss * 0.001;
+
+    vec3 wiTangent = vec3(transpose(tbn) * wi);
+    vec3 h = sampleGTR1(alphag, rngState);
+
+    // transform h back to world space
+    h = normalize(vec3(tbn * h));
+    vec3 wo = reflect(-wi, h);
+
+    return wo;
+}
+
 #endif

@@ -123,7 +123,7 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            bool skipNEE = bool(pld.materialID != 0 && pld.materialID != 3);
+            bool skipNEE = bool(pld.materialID != 0);
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipNEE
