@@ -7,6 +7,32 @@
 #include "brdfDisney.h.glsl"
 #include "texutils.h.glsl"
 
+vec3 offsetPositionForDielectric(vec3 worldPosition, vec3 normal, vec3 rayDir) {
+    // If the ray is going inside (e.g. entering a dielectric), flip the normal.
+    vec3 offsetNormal = (dot(normal, rayDir) < 0.0) ? -normal : normal;
+
+    // Convert the normal to an integer offset.
+    const float int_scale = 256.0;
+    const ivec3 of_i = ivec3(int_scale * offsetNormal);
+
+    // Offset each component of worldPosition using its bit representation.
+    // The sign check on worldPosition components helps to handle negative values.
+    const vec3 p_i = vec3(
+    intBitsToFloat(floatBitsToInt(worldPosition.x) + ((worldPosition.x < 0.0) ? -of_i.x : of_i.x)),
+    intBitsToFloat(floatBitsToInt(worldPosition.y) + ((worldPosition.y < 0.0) ? -of_i.y : of_i.y)),
+    intBitsToFloat(floatBitsToInt(worldPosition.z) + ((worldPosition.z < 0.0) ? -of_i.z : of_i.z))
+    );
+
+    // For points near the origin, use a smaller floating-point offset.
+    const float origin = 1.0 / 32.0;
+    const float floatScale = 1.0 / 65536.0;
+    return vec3(
+    abs(worldPosition.x) < origin ? worldPosition.x + floatScale * offsetNormal.x : p_i.x,
+    abs(worldPosition.y) < origin ? worldPosition.y + floatScale * offsetNormal.y : p_i.y,
+    abs(worldPosition.z) < origin ? worldPosition.z + floatScale * offsetNormal.z : p_i.z
+    );
+}
+
 void main() {
     HitInfo hitInfo = getObjectHitInfo();
     InstanceProperties props = instanceProperties[gl_InstanceCustomIndexEXT];
@@ -69,15 +95,29 @@ void main() {
 //    pld.color = metal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, h) * cosThetaI / pdf;
 
     // Clearcoat
-    rayDir = sampleClearcoat(hitInfo.tbn, props.clearcoatGloss, -gl_WorldRayDirectionEXT, pld.rngState);
-    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
-    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
-    pdf = pdfClearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, h, props.clearcoatGloss);
-    pld.color = clearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.clearcoatGloss, h) * cosThetaI / pdf;
+//    rayDir = sampleClearcoat(hitInfo.tbn, props.clearcoatGloss, -gl_WorldRayDirectionEXT, pld.rngState);
+//    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+//    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+//    pdf = pdfClearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, h, props.clearcoatGloss);
+//    pld.color = clearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.clearcoatGloss, h) * cosThetaI / pdf;
+
+    // Glass
+    /* vec3 sampleGlass(
+    mat3 tbn,
+    vec3 wi,
+    float roughness,
+    float anisotropic,
+    float ri,
+    inout uint rngState
+) */
+    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, props.ior, hitInfo.frontFace, pld.rngState);
+    pld.insideDielectric = hitInfo.frontFace;
+    pld.color = vec3(1);
+    bool didRefract = dot(rayDir, worldNormal) < 0.0;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
-    pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
+    pld.rayOrigin = !pld.insideDielectric ? offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry) : offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, rayDir);
     pld.rayDirection = rayDir;
     pld.rayHitSky = false;
     pld.skip = false;

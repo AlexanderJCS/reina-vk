@@ -7,6 +7,12 @@
 //                                    GGX
 // ============================================================================
 vec3 sampleGGXVNDF(vec3 V, float ax, float ay, inout uint rngState) {
+    bool flip = V.z < 0.0;
+
+    if (flip) {
+        V.z *= -1;
+    }
+
     float r1 = random(rngState);
     float r2 = random(rngState);
 
@@ -25,6 +31,10 @@ vec3 sampleGGXVNDF(vec3 V, float ax, float ay, inout uint rngState) {
     t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
 
     vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * Vh;
+
+    if (flip) {
+        Nh.z *= -1;
+    }
 
     return normalize(vec3(ax * Nh.x, ay * Nh.y, max(0.0, Nh.z)));
 }
@@ -352,6 +362,88 @@ float pdfClearcoat(mat3 tbn, vec3 wi, vec3 wo, vec3 h, float clearcoatGloss) {
 
     // p(wo) = p(h) / (4 * wo dot h)
     return dc / (4.0 * abs(dot(woTangent, hTangent)));
+}
+
+// ============================================================================
+//                                  Glass
+// ============================================================================
+
+float reflectance(float cosine, float ri) {
+    // Use Schlick's approximation for reflectance
+    float r0 = (1 - ri) / (1 + ri);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+vec3 sampleGlass(
+    mat3 tbn,
+    vec3 wi,
+    float roughness,
+    float anisotropic,
+    float ri,
+    bool hitFrontFace,
+    inout uint rngState
+) {
+    float ior = hitFrontFace ? 1.0 / ri : ri;
+
+    // todo: computing alpha is repeated code
+    const float alpha_min = 1e-4;
+    float aspect = sqrt(1.0 - 0.9 * anisotropic);
+    float alphax = max(alpha_min, roughness*roughness / aspect);
+    float alphay = max(alpha_min, roughness*roughness * aspect);
+
+    vec3 wiTangent = vec3(transpose(tbn) * wi);
+    float cosTheta = wiTangent.z;
+
+    vec3 hTangent = sampleGGXVNDF(wiTangent, alphax, alphay, rngState);
+    vec3 hWorld = normalize(vec3(tbn * hTangent));
+
+    float reflectivity = reflectance(cosTheta, ior);
+
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    bool cannotRefract = bool(ior * sinTheta > 1.0);
+
+    if (cannotRefract || reflectivity > random(rngState)) {
+        // Reflect
+        return reflect(-wi, hWorld);
+    }
+
+    // Refract
+    return refract(-wi, hWorld, ior);
+}
+
+float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay) {
+    // https://github.com/knightcrawler25/GLSL-PathTracer/blob/291c1fdc3f97b2a2602c946b41cecca9c3092af7/src/shaders/common/sampling.glsl#L116-L122
+    float a = VDotX * ax;
+    float b = VDotY * ay;
+    float c = NDotV;
+    return (2.0 * NDotV) / (NDotV + sqrt(a * a + b * b + c * c));
+}
+
+vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness, float eta, vec3 V, vec3 L, vec3 H, vec3 F, out float pdf) {
+    const float alpha_min = 1e-4;
+    float aspect = sqrt(1.0 - 0.9 * anisotropic);
+    float alphax = max(alpha_min, roughness*roughness / aspect);
+    float alphay = max(alpha_min, roughness*roughness * aspect);
+
+    pdf = 0.0;
+    if (L.z >= 0.0) {
+        return vec3(0.0);
+    }
+
+    float LDotH = dot(L, H);
+    float VDotH = dot(V, H);
+
+    float D = evalDm(H, alphax, alphay);
+    float G1 = SmithGAniso(abs(V.z), V.x, V.y, alphax, alphay);
+    float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, alphax, alphay);
+    float denom = LDotH + VDotH * eta;
+    denom *= denom;
+    float eta2 = eta * eta;
+    float jacobian = abs(LDotH) / denom;
+
+    pdf = G1 * max(0.0, VDotH) * D * jacobian / V.z;
+    return pow(baseColor, vec3(0.5)) * (1.0 - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
 }
 
 #endif

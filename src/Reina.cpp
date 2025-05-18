@@ -51,8 +51,8 @@ Reina::Reina(){
     auto config = toml::parse_file("config/config.toml");
 
     // init
-    renderWidth = 1080;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
-    renderHeight = 1080;
+    renderWidth = 800;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
+    renderHeight = 800;
     const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
     windowWidth = 800;
@@ -97,10 +97,10 @@ Reina::Reina(){
     scene = reina::scene::Scene();
     uint32_t wallTexID = scene.defineTexture("textures/cornell_texture.png");
 
-    glm::mat4 subjectTransform = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.25f)), glm::vec3(0, 1, 0));
+    glm::mat4 subjectTransform = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.25f)), glm::vec3(0, 2, 0));
 
     reina::scene::Material cornellWall{0, (int) wallTexID, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f};
-    reina::scene::Material subjectMaterial{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.4f, 0.0f, true, 0.0f, true, 0.4f, 0.0f, 0.4f};
+    reina::scene::Material subjectMaterial{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, 1.5f, true, 0.0f, true, 0.0f, 0.0f, 0.4f};
     reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f};
     reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false, 0.0f, 0.0f, 0.0f};
     scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), cornellWall);
