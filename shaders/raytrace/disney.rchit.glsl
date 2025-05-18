@@ -64,14 +64,16 @@ void main() {
     // Metal
 //    rayDir = sampleMetal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
 //    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
+//    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+//    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+//    pld.color = metal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, h) * cosThetaI / pdf;
 
     // Clearcoat
     rayDir = sampleClearcoat(hitInfo.tbn, props.clearcoatGloss, -gl_WorldRayDirectionEXT, pld.rngState);
     vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
-
+    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
     pdf = pdfClearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, h, props.clearcoatGloss);
-
-    pld.color = clearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.clearcoatGloss, h);
+    pld.color = clearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.clearcoatGloss, h) * cosThetaI / pdf;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
