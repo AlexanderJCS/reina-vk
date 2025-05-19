@@ -111,17 +111,14 @@ void main() {
     inout uint rngState
 ) */
     rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, props.ior, hitInfo.frontFace, pld.rngState);
-    pld.insideDielectric = hitInfo.frontFace;
     pld.color = vec3(1);
-    bool didRefract = dot(rayDir, worldNormal) < 0.0;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
-    pld.rayOrigin = !pld.insideDielectric ? offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry) : offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, rayDir);
+    pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, rayDir);
     pld.rayDirection = rayDir;
     pld.rayHitSky = false;
     pld.skip = false;
-    pld.insideDielectric = false;
     pld.materialID = 3;
     pld.surfaceNormal = worldNormal;
     pld.tbn = hitInfo.tbn;
