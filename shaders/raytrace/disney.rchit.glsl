@@ -130,6 +130,12 @@ void main() {
 
     pld.color = f * max(dot(worldNormal, rayDir), 0.0) / pdf;
 
+    // add metal component
+    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
+    h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+    pld.color += metal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, h) * cosThetaI / pdf;
+
     // vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta)
 //    pld.color = glassTransmission(hitInfo.tbn, props.albedo, -gl_WorldRayDirectionEXT, h, rayDir, props.roughness, props.anisotropic, eta) * max(dot(worldNormal, rayDir), 0.0) / pdf;
 
