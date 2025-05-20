@@ -446,7 +446,50 @@ vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness
     return pow(baseColor, vec3(0.5)) * (1.0 - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
 }
 
-vec3 EvaluateDisneySpecTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float ax, float ay, float eta) {
+float pdfGlassTransmission(mat3 tbn,
+                           vec3 wi_world,
+                           vec3 wo_world,
+                           float anisotropic,
+                           float roughness,
+                           float eta) {
+    // Transform to tangent space
+    vec3 wiTangent = transpose(tbn) * wi_world;
+    vec3 woTangent = transpose(tbn) * wo_world;
+
+    // Reject non‑transmission geometry
+    if (wiTangent.z <= 0.0 || woTangent.z >= 0.0)
+        return 0.0;
+
+    // Anisotropic GGX alpha parameters (Burley 2015)
+    const float alphamin = 1e-4;
+    float aspect = sqrt(1.0 - 0.9 * anisotropic);
+    float alphax = max(alphamin, roughness*roughness / aspect);
+    float alphay = max(alphamin, roughness*roughness * aspect);
+    vec2  alpha  = vec2(alphax, alphay);
+
+    // Compute refractive half‑vector
+    vec3 m = normalize(wiTangent + eta * woTangent);
+
+    // PDF of visible normal
+    float D    = D_GGX_Aniso(m, alphax, alphay);
+    float G1   = SmithGAniso(abs(wiTangent.z), wiTangent.x, wiTangent.y, alphax, alphay);
+    float dotWiM = abs(dot(wiTangent, m));
+    float p_m = D * G1 * dotWiM / abs(wiTangent.z);
+
+    // Jacobian for refraction
+    float dotWoM = dot(woTangent, m);
+    float jacobian = eta*eta * dotWiM 
+                   / pow(dotWiM + eta * dotWoM, 2);
+
+    return p_m * jacobian;  // final PDF over ωo :contentReference[oaicite:7]{index=7}
+}
+
+vec3 glass(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta) {
+    const float alpha_min = 1e-4;
+    float aspect = sqrt(1.0 - 0.9 * anisotropic);
+    float ax = max(alpha_min, roughness*roughness / aspect);
+    float ay = max(alpha_min, roughness*roughness * aspect);
+
     // https://schuttejoe.github.io/post/disneybsdf/
     vec3 wiTangent = vec3(transpose(tbn) * wi);
     vec3 woTangent = vec3(transpose(tbn) * wo);
