@@ -393,9 +393,9 @@ vec3 sampleGlass(
     float alphay = max(alpha_min, roughness*roughness * aspect);
 
     vec3 wiTangent = vec3(transpose(tbn) * wi);
-    float cosTheta = wiTangent.z;
-
     vec3 hTangent = sampleGGXVNDF(wiTangent, alphax, alphay, rngState);
+
+    float cosTheta = dot(wiTangent, hTangent);
     vec3 hWorld = normalize(vec3(tbn * hTangent));
 
     float reflectivity = reflectance(cosTheta, ior);
@@ -444,6 +444,38 @@ vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness
 
     pdf = G1 * max(0.0, VDotH) * D * jacobian / V.z;
     return pow(baseColor, vec3(0.5)) * (1.0 - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
+}
+
+vec3 EvaluateDisneySpecTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float ax, float ay, float eta) {
+    // https://schuttejoe.github.io/post/disneybsdf/
+    vec3 wiTangent = vec3(transpose(tbn) * wi);
+    vec3 woTangent = vec3(transpose(tbn) * wo);
+    vec3 hTangent = vec3(transpose(tbn) * h);
+
+    float relativeIor = eta;
+    float n2 = relativeIor * relativeIor;
+
+    float absDotNL = abs(wiTangent.z);
+    float absDotNV = abs(woTangent.z);
+    float dotHL = dot(hTangent, wiTangent);
+    float dotHV = dot(hTangent, woTangent);
+    float absDotHL = abs(dotHL);
+    float absDotHV = abs(dotHV);
+
+    float d = evalDm(hTangent, ax, ay);
+    float gl = evalGm(wiTangent, hTangent, ax, ay);
+    float gv = evalGm(woTangent, hTangent, ax, ay);
+
+    float f = reflectance(dotHV, eta);
+
+    vec3 color = baseColor;
+
+    // Note that we are intentionally leaving out the 1/n2 spreading factor since for VCM we will be evaluating
+    // particles with this. That means we'll need to model the air-[other medium] transmission if we ever place
+    // the camera inside a non-air medium.
+    float c = (absDotHL * absDotHV) / (absDotNL * absDotNV);
+    float t = (n2 / pow(dotHL + relativeIor * dotHV, 2));
+    return color * c * t * (1.0f - f) * gl * gv * d;
 }
 
 #endif
