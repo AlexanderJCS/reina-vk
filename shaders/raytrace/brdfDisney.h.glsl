@@ -380,12 +380,9 @@ vec3 sampleGlass(
     vec3 wi,
     float roughness,
     float anisotropic,
-    float ri,
-    bool hitFrontFace,
+    float eta,
     inout uint rngState
 ) {
-    float ior = hitFrontFace ? 1.0 / ri : ri;
-
     // todo: computing alpha is repeated code
     const float alpha_min = 1e-4;
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
@@ -398,10 +395,10 @@ vec3 sampleGlass(
     float cosTheta = dot(wiTangent, hTangent);
     vec3 hWorld = normalize(vec3(tbn * hTangent));
 
-    float reflectivity = reflectance(cosTheta, ior);
+    float reflectivity = reflectance(cosTheta, eta);
 
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
-    bool cannotRefract = bool(ior * sinTheta > 1.0);
+    bool cannotRefract = bool(eta * sinTheta > 1.0);
 
     if (cannotRefract || reflectivity > random(rngState)) {
         // Reflect
@@ -409,7 +406,7 @@ vec3 sampleGlass(
     }
 
     // Refract
-    return refract(-wi, hWorld, ior);
+    return refract(-wi, hWorld, eta);
 }
 
 float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay) {
@@ -484,7 +481,7 @@ float pdfGlassTransmission(mat3 tbn,
     return p_m * jacobian;  // final PDF over ωo :contentReference[oaicite:7]{index=7}
 }
 
-vec3 glass(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta) {
+vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta) {
     const float alpha_min = 1e-4;
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float ax = max(alpha_min, roughness*roughness / aspect);

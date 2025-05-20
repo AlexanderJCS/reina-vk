@@ -110,8 +110,10 @@ void main() {
     float ri,
     inout uint rngState
 ) */
-    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, props.ior, hitInfo.frontFace, pld.rngState);
-    pld.color = vec3(1);
+    float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
+    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState);
+    pdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
+    pld.color = vec3(pdf);
 
     pld.pdf = pdf;
     pld.emission = props.emission;
