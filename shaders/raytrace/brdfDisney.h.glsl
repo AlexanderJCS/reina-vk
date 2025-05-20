@@ -417,16 +417,16 @@ float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay) {
     return (2.0 * NDotV) / (NDotV + sqrt(a * a + b * b + c * c));
 }
 
-vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness, float eta, vec3 V, vec3 L, vec3 H, vec3 F, out float pdf) {
+vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness, float eta, vec3 V, vec3 L, vec3 H, out float pdf) {
     const float alpha_min = 1e-4;
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float alphax = max(alpha_min, roughness*roughness / aspect);
     float alphay = max(alpha_min, roughness*roughness * aspect);
 
     pdf = 0.0;
-    if (L.z >= 0.0) {
-        return vec3(0.0);
-    }
+//    if (L.z >= 0.0) {
+//        return vec3(0.0);
+//    }
 
     float LDotH = dot(L, H);
     float VDotH = dot(V, H);
@@ -440,6 +440,8 @@ vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness
     float jacobian = abs(LDotH) / denom;
 
     pdf = G1 * max(0.0, VDotH) * D * jacobian / V.z;
+
+    vec3 F = vec3(reflectance(dot(V, H), eta));
     return pow(baseColor, vec3(0.5)) * (1.0 - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
 }
 
@@ -509,13 +511,11 @@ vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float
     float f = reflectance(dotHV, eta);
 
     vec3 color = baseColor;
+    float spreading = 1.0 / (eta * eta);
 
-    // Note that we are intentionally leaving out the 1/n2 spreading factor since for VCM we will be evaluating
-    // particles with this. That means we'll need to model the air-[other medium] transmission if we ever place
-    // the camera inside a non-air medium.
     float c = (absDotHL * absDotHV) / (absDotNL * absDotNV);
     float t = (n2 / pow(dotHL + relativeIor * dotHV, 2));
-    return color * c * t * (1.0f - f) * gl * gv * d;
+    return spreading * color * c * t * (1.0f - f) * gl * gv * d;
 }
 
 #endif

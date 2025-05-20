@@ -113,7 +113,25 @@ void main() {
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
     rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState);
     pdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
-    pld.color = vec3(pdf);
+
+    vec3 h = normalize(rayDir * eta - gl_WorldRayDirectionEXT);
+
+    // vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness, float eta, vec3 V, vec3 L, vec3 H, out float pdf)
+    vec3 f = evalMicrofacetRefraction(
+        props.albedo,
+        props.anisotropic,
+        props.roughness,
+        eta,
+        transpose(hitInfo.tbn) * -gl_WorldRayDirectionEXT,
+        transpose(hitInfo.tbn) * rayDir,
+        transpose(hitInfo.tbn) * h,
+        pdf
+    );
+
+    pld.color = f * max(dot(worldNormal, rayDir), 0.0) / pdf;
+
+    // vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta)
+//    pld.color = glassTransmission(hitInfo.tbn, props.albedo, -gl_WorldRayDirectionEXT, h, rayDir, props.roughness, props.anisotropic, eta) * max(dot(worldNormal, rayDir), 0.0) / pdf;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
