@@ -381,7 +381,8 @@ vec3 sampleGlass(
     float roughness,
     float anisotropic,
     float eta,
-    inout uint rngState
+    inout uint rngState,
+    inout bool refracted
 ) {
     // todo: computing alpha is repeated code
     const float alpha_min = 1e-4;
@@ -402,9 +403,11 @@ vec3 sampleGlass(
 
     if (cannotRefract || reflectivity > random(rngState)) {
         // Reflect
+        refracted = false;
         return reflect(-wi, hWorld);
     }
 
+    refracted = true;
     // Refract
     return refract(-wi, hWorld, eta);
 }

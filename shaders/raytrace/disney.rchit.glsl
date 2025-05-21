@@ -111,8 +111,9 @@ void main() {
     inout uint rngState
 ) */
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
-    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState);
-    pdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
+    bool didRefract;
+    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract);
+    float transmissionpdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
 
     vec3 h = normalize(rayDir * eta - gl_WorldRayDirectionEXT);
 
@@ -131,10 +132,19 @@ void main() {
     pld.color = f * max(dot(worldNormal, rayDir), 0.0) / pdf;
 
     // add metal component
-    pdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
+    float metalpdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
     h = normalize(rayDir + -gl_WorldRayDirectionEXT);
     float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
     pld.color += metal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, h) * cosThetaI / pdf;
+
+    pld.color = vec3(transmissionpdf + metalpdf);
+
+    if (didRefract) {
+        pld.color = vec3(transmissionpdf);
+    } else {
+        pld.color = vec3(metalpdf);
+    }
+
 
     // vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta)
 //    pld.color = glassTransmission(hitInfo.tbn, props.albedo, -gl_WorldRayDirectionEXT, h, rayDir, props.roughness, props.anisotropic, eta) * max(dot(worldNormal, rayDir), 0.0) / pdf;
