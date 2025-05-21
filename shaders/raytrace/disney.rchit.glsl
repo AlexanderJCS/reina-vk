@@ -112,7 +112,8 @@ void main() {
 ) */
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
     bool didRefract;
-    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract);
+    float reflectivity;
+    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract, reflectivity);
     float transmissionpdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
 
     vec3 h = normalize(rayDir * eta - gl_WorldRayDirectionEXT);
@@ -140,9 +141,9 @@ void main() {
     pld.color = vec3(transmissionpdf + metalpdf);
 
     if (didRefract) {
-        pld.color = vec3(transmissionpdf);
+        pld.color = vec3(transmissionpdf) * (1 - reflectivity);
     } else {
-        pld.color = vec3(metalpdf);
+        pld.color = vec3(metalpdf) * reflectivity;
     }
 
 

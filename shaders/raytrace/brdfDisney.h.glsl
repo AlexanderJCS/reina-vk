@@ -382,7 +382,8 @@ vec3 sampleGlass(
     float anisotropic,
     float eta,
     inout uint rngState,
-    inout bool refracted
+    out bool refracted,
+    out float reflectivity
 ) {
     // todo: computing alpha is repeated code
     const float alpha_min = 1e-4;
@@ -396,7 +397,7 @@ vec3 sampleGlass(
     float cosTheta = dot(wiTangent, hTangent);
     vec3 hWorld = normalize(vec3(tbn * hTangent));
 
-    float reflectivity = reflectance(cosTheta, eta);
+    reflectivity = reflectance(cosTheta, eta);
 
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     bool cannotRefract = bool(eta * sinTheta > 1.0);
@@ -454,7 +455,7 @@ float pdfGlassTransmission(mat3 tbn,
                            float anisotropic,
                            float roughness,
                            float eta) {
-    // Transform to tangent space
+
     vec3 wiTangent = transpose(tbn) * wi_world;
     vec3 woTangent = transpose(tbn) * wo_world;
 
@@ -462,14 +463,12 @@ float pdfGlassTransmission(mat3 tbn,
     if (wiTangent.z <= 0.0 || woTangent.z >= 0.0)
         return 0.0;
 
-    // Anisotropic GGX alpha parameters (Burley 2015)
     const float alphamin = 1e-4;
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float alphax = max(alphamin, roughness*roughness / aspect);
     float alphay = max(alphamin, roughness*roughness * aspect);
     vec2  alpha  = vec2(alphax, alphay);
 
-    // Compute refractive half‑vector
     vec3 m = normalize(wiTangent + eta * woTangent);
 
     // PDF of visible normal
@@ -478,12 +477,12 @@ float pdfGlassTransmission(mat3 tbn,
     float dotWiM = abs(dot(wiTangent, m));
     float p_m = D * G1 * dotWiM / abs(wiTangent.z);
 
-    // Jacobian for refraction
+    // Jacobian
     float dotWoM = dot(woTangent, m);
     float jacobian = eta*eta * dotWiM 
                    / pow(dotWiM + eta * dotWoM, 2);
 
-    return p_m * jacobian;  // final PDF over ωo :contentReference[oaicite:7]{index=7}
+    return p_m * jacobian;
 }
 
 vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta) {
