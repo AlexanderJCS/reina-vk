@@ -519,4 +519,41 @@ vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float
     return spreading * color * c * t * (1.0f - f) * gl * gv * d;
 }
 
+vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float eta, vec3 n, vec3 wi, vec3 wo, float reflectivity, bool didRefract, out float pdf) {
+    vec3 h;
+    if (didRefract) {
+        h = normalize(wo + wi * eta);
+    } else {
+        h = normalize(wo + wi);
+    }
+
+    if (dot(h, n) < 0.0) {
+        h = -h;
+    }
+
+    float transmissionpdf;
+    vec3 glassf = evalMicrofacetRefraction(
+        baseColor,
+        anisotropic,
+        roughness,
+        eta,
+        transpose(tbn) * wi,
+        transpose(tbn) * wo,
+        transpose(tbn) * h,
+        transmissionpdf
+    );
+
+    // add metal component
+    float metalpdf = pdfMetal(tbn, wi, wo, anisotropic, roughness);
+    vec3 metalf = metal(tbn, baseColor, anisotropic, roughness, n, wi, wo, h);
+
+    if (didRefract) {
+        pdf = transmissionpdf * (1 - reflectivity);
+        return glassf;
+    }
+
+    pdf = metalpdf * reflectivity;
+    return metalf;
+}
+
 #endif

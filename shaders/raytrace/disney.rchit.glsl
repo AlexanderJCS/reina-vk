@@ -116,51 +116,17 @@ void main() {
     rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract, reflectivity);
 //    float transmissionpdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
 
-    vec3 h;
-    if (didRefract) {
-        h = normalize(rayDir + -gl_WorldRayDirectionEXT * eta);
-    } else {
-        h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+    vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, reflectivity, didRefract, pdf);
+
+    // TODO: this is clamped between [0, 1] since there is a (likely) bug where, at edges, this can go above 1,
+    //  which causes the glass to be (essentially) emissive by having an albedo > 1. This is a hack: the real reason
+    //  this goes above 1 seems to be the * reflectivity in the denominator, which causes the resulting color to be
+    //  too bright. This hack solution likely isn't accurate, but I tested it with a bunch of different albedos and,
+    //  visually, it looks about fine. So I'm keeping it for now.
+    pld.color = f * abs(dot(hitInfo.worldNormal, rayDir)) / pdf;
+    if (!didRefract) {
+        pld.color = clamp(pld.color, vec3(0.0), vec3(1.0));
     }
-
-    if (dot(h, hitInfo.worldNormal) < 0.0) {
-        h = -h;
-    }
-
-    // vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness, float eta, vec3 V, vec3 L, vec3 H, out float pdf)
-    vec3 glassf = evalMicrofacetRefraction(
-        props.albedo,
-        props.anisotropic,
-        props.roughness,
-        eta,
-        transpose(hitInfo.tbn) * -gl_WorldRayDirectionEXT,
-        transpose(hitInfo.tbn) * rayDir,
-        transpose(hitInfo.tbn) * h,
-        pdf
-    );
-
-    float transmissionpdf = pdf;
-
-//    pld.color = f * max(dot(worldNormal, rayDir), 0.0) / (transmissionpdf * (1 - reflectivity));
-
-    // add metal component
-    float metalpdf = pdfMetal(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness);
-    float cosThetaI = abs(dot(worldNormal, rayDir));
-    vec3 metalf = metal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, h);
-
-    if (didRefract) {
-        pld.color = glassf * cosThetaI / vec3(transmissionpdf * (1 - reflectivity));
-    } else {
-        // TODO: this is clamped between [0, 1] since there is a (likely) bug where, at edges, this can go above 1,
-        //  which causes the glass to be (essentially) emissive by having an albedo > 1. This is a hack: the real reason
-        //  this goes above 1 seems to be the * reflectivity in the denominator, which causes the resulting color to be
-        //  too bright. This hack solution likely isn't accurate, but I tested it with a bunch of different albedos and,
-        //  visually, it looks about fine. So I'm keeping it for now.
-        pld.color = clamp(metalf * cosThetaI / vec3(metalpdf * reflectivity), vec3(0), vec3(1));
-    }
-
-//    pld.color = glassf * cosThetaI / vec3(transmissionpdf * (1 - reflectivity));
-//    pld.color += metalf * cosThetaI / vec3(metalpdf * reflectivity);
 
     // vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta)
 //    pld.color = glassTransmission(hitInfo.tbn, props.albedo, -gl_WorldRayDirectionEXT, h, rayDir, props.roughness, props.anisotropic, eta) * max(dot(worldNormal, rayDir), 0.0) / pdf;
