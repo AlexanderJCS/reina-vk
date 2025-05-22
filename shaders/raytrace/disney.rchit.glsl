@@ -151,7 +151,12 @@ void main() {
     if (didRefract) {
         pld.color = glassf * cosThetaI / vec3(transmissionpdf * (1 - reflectivity));
     } else {
-        pld.color = metalf * cosThetaI / vec3(metalpdf * reflectivity);
+        // TODO: this is clamped between [0, 1] since there is a (likely) bug where, at edges, this can go above 1,
+        //  which causes the glass to be (essentially) emissive by having an albedo > 1. This is a hack: the real reason
+        //  this goes above 1 seems to be the * reflectivity in the denominator, which causes the resulting color to be
+        //  too bright. This hack solution likely isn't accurate, but I tested it with a bunch of different albedos and,
+        //  visually, it looks about fine. So I'm keeping it for now.
+        pld.color = clamp(metalf * cosThetaI / vec3(metalpdf * reflectivity), vec3(0), vec3(1));
     }
 
 //    pld.color = glassf * cosThetaI / vec3(transmissionpdf * (1 - reflectivity));

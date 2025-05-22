@@ -428,9 +428,9 @@ vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness
     float alphay = max(alpha_min, roughness*roughness * aspect);
 
     pdf = 0.0;
-//    if (L.z >= 0.0) {
-//        return vec3(0.0);
-//    }
+    if (L.z >= 0.0) {
+        return vec3(0.0);
+    }
 
     float LDotH = dot(L, H);
     float VDotH = dot(V, H);
