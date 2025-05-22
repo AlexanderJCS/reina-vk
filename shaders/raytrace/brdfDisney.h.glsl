@@ -479,8 +479,7 @@ float pdfGlassTransmission(mat3 tbn,
 
     // Jacobian
     float dotWoM = dot(woTangent, m);
-    float jacobian = eta*eta * dotWiM 
-                   / pow(dotWiM + eta * dotWoM, 2);
+    float jacobian = eta*eta * dotWiM / pow(dotWiM + eta * dotWoM, 2);
 
     return p_m * jacobian;
 }
