@@ -550,8 +550,8 @@ vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float e
         return glassf * (1 - reflectivity);
     }
 
-    pdf = metalpdf * reflectivity;
-    return metalf * reflectivity;
+    pdf = metalpdf;
+    return metalf;
 }
 
 #endif
