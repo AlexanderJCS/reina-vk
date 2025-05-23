@@ -143,7 +143,7 @@ void main() {
     pld.didRefract = didRefract;
     pld.eta = eta;
 
-    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0;
+    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {
