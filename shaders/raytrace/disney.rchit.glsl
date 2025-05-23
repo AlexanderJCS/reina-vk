@@ -124,9 +124,9 @@ void main() {
     //  too bright. This hack solution likely isn't accurate, but I tested it with a bunch of different albedos and,
     //  visually, it looks about fine. So I'm keeping it for now.
     pld.color = f * abs(dot(hitInfo.worldNormal, rayDir)) / pdf;
-    if (!didRefract) {
-        pld.color = clamp(pld.color, vec3(0.0), vec3(1.0));
-    }
+//    if (!didRefract) {
+//        pld.color = clamp(pld.color, vec3(0.0), vec3(1.0));
+//    }
 
     // vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta)
 //    pld.color = glassTransmission(hitInfo.tbn, props.albedo, -gl_WorldRayDirectionEXT, h, rayDir, props.roughness, props.anisotropic, eta) * max(dot(worldNormal, rayDir), 0.0) / pdf;

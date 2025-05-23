@@ -267,10 +267,6 @@ float pdfMetal(mat3 tbn, vec3 wi_world, vec3 wo_world, float anisotropic, float 
     vec3 wiTangent = vec3(transpose(tbn) * wi_world);
     vec3 woTangent = vec3(transpose(tbn) * wo_world);
 
-    if (wiTangent.z <= 0.0 || woTangent.z <= 0.0) {
-        return 0.0;
-    }
-
     vec2 alpha = vec2(alphax, alphay);
 
     return pdfGGXReflection(wiTangent, woTangent, alpha);
@@ -441,12 +437,12 @@ vec3 evalMicrofacetRefraction(vec3 baseColor, float anisotropic, float roughness
     float denom = LDotH + VDotH * eta;
     denom *= denom;
     float eta2 = eta * eta;
-    float jacobian = abs(LDotH) / denom;
+    float jacobian = abs(LDotH) * eta2 / denom;
 
     pdf = G1 * max(0.0, VDotH) * D * jacobian / V.z;
 
     vec3 F = vec3(reflectance(dot(V, H), eta));
-    return pow(baseColor, vec3(0.5)) * (1.0 - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
+    return pow(baseColor, vec3(0.5)) * (1.0 - F) * D * G2 * abs(VDotH) * jacobian / abs(L.z * V.z);
 }
 
 float pdfGlassTransmission(mat3 tbn,
@@ -549,11 +545,11 @@ vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float e
 
     if (didRefract) {
         pdf = transmissionpdf * (1 - reflectivity);
-        return glassf;
+        return glassf * (1 - reflectivity);
     }
 
     pdf = metalpdf * reflectivity;
-    return metalf;
+    return metalf * reflectivity;
 }
 
 #endif
