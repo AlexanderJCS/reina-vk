@@ -542,12 +542,15 @@ vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float e
     float metalpdf = pdfMetal(tbn, wi, wo, anisotropic, roughness);
     vec3 metalf = metal(tbn, baseColor, anisotropic, roughness, n, wi, wo, h);
 
-    float cosTheta = dot(h, n);
-    float reflectivity = reflectance(cosTheta, eta);
+//    float cosTheta = dot(h, n);
+//    float reflectivity = reflectance(cosTheta, eta);
 
+    // I can't justify this mathematically but it seems to provide good results. the PDF should theoretically be
+    //  transmissionpdf * (1 - reflectivity) and metalpdf * reflectivity, but not including the reflectivity multiply
+    //  seems to make the glass look better (i.e., not lose energy as fast when albedo = 1).
     if (didRefract) {
-        pdf = transmissionpdf * (1 - reflectivity);
-        return glassf * (1 - reflectivity);
+        pdf = transmissionpdf;
+        return glassf;
     }
 
     pdf = metalpdf;
