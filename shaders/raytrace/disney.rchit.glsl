@@ -112,11 +112,10 @@ void main() {
 ) */
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
     bool didRefract;
-    float reflectivity;
-    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract, reflectivity);
+    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract);
 //    float transmissionpdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
 
-    vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, reflectivity, didRefract, pdf);
+    vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, didRefract, pdf);
 
     // TODO: this is clamped between [0, 1] since there is a (likely) bug where, at edges, this can go above 1,
     //  which causes the glass to be (essentially) emissive by having an albedo > 1. This is a hack: the real reason

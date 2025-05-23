@@ -378,8 +378,7 @@ vec3 sampleGlass(
     float anisotropic,
     float eta,
     inout uint rngState,
-    out bool refracted,
-    out float reflectivity
+    out bool refracted
 ) {
     // todo: computing alpha is repeated code
     const float alpha_min = 1e-4;
@@ -393,7 +392,7 @@ vec3 sampleGlass(
     float cosTheta = dot(wiTangent, hTangent);
     vec3 hWorld = normalize(vec3(tbn * hTangent));
 
-    reflectivity = reflectance(cosTheta, eta);
+    float reflectivity = reflectance(cosTheta, eta);
 
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     bool cannotRefract = bool(eta * sinTheta > 1.0);
@@ -515,7 +514,7 @@ vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float
     return spreading * color * c * t * (1.0f - f) * gl * gv * d;
 }
 
-vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float eta, vec3 n, vec3 wi, vec3 wo, float reflectivity, bool didRefract, out float pdf) {
+vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float eta, vec3 n, vec3 wi, vec3 wo, bool didRefract, out float pdf) {
     vec3 h;
     if (didRefract) {
         h = normalize(wo + wi * eta);
@@ -542,6 +541,9 @@ vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float e
     // add metal component
     float metalpdf = pdfMetal(tbn, wi, wo, anisotropic, roughness);
     vec3 metalf = metal(tbn, baseColor, anisotropic, roughness, n, wi, wo, h);
+
+    float cosTheta = dot(h, n);
+    float reflectivity = reflectance(cosTheta, eta);
 
     if (didRefract) {
         pdf = transmissionpdf * (1 - reflectivity);
