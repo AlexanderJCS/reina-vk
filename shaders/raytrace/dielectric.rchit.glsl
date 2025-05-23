@@ -107,4 +107,6 @@ void main() {
     pld.pdf = 0.0;  // Not used in this shader
     pld.tbn = hitInfo.tbn;
     pld.props = props;
+    pld.didRefract = false;  // only used for disney bsdf
+    pld.eta = 0.0;  // only used for disney bsdf
 }

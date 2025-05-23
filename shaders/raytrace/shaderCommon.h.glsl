@@ -29,6 +29,8 @@ struct HitPayload {
     float accumulatedDistance;  // Used for Beer's law. The distance the ray has traveled inside any media.
     bool insideDielectric;  // Apply color for this iteration
     mat3 tbn;           // World to tangent space matrix
+    float eta;          // Refractive index of the material. Used for disney dielectric component.
+    bool didRefract;    // For disney dielectric component. True if the ray was refracted, false if it was reflected.
     InstanceProperties props;
 };
 

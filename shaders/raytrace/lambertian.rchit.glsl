@@ -66,6 +66,8 @@ void main() {
     pld.pdf = pdfLambertian(pld.surfaceNormal, pld.rayDirection);
     pld.tbn = hitInfo.tbn;
     pld.props = props;
+    pld.didRefract = false;  // only used for disney bsdf
+    pld.eta = 0.0;  // only used for disney bsdf
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);

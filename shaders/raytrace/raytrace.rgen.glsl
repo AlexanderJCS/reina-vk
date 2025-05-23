@@ -40,7 +40,7 @@ vec2 randomGaussian(inout uint rngState) {
     return r * vec2(cos(theta), sin(theta));
 }
 
-vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState) {
+vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, float eta, bool didRefract, inout uint rngState) {
     RandomEmissivePointOutput target = randomEmissivePoint(rngState);
     vec3 direction = normalize(target.point - rayOrigin);
     float dist = length(target.point - rayOrigin);
@@ -62,7 +62,9 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
 //        brdf = diffuse(roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
 //        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
         // vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h)
-        brdf = clearcoat(tbn, -rayIn, direction, props.clearcoatGloss, h);
+        // vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, didRefract, pdf);
+        float ignorePdf;  // for BSDF sampling only
+        brdf = glass(tbn, props.albedo, props.anisotropic, props.roughness, eta, surfaceNormal, -rayIn, direction, didRefract, ignorePdf);
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -83,10 +85,12 @@ vec3 traceSegments(Ray ray) {
 
     bool firstBounce = true;
     bool prevSkip = false;
+    bool leftDielectric = false;
 
     for (int tracedSegments = 0; tracedSegments < pushConstants.maxBounces; tracedSegments++) {
         vec3 rayIn = ray.direction;  // wi is the old wo
 
+        bool prevInsideDielectric = pld.insideDielectric;
         traceRayEXT(
             tlas,                  // Top-level acceleration structure
             gl_RayFlagsOpaqueEXT,  // Ray flags, here saying "treat all geometry as opaque"
@@ -100,6 +104,8 @@ vec3 traceSegments(Ray ray) {
             10000.0,               // Maximum t-value
             0                      // Location of payload
         );
+
+        bool leftDielectric = !pld.insideDielectric && prevInsideDielectric;
 
         ray.origin = pld.rayOrigin;
         ray.direction = pld.rayDirection;
@@ -120,11 +126,11 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            bool skipNEE = bool(pld.materialID != 0);
+            bool skipNEE = bool(pld.materialID != 0 && pld.materialID != 3);
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipNEE
-                ? directLight(pld.props, pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.rngState)
+                ? directLight(pld.props, pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.eta, pld.didRefract, pld.rngState)
                 : vec4(0.0, 0.0, 0.0, 0.0);
 
             float pdfNEE = direct.w;
@@ -134,7 +140,7 @@ vec3 traceSegments(Ray ray) {
             float weightBRDF = 1.0;
 
             if (!skipNEE) {
-                if (firstBounce || prevSkip) {
+                if (firstBounce || prevSkip || leftDielectric) {
                     weightNEE = 1.0;
                     weightBRDF = 1.0;
                 } else if (tracedSegments + 1 == pushConstants.maxBounces) {  // last bounce

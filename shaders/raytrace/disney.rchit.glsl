@@ -140,7 +140,10 @@ void main() {
     pld.surfaceNormal = worldNormal;
     pld.tbn = hitInfo.tbn;
     pld.props = props;
+    pld.didRefract = didRefract;
+    pld.eta = eta;
 
+    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0;
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {
