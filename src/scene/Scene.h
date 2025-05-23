@@ -36,6 +36,7 @@ namespace reina::scene {
         float anisotropic;
         float subsurface;
         float clearcoatGloss;
+        glm::vec3 sheenTint;
     };
 
     namespace {

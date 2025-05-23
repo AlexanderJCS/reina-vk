@@ -61,10 +61,11 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         // hard-coded for now
 //        brdf = diffuse(roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
 //        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
-        // vec3 clearcoat(mat3 tbn, vec3 wi, vec3 wo, float clearcoatGloss, vec3 h)
-        // vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, didRefract, pdf);
-        float ignorePdf;  // for BSDF sampling only
-        brdf = glass(tbn, props.albedo, props.anisotropic, props.roughness, eta, surfaceNormal, -rayIn, direction, didRefract, ignorePdf);
+
+//        float ignorePdf;  // for BSDF sampling only
+//        brdf = glass(tbn, props.albedo, props.anisotropic, props.roughness, eta, surfaceNormal, -rayIn, direction, didRefract, ignorePdf);
+
+        brdf = sheen(props.albedo, -rayIn, h, surfaceNormal, props.sheenTint);
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -126,7 +127,7 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            bool skipNEE = bool(pld.materialID != 0 && pld.materialID != 3);
+            bool skipNEE = bool(pld.materialID != 0);
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipNEE

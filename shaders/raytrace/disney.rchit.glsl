@@ -102,33 +102,19 @@ void main() {
 //    pld.color = clearcoat(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.clearcoatGloss, h) * cosThetaI / pdf;
 
     // Glass
-    /* vec3 sampleGlass(
-    mat3 tbn,
-    vec3 wi,
-    float roughness,
-    float anisotropic,
-    float ri,
-    inout uint rngState
-) */
-    float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
-    bool didRefract;
-    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract);
-//    float transmissionpdf = pdfGlassTransmission(hitInfo.tbn, -gl_WorldRayDirectionEXT, rayDir, props.anisotropic, props.roughness, eta);
+//    float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
+//    bool didRefract;
+//    rayDir = sampleGlass(hitInfo.tbn, -gl_WorldRayDirectionEXT, props.roughness, props.anisotropic, eta, pld.rngState, didRefract);
+//    vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, didRefract, pdf);
+//    pld.color = f * abs(dot(hitInfo.worldNormal, rayDir)) / pdf;
 
-    vec3 f = glass(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, eta, hitInfo.worldNormal, -gl_WorldRayDirectionEXT, rayDir, didRefract, pdf);
-
-    // TODO: this is clamped between [0, 1] since there is a (likely) bug where, at edges, this can go above 1,
-    //  which causes the glass to be (essentially) emissive by having an albedo > 1. This is a hack: the real reason
-    //  this goes above 1 seems to be the * reflectivity in the denominator, which causes the resulting color to be
-    //  too bright. This hack solution likely isn't accurate, but I tested it with a bunch of different albedos and,
-    //  visually, it looks about fine. So I'm keeping it for now.
-    pld.color = f * abs(dot(hitInfo.worldNormal, rayDir)) / pdf;
-//    if (!didRefract) {
-//        pld.color = clamp(pld.color, vec3(0.0), vec3(1.0));
-//    }
-
-    // vec3 glassTransmission(mat3 tbn, vec3 baseColor, vec3 wo, vec3 h, vec3 wi, float roughness, float anisotropic, float eta)
-//    pld.color = glassTransmission(hitInfo.tbn, props.albedo, -gl_WorldRayDirectionEXT, h, rayDir, props.roughness, props.anisotropic, eta) * max(dot(worldNormal, rayDir), 0.0) / pdf;
+    // Sheen
+    rayDir = sampleSheen(hitInfo.worldNormal, pld.rngState);
+    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+    vec3 f = sheen(props.albedo, rayDir, h, hitInfo.worldNormal, props.sheenTint);
+    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+    pdf = pdfSheen(hitInfo.worldNormal, rayDir);
+    pld.color = f * cosThetaI / pdf;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
@@ -140,10 +126,13 @@ void main() {
     pld.surfaceNormal = worldNormal;
     pld.tbn = hitInfo.tbn;
     pld.props = props;
-    pld.didRefract = didRefract;
-    pld.eta = eta;
+//    pld.didRefract = didRefract;
+    pld.didRefract = false;
+//    pld.eta = eta;
+    pld.eta = 0;
 
-    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
+//    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
+    pld.insideDielectric = false;
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {

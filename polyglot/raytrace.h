@@ -32,6 +32,7 @@ struct InstanceProperties {
     float anisotropic;
     float subsurface;
     float clearcoatGloss;
+    vec3 sheenTint;
 };
 
 struct RtPushConsts {

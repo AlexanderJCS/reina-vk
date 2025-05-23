@@ -557,4 +557,35 @@ vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float e
     return metalf;
 }
 
+// ============================================================================
+//                                  Sheen
+// ============================================================================
+float luminance(vec3 color) {
+    return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+vec3 sheen(vec3 baseColor, vec3 wo, vec3 h, vec3 n, vec3 sheenTint) {
+    float lum = luminance(baseColor);
+    vec3 ctint = lum > 0.0 ? baseColor / lum : vec3(1);
+    vec3 csheen = (1 - sheenTint) + sheenTint * ctint;
+
+    vec3 fsheen = csheen * pow(1 - max(dot(h, wo), 0), 5) * max(dot(n, wo), 0);
+    return fsheen;
+}
+
+vec3 sampleSheen(vec3 n, inout uint rngState) {
+    // Lambertian reflection
+    const float theta = 2.0 * k_pi * random(rngState);  // Random in [0, 2pi]
+    const float u = 2.0 * random(rngState) - 1.0;   // Random in [-1, 1]
+    const float r = sqrt(1.0 - u * u);
+    const vec3 direction = n + vec3(r * cos(theta), r * sin(theta), u);
+
+    return normalize(direction);
+}
+
+float pdfSheen(vec3 n, vec3 wo) {
+    // Lambertian reflection
+    return max(dot(n, wo), 0.0) * k_inv_pi;
+}
+
 #endif
