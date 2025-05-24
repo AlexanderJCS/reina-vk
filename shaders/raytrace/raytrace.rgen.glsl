@@ -59,13 +59,13 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         vec3 h = normalize(direction + -rayIn);
 
         // hard-coded for now
-//        brdf = diffuse(roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
+        brdf = diffuse(props.roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
 //        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
 
 //        float ignorePdf;  // for BSDF sampling only
 //        brdf = glass(tbn, props.albedo, props.anisotropic, props.roughness, eta, surfaceNormal, -rayIn, direction, didRefract, ignorePdf);
 
-        brdf = sheen(props.albedo, -rayIn, h, surfaceNormal, props.sheenTint);
+//        brdf = sheen(props.albedo, -rayIn, h, surfaceNormal, props.sheenTint);
     }
 
     float cosThetai = dot(surfaceNormal, direction);

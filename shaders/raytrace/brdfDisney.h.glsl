@@ -121,41 +121,43 @@ float pdfGTR1(float roughness, vec3 h) {
 //                                 Diffuse
 // ============================================================================
 
-float FD90(float roughness, vec3 h, vec3 wo) {
-    return 0.5 + 2 * roughness * abs(dot(h, wo)) * abs(dot(h, wo));
+float FD90(float roughness, float HdotWo) {
+    return 0.5 + 2 * roughness * max(HdotWo, 0) * max(HdotWo, 0);
 }
 
-float FD(float roughness, vec3 h, vec3 n, vec3 w) {
+float FD(float roughness, vec3 h, vec3 n, vec3 w, float fd90) {
     // parameter vec3 w could either be wo or wi
-    return 1 + (FD90(roughness, h, w) - 1) * pow(1 - abs(dot(n, w)), 5);
+    return 1 + (fd90 - 1) * pow(1 - max(dot(n, w), 0), 5);
 }
 
 float FSS90(float roughness, vec3 h, vec3 wo) {
-    return roughness * abs(dot(h, wo)) * abs(dot(h, wo));
+    return roughness * max(dot(h, wo), 0) * max(dot(h, wo), 0);
 }
 
-float FSS(float roughness, vec3 n, vec3 w, vec3 wo, vec3 h) {
-    return (1 + (FSS90(roughness, h, wo) - 1) * pow(1 - abs(dot(n, w)), 5));
+float FSS(float roughness, vec3 n, vec3 w, float fss90) {
+    return 1 + (fss90 - 1) * pow(1 - max(dot(n, w), 0), 5);
 }
 
 vec3 fSubsurface(vec3 baseColor, float roughness, vec3 wi, vec3 wo, vec3 n, vec3 h) {
-    vec3 k = 1.25 * baseColor / k_pi;
-    float fssIn = FSS(roughness, n, wi, wo, h);
-    float fssOut = FSS(roughness, n, wo, wo, h);
+    vec3 k = 1.25 * baseColor * k_inv_pi;
+
+    float fss90 = FSS90(roughness, h, wo);
+    float fssIn = FSS(roughness, n, wi, fss90);
+    float fssOut = FSS(roughness, n, wo, fss90);
 
     // Not creatively named, I know
-    float thirdTerm = 1 / (abs(dot(n, wi)) + abs(dot(n, wo))) - 0.5;
+    float thirdTerm = 1 / (max(dot(n, wi), 0) + max(dot(n, wo), 0)) - 0.5;
 
-    return k * (fssIn * fssOut * thirdTerm + 0.5) * abs(dot(n, wo));
+    return k * (fssIn * fssOut * thirdTerm + 0.5);
 }
 
 vec3 fBaseDiffuse(vec3 baseColor, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h) {
-    float NdotL = abs(dot(n, wi));
+    float fd90 = FD90(roughness, dot(h, wo));
 
-    float FDin = FD(roughness, h, n, wi);
-    float FDout = FD(roughness, h, n, wo);
+    float FDin = FD(roughness, h, n, wi, fd90);
+    float FDout = FD(roughness, h, n, wo, fd90);
 
-    return baseColor / k_pi * FDin * FDout * NdotL;
+    return baseColor / k_pi * FDin * FDout;
 }
 
 vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h) {
@@ -165,9 +167,9 @@ vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi,
     return mix(baseDiffuse, fSubsurface, subsurface);
 }
 
-float pdfDiffuse(vec3 wi, vec3 n) {
+float pdfDiffuse(vec3 wo, vec3 n) {
     // Lambertian PDF
-    float cosTheta = dot(n, wi);
+    float cosTheta = dot(n, wo);
 
     if (cosTheta <= 0.0) {
         return 0.0;
@@ -176,14 +178,26 @@ float pdfDiffuse(vec3 wi, vec3 n) {
     return cosTheta * k_inv_pi;
 }
 
-vec3 sampleDiffuse(vec3 normal, inout uint rngState) {
-    // Cosine hemisphere sampling
-    const float theta = 2.0 * k_pi * random(rngState);  // Random in [0, 2pi]
-    const float u = 2.0 * random(rngState) - 1.0;   // Random in [-1, 1]
-    const float r = sqrt(1.0 - u * u);
-    const vec3 direction = normal + vec3(r * cos(theta), r * sin(theta), u);
+vec3 sampleDiffuse(vec3 n, inout uint rngState) {
+    // 1) draw two uniform randoms
+    float xi1 = random(rngState);
+    float xi2 = random(rngState);
 
-    return normalize(direction);
+    // 2) convert to spherical coords
+    float r   = sqrt(xi1);
+    float phi = 2.0 * k_pi * xi2;
+    float x   = r * cos(phi);
+    float y   = r * sin(phi);
+    float z   = sqrt(max(0.0, 1.0 - xi1));  // cosθ
+
+    // 3) build an orthonormal basis (n, t, b)
+    vec3 t = abs(n.x) < 0.5
+    ? normalize(cross(n, vec3(1,0,0)))
+    : normalize(cross(n, vec3(0,1,0)));
+    vec3 b = cross(n, t);
+
+    // 4) transform from local→world
+    return normalize(x*t + y*b + z*n);
 }
 
 // ============================================================================
@@ -574,25 +588,7 @@ vec3 sheen(vec3 baseColor, vec3 wo, vec3 h, vec3 n, vec3 sheenTint) {
 }
 
 vec3 sampleSheen(vec3 n, inout uint rngState) {
-    // 1) draw two uniform randoms
-    float xi1 = random(rngState);
-    float xi2 = random(rngState);
-
-    // 2) convert to spherical coords
-    float r   = sqrt(xi1);
-    float phi = 2.0 * k_pi * xi2;
-    float x   = r * cos(phi);
-    float y   = r * sin(phi);
-    float z   = sqrt(max(0.0, 1.0 - xi1));  // cosθ
-
-    // 3) build an orthonormal basis (n, t, b)
-    vec3 t = abs(n.x) < 0.5
-    ? normalize(cross(n, vec3(1,0,0)))
-    : normalize(cross(n, vec3(0,1,0)));
-    vec3 b = cross(n, t);
-
-    // 4) transform from local→world
-    return normalize(x*t + y*b + z*n);
+    return sampleDiffuse(n, rngState);
 }
 
 float pdfSheen(vec3 n, vec3 wo) {

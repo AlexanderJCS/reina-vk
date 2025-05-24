@@ -84,8 +84,14 @@ void main() {
     float pdf = 0.0;
 
     // Diffuse
-//    rayDir = sampleDiffuse(worldNormal, pld.rngState);
-//    pdf = pdfDiffuse(worldNormal, rayDir);
+    rayDir = sampleDiffuse(worldNormal, pld.rngState);
+    // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h) {
+    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+    vec3 f = diffuse(props.roughness, props.subsurface, props.albedo, worldNormal, -gl_WorldRayDirectionEXT, rayDir, h);
+    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+    pdf = pdfDiffuse(rayDir, worldNormal);
+
+    pld.color = f * cosThetaI / pdf;
 
     // Metal
 //    rayDir = sampleMetal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
@@ -109,12 +115,12 @@ void main() {
 //    pld.color = f * abs(dot(hitInfo.worldNormal, rayDir)) / pdf;
 
     // Sheen
-    rayDir = sampleSheen(worldNormal, pld.rngState);
-    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
-    vec3 f = sheen(props.albedo, rayDir, h, worldNormal, props.sheenTint);
-    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
-    pdf = pdfSheen(worldNormal, rayDir);
-    pld.color = f * cosThetaI / pdf;
+//    rayDir = sampleSheen(worldNormal, pld.rngState);
+//    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+//    vec3 f = sheen(props.albedo, rayDir, h, worldNormal, props.sheenTint);
+//    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+//    pdf = pdfSheen(worldNormal, rayDir);
+//    pld.color = f * cosThetaI / pdf;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
