@@ -596,4 +596,46 @@ float pdfSheen(vec3 n, vec3 wo) {
     return max(dot(n, wo), 0.0) * k_inv_pi;
 }
 
+// ============================================================================
+//                            Putting it Together
+// ============================================================================
+
+vec3 sampleDisney(
+    mat3 tbn,
+    vec3 baseColor,
+    float anisotropic,
+    float roughness,
+    float clearcoatGloss,
+    float eta,
+    float probDiffuse,
+    float probMetallic,
+    float probClearcoat,
+    float probSpecularTransmission,
+    vec3 n,
+    vec3 wi,
+    out bool didRefract,
+    inout uint rngState
+) {
+    float cdf[4];
+    cdf[0] = probDiffuse;
+    cdf[1] = cdf[0] + probMetallic;
+    cdf[2] = cdf[1] + probClearcoat;
+    cdf[3] = cdf[2] + probSpecularTransmission;
+
+    float rand = random(rngState) * cdf[3];
+    if (rand < cdf[0]) {
+        // Diffuse
+        return sampleDiffuse(n, rngState);
+    } else if (rand < cdf[1]) {
+        // Metal
+        return sampleMetal(tbn, baseColor, anisotropic, roughness, n, wi, rngState);
+    } else if (rand < cdf[2]) {
+        // Clearcoat
+        return sampleClearcoat(tbn, clearcoatGloss, wi, rngState);
+    }
+
+    // Glass
+    return sampleGlass(tbn, wi, roughness, anisotropic, eta, rngState, didRefract);
+}
+
 #endif
