@@ -109,11 +109,11 @@ void main() {
 //    pld.color = f * abs(dot(hitInfo.worldNormal, rayDir)) / pdf;
 
     // Sheen
-    rayDir = sampleSheen(hitInfo.worldNormal, pld.rngState);
+    rayDir = sampleSheen(worldNormal, pld.rngState);
     vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
-    vec3 f = sheen(props.albedo, rayDir, h, hitInfo.worldNormal, props.sheenTint);
+    vec3 f = sheen(props.albedo, rayDir, h, worldNormal, props.sheenTint);
     float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
-    pdf = pdfSheen(hitInfo.worldNormal, rayDir);
+    pdf = pdfSheen(worldNormal, rayDir);
     pld.color = f * cosThetaI / pdf;
 
     pld.pdf = pdf;

@@ -567,20 +567,32 @@ float luminance(vec3 color) {
 vec3 sheen(vec3 baseColor, vec3 wo, vec3 h, vec3 n, vec3 sheenTint) {
     float lum = luminance(baseColor);
     vec3 ctint = lum > 0.0 ? baseColor / lum : vec3(1);
-    vec3 csheen = (1 - sheenTint) + sheenTint * ctint;
+    vec3 csheen = mix(vec3(1.0), ctint, sheenTint);
 
     vec3 fsheen = csheen * pow(1 - max(dot(h, wo), 0), 5) * max(dot(n, wo), 0);
     return fsheen;
 }
 
 vec3 sampleSheen(vec3 n, inout uint rngState) {
-    // Lambertian reflection
-    const float theta = 2.0 * k_pi * random(rngState);  // Random in [0, 2pi]
-    const float u = 2.0 * random(rngState) - 1.0;   // Random in [-1, 1]
-    const float r = sqrt(1.0 - u * u);
-    const vec3 direction = n + vec3(r * cos(theta), r * sin(theta), u);
+    // 1) draw two uniform randoms
+    float xi1 = random(rngState);
+    float xi2 = random(rngState);
 
-    return normalize(direction);
+    // 2) convert to spherical coords
+    float r   = sqrt(xi1);
+    float phi = 2.0 * k_pi * xi2;
+    float x   = r * cos(phi);
+    float y   = r * sin(phi);
+    float z   = sqrt(max(0.0, 1.0 - xi1));  // cosθ
+
+    // 3) build an orthonormal basis (n, t, b)
+    vec3 t = abs(n.x) < 0.5
+    ? normalize(cross(n, vec3(1,0,0)))
+    : normalize(cross(n, vec3(0,1,0)));
+    vec3 b = cross(n, t);
+
+    // 4) transform from local→world
+    return normalize(x*t + y*b + z*n);
 }
 
 float pdfSheen(vec3 n, vec3 wo) {
