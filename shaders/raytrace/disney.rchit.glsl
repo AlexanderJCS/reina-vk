@@ -84,14 +84,14 @@ void main() {
     float pdf = 0.0;
 
     // Diffuse
-    rayDir = sampleDiffuse(worldNormal, pld.rngState);
-    // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h) {
-    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
-    vec3 f = diffuse(props.roughness, props.subsurface, props.albedo, worldNormal, -gl_WorldRayDirectionEXT, rayDir, h);
-    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
-    pdf = pdfDiffuse(rayDir, worldNormal);
-
-    pld.color = f * cosThetaI / pdf;
+//    rayDir = sampleDiffuse(worldNormal, pld.rngState);
+//    // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h) {
+//    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+//    vec3 f = diffuse(props.roughness, props.subsurface, props.albedo, worldNormal, -gl_WorldRayDirectionEXT, rayDir, h);
+//    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+//    pdf = pdfDiffuse(rayDir, worldNormal);
+//
+//    pld.color = f * cosThetaI / pdf;
 
     // Metal
 //    rayDir = sampleMetal(hitInfo.tbn, props.albedo, props.anisotropic, props.roughness, worldNormal, -gl_WorldRayDirectionEXT, pld.rngState);
@@ -122,6 +122,26 @@ void main() {
 //    pdf = pdfSheen(worldNormal, rayDir);
 //    pld.color = f * cosThetaI / pdf;
 
+    float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
+
+    bool didRefract;
+    rayDir = sampleDisney(
+        hitInfo.tbn,
+        props.albedo,
+        props.anisotropic,
+        props.roughness,
+        props.clearcoatGloss,
+        eta,
+        1,
+        0,
+        0,
+        0,
+        hitInfo.worldNormal,
+        -gl_WorldRayDirectionEXT,
+        didRefract,
+        pld.rngState
+    );
+
     pld.pdf = pdf;
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, rayDir);
@@ -132,13 +152,13 @@ void main() {
     pld.surfaceNormal = worldNormal;
     pld.tbn = hitInfo.tbn;
     pld.props = props;
-//    pld.didRefract = didRefract;
+    pld.didRefract = didRefract;
     pld.didRefract = false;
-//    pld.eta = eta;
+    pld.eta = eta;
     pld.eta = 0;
 
-//    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
-    pld.insideDielectric = false;
+    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
+//    pld.insideDielectric = false;
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {
