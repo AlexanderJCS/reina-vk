@@ -607,39 +607,6 @@ float pdfSheen(vec3 n, vec3 wo) {
 //                            Putting it Together
 // ============================================================================
 
-struct LobePDFs {
-    float diffuse;
-    float metal;
-    float clearcoat;
-    float transmission;
-};
-
-LobePDFs computeLobePDFs(float metallic, float specTrans, float clearcoat) {
-    // https://schuttejoe.github.io/post/disneybsdf/
-    float metallicBRDF   = metallic;
-    float specularBSDF   = (1.0f - metallic) * specTrans;
-    float dielectricBRDF = (1.0f - specTrans) * (1.0f - metallic);
-
-    float specularWeight     = metallicBRDF + dielectricBRDF;
-    float transmissionWeight = specularBSDF;
-    float diffuseWeight      = dielectricBRDF;
-    float clearcoatWeight    = 1.0f * clamp(clearcoat, 0.0, 1.0);
-
-    float norm = 1.0f / (specularWeight + transmissionWeight + diffuseWeight + clearcoatWeight);
-
-    float pSpecular  = specularWeight     * norm;
-    float pSpecTrans = transmissionWeight * norm;
-    float pDiffuse   = diffuseWeight      * norm;
-    float pClearcoat = clearcoatWeight    * norm;
-
-    return LobePDFs(
-        pDiffuse,
-        pSpecular,
-        pClearcoat,
-        pSpecTrans
-    );
-}
-
 vec3 sampleDisney(
     mat3 tbn,
     vec3 baseColor,
@@ -647,7 +614,6 @@ vec3 sampleDisney(
     float roughness,
     float clearcoatGloss,
     float eta,
-    float diffuse,
     float metallic,
     float clearcoat,
     float specTransmission,
@@ -656,15 +622,19 @@ vec3 sampleDisney(
     out bool didRefract,
     inout uint rngState
 ) {
-    LobePDFs lobePDFs = computeLobePDFs(metallic, specTransmission, clearcoat);
+    float diffuseWt = (1 - specTransmission) * (1 - metallic);
+    float sheenWt = (1 - metallic);
+    float metalWt = (1 - specTransmission * (1 - metallic));
+    float clearcoatWt = 0.25 * clearcoat;
+    float glassWt = (1 - metallic) * specTransmission;
 
     float cdf[4];
-    cdf[0] = lobePDFs.diffuse;
-    cdf[1] = cdf[0] + lobePDFs.metal;
-    cdf[2] = cdf[1] + lobePDFs.clearcoat;
-    cdf[3] = cdf[2] + lobePDFs.transmission;
+    cdf[0] = diffuseWt;
+    cdf[1] = cdf[0] + metalWt;
+    cdf[2] = cdf[1] + clearcoatWt;
+    cdf[3] = cdf[2] + glassWt;
 
-    float rand = random(rngState) * cdf[3];  // cdf[3] should be 1.0 but just in case
+    float rand = random(rngState) * cdf[3];
     if (rand < cdf[0]) {
         // Diffuse
         return sampleDiffuse(n, rngState);
@@ -680,7 +650,7 @@ vec3 sampleDisney(
     return sampleGlass(tbn, wi, roughness, anisotropic, eta, rngState, didRefract);
 }
 
-vec3 disney(
+vec3 evalDisney(
     mat3 tbn,
     vec3 baseColor,
     vec3 specularTint,
@@ -706,20 +676,32 @@ vec3 disney(
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specularTransmission;
 
+    float wtSum = diffuseWt + sheenWt + metalWt + clearcoatWt + glassWt;
+
     // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
     vec3 fdiffuse = evalDiffuse(roughness, subsurface, baseColor, n, wi, wo, h);
+    float diffusePdf = pdfDiffuse(wo, n);
 
     // vec3 sheen(vec3 baseColor, vec3 wo, vec3 h, vec3 n, vec3 sheenTint)
     vec3 fsheen = evalSheen(baseColor, wo, h, n, sheenTint);
+    float sheenPdf = pdfSheen(n, wo);
 
     // vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h, float specular, vec3 specularTint, float metallic, float eta) {
     vec3 fmetal = evalMetal(tbn, baseColor, anisotropic, roughness, n, wi, wo, h, specularTransmission, specularTint, metallic, eta);
+    float metalPdf = pdfMetal(tbn, wi, wo, anisotropic, roughness);
 
     vec3 fclearcoat = evalClearcoat(tbn, wi, wo, clearcoatGloss, h);
+    float clearcoatPdf = pdfClearcoat(tbn, wi, wo, h, clearcoatGloss);
 
     // vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float eta, vec3 n, vec3 wi, vec3 wo, bool didRefract, out float pdf)
-    float ignorePdf;
-    vec3 fglass = glass(tbn, baseColor, anisotropic, roughness, eta, n, wi, wo, didRefract, ignorePdf);
+    float glassPdf;
+    vec3 fglass = glass(tbn, baseColor, anisotropic, roughness, eta, n, wi, wo, didRefract, glassPdf);
+
+    pdf = diffusePdf * diffuseWt / wtSum +
+          sheenPdf * sheenWt / wtSum +
+          metalPdf * metalWt / wtSum +
+          clearcoatPdf * clearcoatWt / wtSum +
+          glassPdf * glassWt / wtSum;
 
     return diffuseWt * fdiffuse +
            sheenWt * fsheen +

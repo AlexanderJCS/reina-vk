@@ -81,7 +81,6 @@ void main() {
     #endif
 
     vec3 rayDir = vec3(0);
-    float pdf = 0.0;
 
     // Diffuse
 //    rayDir = sampleDiffuse(worldNormal, pld.rngState);
@@ -132,15 +131,42 @@ void main() {
         props.roughness,
         props.clearcoatGloss,
         eta,
+        0,
+        0,
         1,
-        0,
-        0,
-        0,
-        hitInfo.worldNormal,
+        worldNormal,
         -gl_WorldRayDirectionEXT,
         didRefract,
         pld.rngState
     );
+
+    vec3 h = normalize(rayDir + -gl_WorldRayDirectionEXT);
+
+    float pdf;
+    vec3 f = evalDisney(
+        hitInfo.tbn,
+        props.albedo,
+        vec3(1),  // specular tint
+        props.sheenTint,  // sheen tint
+        props.anisotropic,
+        props.roughness,
+        props.subsurface,
+        props.clearcoatGloss,
+        eta,
+        0,
+        0,
+        1,
+        didRefract,
+        worldNormal,
+        -gl_WorldRayDirectionEXT,
+        rayDir,
+        h,
+        pdf
+    );
+
+    float cosThetaI = max(dot(worldNormal, rayDir), 0.0);
+
+    pld.color = f * cosThetaI / pdf;
 
     pld.pdf = pdf;
     pld.emission = props.emission;
