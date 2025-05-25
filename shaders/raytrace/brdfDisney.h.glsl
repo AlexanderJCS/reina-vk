@@ -204,8 +204,17 @@ vec3 sampleDiffuse(vec3 n, inout uint rngState) {
 //                                    Metal
 // ============================================================================
 
-vec3 evalFm(vec3 baseColor, vec3 h, vec3 wo) {
-    return baseColor + (1 - baseColor) * pow(1 - abs(dot(h, wo)), 5);
+float evalR0(float ior) {
+    return (ior - 1) * (ior - 1) / ((ior + 1) * (ior + 1));
+}
+
+vec3 evalFm(vec3 baseColor, vec3 h, vec3 wo, float specular, float metallic, float eta) {
+    float lum = luminance(baseColor);
+    vec3 ctint = lum > 0.0 ? baseColor / lum : vec3(1);
+    vec3 ks = (1 - ctint) + specularTint * ctint;
+    vec3 c0 = specular * evalR0(eta) * (1 - metallic) * ks + metallic * baseColor;
+
+    return c0 + (1 - c0) * pow(1 - abs(dot(h, wo)), 5);
 }
 
 float evalDm(vec3 hl, float alphax, float alphay) {
@@ -231,14 +240,14 @@ float evalGm(vec3 wi, vec3 wo, float alphax, float alphay) {
     return g1 * g2;
 }
 
-vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h) {
+vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h, float specular, float metallic, float eta) {
     const float alphamin = 0.0001;
 
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float alphax = max(alphamin, roughness * roughness / aspect);
     float alphay = max(alphamin, roughness * roughness * aspect);
 
-    vec3 fm = evalFm(baseColor, h, wo);
+    vec3 fm = evalFm(baseColor, h, wo, specular, metallic, eta);
 
     vec3 wiTangent = vec3(transpose(tbn) * wi);
     vec3 woTangent = vec3(transpose(tbn) * wo);
@@ -318,10 +327,6 @@ float evalDc(float alphag, vec3 hl) {
     float denominator = k_pi * log(alphag * alphag) * (1 + (alphag * alphag - 1) * (hl.z * hl.z));
 
     return numerator / denominator;
-}
-
-float evalR0(float ior) {
-    return (ior - 1) * (ior - 1) / ((ior + 1) * (ior + 1));
 }
 
 float evalFc(vec3 h, vec3 wo) {
@@ -636,6 +641,49 @@ vec3 sampleDisney(
 
     // Glass
     return sampleGlass(tbn, wi, roughness, anisotropic, eta, rngState, didRefract);
+}
+
+vec3 disney(
+    mat3 tbn,
+    vec3 baseColor,
+    float anisotropic,
+    float roughness,
+    float clearcoatGloss,
+    float eta,
+    float metallic,
+    float clearcoat,
+    float specularTransmission,
+    vec3 n,
+    vec3 wi,
+    vec3 wo,
+    out pdf
+) {
+    float diffuseWt = (1 - specularTransmission) * (1 - metallic);
+    float sheenWt = (1 - metallic);
+    float metalWt = (1 - specularTransmission * (1 - metallic));
+    float clearcoatWt = 0.25 * clearcoat;
+    float glassWt = (1 - metallic) * specularTransmission;
+
+    // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
+    vec3 fdiffuse = diffuse(roughness, subsurface, baseColor, n, wi, wo, h);
+
+    // vec3 sheen(vec3 baseColor, vec3 wo, vec3 h, vec3 n, vec3 sheenTint)
+    vec3 fsheen = sheen(baseColor, wo, h, n, sheenTint);
+
+    // vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h, float specular, float metallic, float eta)
+    vec3 fmetal = metal(tbn, baseColor, anisotropic, roughness, n, wi, wo, h, specularTransmission, metallic, eta);
+
+    vec3 fclearcoat = clearcoat(tbn, wi, wo, clearcoatGloss, h);
+
+    // vec3 glass(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, float eta, vec3 n, vec3 wi, vec3 wo, bool didRefract, out float pdf)
+    float ignorePdf;
+    vec3 fglass = glass(tbn, baseColor, anisotropic, roughness, eta, n, wi, wo, didRefract, ignorePdf);
+
+    return diffuseWt * fdiffuse +
+           sheenWt * fsheen +
+           metalWt * fmetal +
+           clearcoatWt * fclearcoat +
+           glassWt * fglass;
 }
 
 #endif
