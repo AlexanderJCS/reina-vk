@@ -59,7 +59,7 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         vec3 h = normalize(direction + -rayIn);
 
         // hard-coded for now
-        brdf = diffuse(props.roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
+        brdf = evalDiffuse(props.roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
 //        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
 
 //        float ignorePdf;  // for BSDF sampling only
