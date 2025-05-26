@@ -59,13 +59,36 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         vec3 h = normalize(direction + -rayIn);
 
         // hard-coded for now
-        brdf = evalDiffuse(props.roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
+//        brdf = evalDiffuse(props.roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
 //        brdf = metal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h);
 
 //        float ignorePdf;  // for BSDF sampling only
 //        brdf = glass(tbn, props.albedo, props.anisotropic, props.roughness, eta, surfaceNormal, -rayIn, direction, didRefract, ignorePdf);
 
 //        brdf = sheen(props.albedo, -rayIn, h, surfaceNormal, props.sheenTint);
+
+        float ignorePdf;
+        brdf = evalDisney(
+            tbn,
+            props.albedo,
+            vec3(1),  // specular tint
+            props.sheenTint,  // sheen tint
+            props.anisotropic,
+            props.roughness,
+            props.subsurface,
+            props.clearcoatGloss,
+            eta,
+            0.3,
+            0,
+            0,
+            0,
+            didRefract,
+            surfaceNormal,
+            -rayIn,
+            direction,
+            h,
+            ignorePdf
+        );
     }
 
     float cosThetai = dot(surfaceNormal, direction);
@@ -127,7 +150,7 @@ vec3 traceSegments(Ray ray) {
 
         if (!pld.insideDielectric) {
             vec3 indirect = pld.emission.xyz;
-            bool skipNEE = bool(pld.materialID != 0);
+            bool skipNEE = bool(pld.materialID != 0 && pld.materialID != 3);
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipNEE

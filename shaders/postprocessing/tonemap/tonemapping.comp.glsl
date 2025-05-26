@@ -76,8 +76,8 @@ void main() {
     vec3 color = pixel.rgb;
 
     #ifndef DEBUG_SHOW_NORMALS
-//        color = adjustExposure(color, pushConstants.exposure);
-//        color = tonemapACESFitted(color);
+        color = adjustExposure(color, pushConstants.exposure);
+        color = tonemapACESFitted(color);
     #endif
 
     imageStore(outImage, pixelCoord, vec4(color, 1));

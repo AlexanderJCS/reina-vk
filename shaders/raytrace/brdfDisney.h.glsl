@@ -623,8 +623,7 @@ vec3 sampleDisney(
     inout uint rngState
 ) {
     float diffuseWt = (1 - specTransmission) * (1 - metallic);
-    float sheenWt = (1 - metallic);
-    float metalWt = (1 - specTransmission * (1 - metallic));
+    float metalWt = metallic;
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specTransmission;
 
@@ -663,6 +662,7 @@ vec3 evalDisney(
     float metallic,
     float clearcoat,
     float specularTransmission,
+    float sheen,
     bool didRefract,
     vec3 n,
     vec3 wi,
@@ -671,12 +671,11 @@ vec3 evalDisney(
     out float pdf
 ) {
     float diffuseWt = (1 - specularTransmission) * (1 - metallic);
-    float sheenWt = (1 - metallic);
-    float metalWt = (1 - specularTransmission * (1 - metallic));
+    float metalWt = metallic;
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specularTransmission;
 
-    float wtSum = diffuseWt + sheenWt + metalWt + clearcoatWt + glassWt;
+    float wtSum = diffuseWt + metalWt + glassWt + clearcoatWt;
 
     // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
     vec3 fdiffuse = evalDiffuse(roughness, subsurface, baseColor, n, wi, wo, h);
@@ -684,7 +683,6 @@ vec3 evalDisney(
 
     // vec3 sheen(vec3 baseColor, vec3 wo, vec3 h, vec3 n, vec3 sheenTint)
     vec3 fsheen = evalSheen(baseColor, wo, h, n, sheenTint);
-    float sheenPdf = pdfSheen(n, wo);
 
     // vec3 metal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h, float specular, vec3 specularTint, float metallic, float eta) {
     vec3 fmetal = evalMetal(tbn, baseColor, anisotropic, roughness, n, wi, wo, h, specularTransmission, specularTint, metallic, eta);
@@ -698,16 +696,14 @@ vec3 evalDisney(
     vec3 fglass = glass(tbn, baseColor, anisotropic, roughness, eta, n, wi, wo, didRefract, glassPdf);
 
     pdf = diffusePdf * diffuseWt / wtSum +
-          sheenPdf * sheenWt / wtSum +
           metalPdf * metalWt / wtSum +
           clearcoatPdf * clearcoatWt / wtSum +
           glassPdf * glassWt / wtSum;
 
-    return diffuseWt * fdiffuse +
-           sheenWt * fsheen +
-           metalWt * fmetal +
+    return diffuseWt / wtSum * (fdiffuse + fsheen * sheen) +
+           metalWt / wtSum * fmetal +
            clearcoatWt * fclearcoat +
-           glassWt * fglass;
+           glassWt / wtSum * fglass;
 }
 
 #endif
