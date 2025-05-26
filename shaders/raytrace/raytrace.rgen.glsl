@@ -70,7 +70,7 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         float ignorePdf;
         brdf = evalDisney(
             tbn,
-            props.albedo,
+            albedo,
             props.specularTint,
             props.sheenTint,
             props.anisotropic,
@@ -139,7 +139,7 @@ vec3 traceSegments(Ray ray) {
         }
 
         #ifdef DEBUG_SHOW_NORMALS
-            incomingLight += pld.color;
+            incomingLight += pld.albedo;
             break;
         #endif
 
@@ -154,7 +154,7 @@ vec3 traceSegments(Ray ray) {
 
             // vec4 directLight(int materialID, vec3 rayIn, vec3 rayOrigin, vec3 surfaceNormal, vec3 albedo, inout uint rngState)
             vec4 direct = !skipNEE
-                ? directLight(pld.props, pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.color, pld.eta, pld.didRefract, pld.rngState)
+                ? directLight(pld.props, pld.tbn, pld.materialID, rayIn, pld.rayOrigin, pld.surfaceNormal, pld.albedo, pld.eta, pld.didRefract, pld.rngState)
                 : vec4(0.0, 0.0, 0.0, 0.0);
 
             float pdfNEE = direct.w;

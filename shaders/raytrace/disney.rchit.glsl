@@ -64,10 +64,11 @@ void main() {
         worldNormal = normalize(hitInfo.tbn * tangentNormal);
     }
 
+    vec3 albedo;
     #ifdef DEBUG_SHOW_NORMALS
-        pld.color = worldNormal * 0.5 + 0.5;
+        albedo = worldNormal * 0.5 + 0.5;
     #else
-        pld.color = props.albedo;
+        albedo = props.albedo;
         if (props.textureID >= 0) {
             vec4 texColor = texture(textures[props.textureID], uv);
             if (texColor.a < 0.999 && random(pld.rngState) > texColor.a) {
@@ -76,7 +77,7 @@ void main() {
                 return;
             }
 
-            pld.color *= texColor.rgb;
+            albedo *= texColor.rgb;
         }
     #endif
 
@@ -126,7 +127,7 @@ void main() {
     bool didRefract;
     rayDir = sampleDisney(
         hitInfo.tbn,
-        props.albedo,
+        albedo,
         props.anisotropic,
         props.roughness,
         props.clearcoatGloss,
@@ -145,7 +146,7 @@ void main() {
     float pdf;
     vec3 f = evalDisney(
         hitInfo.tbn,
-        props.albedo,
+        albedo,
         props.specularTint,
         props.sheenTint,
         props.anisotropic,
@@ -169,6 +170,7 @@ void main() {
 
     pld.color = f * cosThetaI / pdf;
 
+    pld.albedo = albedo;
     pld.pdf = pdf;
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionForDielectric(hitInfo.worldPosition, hitInfo.worldNormalGeometry, rayDir);

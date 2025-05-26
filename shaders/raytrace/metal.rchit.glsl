@@ -47,6 +47,7 @@ void main() {
         }
     #endif
 
+    pld.albedo = pld.color;
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     pld.rayDirection = fuzzyReflection(gl_WorldRayDirectionEXT, worldNormal, props.roughness, pld.rngState);

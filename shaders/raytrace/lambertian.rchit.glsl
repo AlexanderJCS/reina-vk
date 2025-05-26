@@ -55,6 +55,7 @@ void main() {
         }
     #endif
 
+    pld.albedo = pld.color;
     pld.emission = props.emission;
     pld.rayOrigin = offsetPositionAlongNormal(hitInfo.worldPosition, hitInfo.worldNormalGeometry);
     pld.rayDirection = diffuseReflection(worldNormal, pld.rngState);

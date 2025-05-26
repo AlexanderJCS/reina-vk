@@ -303,15 +303,24 @@ void reina::scene::gltf::addInstancesToScene(fastgltf::Asset &asset, reina::scen
             });
 }
 
+inline glm::vec3 toGlm(const fastgltf::math::nvec3& v) {
+    return glm::vec3{ v.x(), v.y(), v.z() };
+}
+
 std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::gltf::materialsFromMeshTBNs(fastgltf::Asset &asset, const std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>>& meshIdToPrimitives, std::unordered_map<uint32_t, uint32_t> gltfTexIdToSceneId) {
     std::unordered_map<uint32_t, std::vector<Material>> meshIdToMaterials;
 
     for (const auto& [meshID, primitives] : meshIdToPrimitives) {
         for (const Primitive& primitive : primitives) {
-            Material material{0, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, 0.0f, true, 0.0f, false};
+            Material material{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, 1.5f, true, 0.0f, false, 0.0f, 0.0f, 0.0f, glm::vec3(1.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
 
             if (primitive.materialIdx != -1) {
                 const auto& gltfMaterial = asset.materials[primitive.materialIdx];
+
+                if (glm::any(glm::greaterThan(toGlm(gltfMaterial.emissiveFactor), glm::vec3(0))) && !gltfMaterial.emissiveTexture.has_value()) {
+                    // emission maps are not supported yet so do not include any emissive materials that require an emission map
+                    material.emission = toGlm(gltfMaterial.emissiveFactor) * gltfMaterial.emissiveStrength;
+                }
 
                 if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
                     try {

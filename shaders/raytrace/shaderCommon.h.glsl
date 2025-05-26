@@ -16,6 +16,7 @@ layout(binding = 3, set = 0, scalar) buffer Indices {
 };
 
 struct HitPayload {
+    vec3 albedo;        // The albedo of the surface.
     vec3 color;         // The reflectivity of the surface.
     vec3 rayOrigin;     // The new ray origin in world-space.
     vec3 rayDirection;  // The new ray direction in world-space.

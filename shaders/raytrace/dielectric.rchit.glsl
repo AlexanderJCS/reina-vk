@@ -99,6 +99,7 @@ void main() {
         pld.accumulatedDistance = 0.0;
     }
 
+    pld.albedo = pld.color;
     pld.emission = props.emission;
     pld.rayHitSky = false;
     pld.skip = false;
