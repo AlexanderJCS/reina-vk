@@ -322,6 +322,11 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
                     material.emission = toGlm(gltfMaterial.emissiveFactor) * gltfMaterial.emissiveStrength;
                 }
 
+                material.metallic = gltfMaterial.pbrData.metallicFactor;
+                material.roughness = gltfMaterial.pbrData.roughnessFactor;
+
+                // TODO: support clearcoat, transmission, sheen
+
                 if (gltfMaterial.pbrData.baseColorTexture.has_value()) {
                     try {
                         material.textureID = static_cast<int>(gltfTexIdToSceneId.at(static_cast<uint32_t>(asset.textures[gltfMaterial.pbrData.baseColorTexture.value().textureIndex].imageIndex.value())));
