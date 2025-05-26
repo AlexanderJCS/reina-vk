@@ -71,17 +71,17 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         brdf = evalDisney(
             tbn,
             props.albedo,
-            vec3(1),  // specular tint
-            props.sheenTint,  // sheen tint
+            props.specularTint,
+            props.sheenTint,
             props.anisotropic,
             props.roughness,
             props.subsurface,
             props.clearcoatGloss,
             eta,
-            0.3,
-            0,
-            0,
-            0,
+            props.metallic,
+            props.clearcoat,
+            props.specularTransmission,
+            props.sheen,
             didRefract,
             surfaceNormal,
             -rayIn,

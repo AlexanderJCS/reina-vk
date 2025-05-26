@@ -37,6 +37,12 @@ namespace reina::scene {
         float subsurface;
         float clearcoatGloss;
         glm::vec3 sheenTint;
+        glm::vec3 specularTint;
+
+        float metallic;
+        float clearcoat;
+        float specularTransmission;
+        float sheen;
     };
 
     namespace {

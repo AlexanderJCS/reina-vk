@@ -99,10 +99,10 @@ Reina::Reina(){
 
     glm::mat4 subjectTransform = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.25f)), glm::vec3(0, 2, 0));
 
-    reina::scene::Material cornellWall{0, (int) wallTexID, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f)};
-    reina::scene::Material subjectMaterial{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.2f, 1.5f, true, 0.0f, false, 0.0f, 0.0f, 0.0f, glm::vec3(1.0f)};
-    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f)};
-    reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f)};
+    reina::scene::Material cornellWall{0, (int) wallTexID, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+    reina::scene::Material subjectMaterial{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.0f, 1.5f, true, 0.0f, false, 0.0f, 0.0f, 0.0f, glm::vec3(1.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+    reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
     scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), cornellWall);
     scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
     scene.addObject("models/uv_sphere_highres.obj", subjectTransform, subjectMaterial);

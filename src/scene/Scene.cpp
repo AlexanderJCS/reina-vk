@@ -42,7 +42,12 @@ void reina::scene::Scene::addInstance(uint32_t objectID, glm::mat4 transform, co
             mat.anisotropic,
             mat.subsurface,
             mat.clearcoatGloss,
-            mat.sheenTint
+            mat.sheenTint,
+            mat.specularTint,
+            mat.metallic,
+            mat.clearcoat,
+            mat.specularTransmission,
+            mat.sheen
             );
 
     instancesToCreate.emplace_back(instanceProperties.size() - 1, mat.materialIdx, objectID, transform);
