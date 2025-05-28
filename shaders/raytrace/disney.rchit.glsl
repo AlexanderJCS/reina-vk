@@ -58,11 +58,11 @@ void main() {
     }
 
     vec3 worldNormal = hitInfo.worldNormal;
-    if (props.normalMapTexID >= 0) {
-        vec3 tangentNormal = texture(textures[props.normalMapTexID], uv).rgb * 2 - 1;
-        tangentNormal.y *= -1;
-        worldNormal = normalize(hitInfo.tbn * tangentNormal);
-    }
+//    if (props.normalMapTexID >= 0) {
+//        vec3 tangentNormal = texture(textures[props.normalMapTexID], uv).rgb * 2 - 1;
+//        tangentNormal.y *= -1;
+//        worldNormal = normalize(hitInfo.tbn * tangentNormal);
+//    }
 
     vec3 albedo;
     #ifdef DEBUG_SHOW_NORMALS
@@ -181,13 +181,12 @@ void main() {
     pld.surfaceNormal = worldNormal;
     pld.tbn = hitInfo.tbn;
     pld.props = props;
-    pld.didRefract = didRefract;
     pld.didRefract = false;
     pld.eta = eta;
     pld.eta = 0;
 
-    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
-//    pld.insideDielectric = false;
+//    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
+    pld.insideDielectric = false;
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {

@@ -40,6 +40,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fastgltf)
 
+FetchContent_Declare(
+        mikktspace
+        GIT_REPOSITORY https://github.com/mmikk/MikkTSpace
+        GIT_TAG        3e895b49d05ea07e4c2133156cfa94369e19e409
+)
+FetchContent_MakeAvailable(mikktspace)
+
 # tomlplusplus
 FetchContent_Declare(
         tomlplusplus
@@ -101,10 +108,15 @@ target_link_libraries(reina_vk
         fastgltf
 )
 
+target_sources(reina_vk PRIVATE
+        ${mikktspace_SOURCE_DIR}/mikktspace.c
+)
+
 # Include directories for FetchContent libraries
 target_include_directories(reina_vk PRIVATE
         ${Vulkan_INCLUDE_DIRS}
         ${stb_SOURCE_DIR}
         ${tinyobjloader_SOURCE_DIR}
         ${tomlplusplus_SOURCE_DIR}
+        ${mikktspace_SOURCE_DIR}
 )

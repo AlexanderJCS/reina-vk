@@ -10,6 +10,62 @@
 #include <iostream>
 #include <unordered_set>
 
+#include "mikktspace.h"
+
+
+static int getNumFaces(const SMikkTSpaceContext* ctx) {
+    auto* mesh = static_cast<reina::scene::gltf::Primitive*>(ctx->m_pUserData);
+    // 3 verts per face → #faces = totalVerts / 3
+    return static_cast<int>(mesh->vertices.size() / 3);
+}
+
+static int getNumVertsOfFace(const SMikkTSpaceContext* ctx, int /*iFace*/) {
+    return 3;
+}
+
+static void getPosition(const SMikkTSpaceContext* ctx, float outPos[],
+                        int iFace, int iVert) {
+    auto* mesh = static_cast<reina::scene::gltf::Primitive*>(ctx->m_pUserData);
+    int idx = iFace * 3 + iVert;
+    outPos[0] = mesh->vertices[idx].position[0];
+    outPos[1] = mesh->vertices[idx].position[1];
+    outPos[2] = mesh->vertices[idx].position[2];
+}
+
+static void getNormal(const SMikkTSpaceContext* ctx, float outNorm[],
+                      int iFace, int iVert) {
+    auto* mesh = static_cast<reina::scene::gltf::Primitive*>(ctx->m_pUserData);
+    int idx = iFace * 3 + iVert;
+    outNorm[0] = mesh->vertices[idx].normal[0];
+    outNorm[1] = mesh->vertices[idx].normal[1];
+    outNorm[2] = mesh->vertices[idx].normal[2];
+}
+
+static void getTexCoord(const SMikkTSpaceContext* ctx, float outUV[],
+                        int iFace, int iVert) {
+    auto* mesh = static_cast<reina::scene::gltf::Primitive*>(ctx->m_pUserData);
+    int idx = iFace * 3 + iVert;
+    outUV[0] = mesh->vertices[idx].uv[0];
+    outUV[1] = mesh->vertices[idx].uv[1];
+}
+
+static void setTSpace(const SMikkTSpaceContext* ctx,
+                      const float tangent[], const float bitangent[],
+                      const float /*magS*/, const float /*magT*/,
+                      const int isOrientationPreserving,
+                      int iFace, int iVert) {
+    auto* mesh = static_cast<reina::scene::gltf::Primitive*>(ctx->m_pUserData);
+    int idx = iFace * 3 + iVert;
+
+    mesh->vertices[idx].tangent[0] = tangent[0];
+    mesh->vertices[idx].tangent[1] = tangent[1];
+    mesh->vertices[idx].tangent[2] = tangent[2];
+
+    mesh->vertices[idx].bitangent[0] = bitangent[0];
+    mesh->vertices[idx].bitangent[1] = bitangent[1];
+    mesh->vertices[idx].bitangent[2] = bitangent[2];
+}
+
 
 fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     const std::filesystem::path path{filepath};
@@ -109,42 +165,23 @@ std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>> reina::
                         m.vertices[i].normal = n;
                     });
             }
-            // — TANGENT: may be Vec4 (x,y,z + w sign) or fallback Vec3
-            if (auto tanIt = prim.findAttribute("TANGENT"); tanIt != prim.attributes.end()) {
-                const auto& acc = asset.accessors[tanIt->accessorIndex];
-                // Vec4 case: apply w as bitangent sign
-                if (acc.type == fastgltf::AccessorType::Vec4) {
-                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
-                        asset, acc,
-                        [&](const fastgltf::math::fvec4& t, std::size_t i) {
-                            // tangent.xyz
-                            m.vertices[i].tangent  = { t.x(), t.y(), t.z() };
-                            // bitangent = cross(normal, tangent) * w
-                            m.vertices[i].bitangent =
-                                    fastgltf::math::cross(m.vertices[i].normal,
-                                                          m.vertices[i].tangent)
-                                    * t.w();
-                        }
-                    );
-                }
-                // Vec3 fallback: no handedness, assume w == +1
-                else if (acc.type == fastgltf::AccessorType::Vec3) {
-                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
-                        asset, acc,
-                        [&](const fastgltf::math::fvec3& t, std::size_t i) {
-                            m.vertices[i].tangent   = t;
-                            // bitangent = cross(normal, tangent)
-                            m.vertices[i].bitangent =
-                                    fastgltf::math::cross(m.vertices[i].normal,
-                                                          m.vertices[i].tangent);
-                        }
-                    );
-                }
-                else {
-                    // Unexpected accessor type—either skip or log a warning
-                    std::cerr << "Warning: TANGENT accessor is neither Vec4 nor Vec3\n";
-                }
-            }
+
+            SMikkTSpaceInterface interface = {
+                    .m_getNumFaces         = getNumFaces,
+                    .m_getNumVerticesOfFace= getNumVertsOfFace,
+                    .m_getPosition         = getPosition,
+                    .m_getNormal           = getNormal,
+                    .m_getTexCoord         = getTexCoord,
+                    .m_setTSpace           = setTSpace
+            };
+
+            SMikkTSpaceContext ctx = {
+                    .m_pInterface = &interface,
+                    .m_pUserData = &m
+            };
+
+            genTangSpaceDefault(&ctx);
+
             // — TEXCOORD_0
             if (auto a = prim.findAttribute("TEXCOORD_0")) {
                 if (a != prim.attributes.end()) {
@@ -323,7 +360,7 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
                 }
 
                 material.metallic = gltfMaterial.pbrData.metallicFactor;
-                material.roughness = gltfMaterial.pbrData.roughnessFactor;
+                material.roughness = fmin(gltfMaterial.pbrData.roughnessFactor, 0.7f);
 
                 // TODO: support clearcoat, transmission, sheen
 

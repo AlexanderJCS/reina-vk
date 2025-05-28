@@ -12,6 +12,7 @@ void main() {
     float t = 0.5 * (rayDirY + 1.0);
 //    pld.color = mix(vec3(1), vec3(0.5, 0.7, 1), t);
     pld.color = vec3(0.5);
+    pld.albedo = pld.color;
 
     pld.rayHitSky = true;
     pld.skip = false;

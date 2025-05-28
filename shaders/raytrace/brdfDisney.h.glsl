@@ -253,9 +253,9 @@ vec3 evalMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec
 
     vec3 fm = evalFm(baseColor, h, wo, specular, specularTint, metallic, eta);
 
-    vec3 wiTangent = vec3(transpose(tbn) * wi);
-    vec3 woTangent = vec3(transpose(tbn) * wo);
-    vec3 hTangent = vec3(transpose(tbn) * h);
+    vec3 wiTangent = normalize(vec3(transpose(tbn) * wi));
+    vec3 woTangent = normalize(vec3(transpose(tbn) * wo));
+    vec3 hTangent = normalize(vec3(transpose(tbn) * h));
 
     float dm = evalDm(hTangent, alphax, alphay);
     float gm = evalGm(wiTangent, woTangent, alphax, alphay);
@@ -263,7 +263,6 @@ vec3 evalMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec
     float NdotWi = abs(dot(n, wi));
     float NdotWo = abs(dot(n, wo));
 
-    // TODO: check if I should be multiplying by NdotWo
     return fm * dm * gm / (4.0 * NdotWi * NdotWo);
 }
 
@@ -627,6 +626,11 @@ vec3 sampleDisney(
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specTransmission;
 
+    diffuseWt = 0;
+    metalWt = 1;
+    clearcoatWt = 0;
+    glassWt = 0;
+
     float cdf[4];
     cdf[0] = diffuseWt;
     cdf[1] = cdf[0] + metalWt;
@@ -674,6 +678,11 @@ vec3 evalDisney(
     float metalWt = metallic;
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specularTransmission;
+
+    diffuseWt = 0;
+    metalWt = 1;
+    clearcoatWt = 0;
+    glassWt = 0;
 
     float wtSum = diffuseWt + metalWt + glassWt + clearcoatWt;
 
