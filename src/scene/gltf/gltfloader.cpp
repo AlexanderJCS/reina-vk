@@ -360,7 +360,7 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
                 }
 
                 material.metallic = gltfMaterial.pbrData.metallicFactor;
-                material.roughness = fmin(gltfMaterial.pbrData.roughnessFactor, 0.7f);
+                material.roughness = fmax(fmin(gltfMaterial.pbrData.roughnessFactor, 0.7f), 0.1f);
 
                 // TODO: support clearcoat, transmission, sheen
 

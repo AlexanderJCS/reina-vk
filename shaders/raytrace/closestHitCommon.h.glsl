@@ -113,7 +113,7 @@ HitInfo getObjectHitInfo() {
     result.worldNormal = normalize(mat3(gl_ObjectToWorldEXT) * objectNormal);
     result.worldNormalGeometry = normalize(mat3(gl_ObjectToWorldEXT) * objectNormalGeometry);
 
-    result.frontFace = dot(gl_WorldRayDirectionEXT, result.worldNormal) < 0;
+    result.frontFace = dot(gl_WorldRayDirectionEXT, result.worldNormalGeometry) < 0;
     result.worldNormal = faceforward(result.worldNormal, gl_WorldRayDirectionEXT, result.worldNormalGeometry);
     result.worldNormalGeometry = faceforward(result.worldNormalGeometry, gl_WorldRayDirectionEXT, result.worldNormalGeometry);
 
