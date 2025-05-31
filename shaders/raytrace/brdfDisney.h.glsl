@@ -626,11 +626,6 @@ vec3 sampleDisney(
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specTransmission;
 
-    diffuseWt = 0;
-    metalWt = 1;
-    clearcoatWt = 0;
-    glassWt = 0;
-
     float cdf[4];
     cdf[0] = diffuseWt;
     cdf[1] = cdf[0] + metalWt;
@@ -679,11 +674,6 @@ vec3 evalDisney(
     float clearcoatWt = 0.25 * clearcoat;
     float glassWt = (1 - metallic) * specularTransmission;
 
-    diffuseWt = 0;
-    metalWt = 1;
-    clearcoatWt = 0;
-    glassWt = 0;
-
     float wtSum = diffuseWt + metalWt + glassWt + clearcoatWt;
 
     // vec3 diffuse(float roughness, float subsurface, vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
@@ -711,7 +701,7 @@ vec3 evalDisney(
 
     return diffuseWt / wtSum * (fdiffuse + fsheen * sheen) +
            metalWt / wtSum * fmetal +
-           clearcoatWt * fclearcoat +
+           clearcoatWt / wtSum * fclearcoat +
            glassWt / wtSum * fglass;
 }
 

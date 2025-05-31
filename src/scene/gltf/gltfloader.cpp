@@ -87,7 +87,9 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
     static constexpr auto supportedExts =
             fastgltf::Extensions::KHR_mesh_quantization |
             fastgltf::Extensions::KHR_texture_transform |
-            fastgltf::Extensions::KHR_materials_variants;
+            fastgltf::Extensions::KHR_materials_variants |
+            fastgltf::Extensions::KHR_materials_transmission |
+            fastgltf::Extensions::KHR_materials_clearcoat;
 
     constexpr auto loadOpts =
             fastgltf::Options::DontRequireValidAssetMember |
@@ -361,6 +363,14 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
 
                 material.metallic = gltfMaterial.pbrData.metallicFactor;
                 material.roughness = fmax(fmin(gltfMaterial.pbrData.roughnessFactor, 0.7f), 0.1f);
+                material.albedo = glm::vec3(glm::make_vec4(gltfMaterial.pbrData.baseColorFactor.data()));  // TODO: support alpha/transparency for albedo
+                material.cullBackface = !gltfMaterial.doubleSided;
+                material.ior = gltfMaterial.ior;
+
+                if (gltfMaterial.transmission) {
+                    material.specularTransmission = gltfMaterial.transmission->transmissionFactor;
+                    material.cullBackface = false;   // thin transmissive materials are not supported
+                }
 
                 // TODO: support clearcoat, transmission, sheen
 

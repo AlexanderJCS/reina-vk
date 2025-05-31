@@ -65,9 +65,9 @@ void main() {
 //    }
 
     vec3 albedo;
-    #ifdef DEBUG_SHOW_NORMALS
-        albedo = worldNormal * 0.5 + 0.5;
-    #else
+//    #ifdef DEBUG_SHOW_NORMALS
+//        albedo = worldNormal * 0.5 + 0.5;
+//    #else
         albedo = props.albedo;
         if (props.textureID >= 0) {
             vec4 texColor = texture(textures[props.textureID], uv);
@@ -79,9 +79,7 @@ void main() {
 
             albedo *= texColor.rgb;
         }
-    #endif
-
-    vec3 rayDir = vec3(0);
+//    #endif
 
     // Diffuse
 //    rayDir = sampleDiffuse(worldNormal, pld.rngState);
@@ -125,7 +123,7 @@ void main() {
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
 
     bool didRefract;
-    rayDir = sampleDisney(
+    vec3 rayDir = sampleDisney(
         hitInfo.tbn,
         albedo,
         props.anisotropic,
@@ -185,8 +183,10 @@ void main() {
     pld.eta = eta;
     pld.eta = 0;
 
-//    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
-    pld.insideDielectric = false;
+    // TODO: there's a bug -- either I can see inside dielectrics by using pld.insideDielectric or I can have colors
+    //  by doing pld.insideDielectric = false, but not both. I need to figure out how to do this properly.
+    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
+//    pld.insideDielectric = false;
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {
