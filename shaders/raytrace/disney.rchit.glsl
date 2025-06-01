@@ -65,9 +65,9 @@ void main() {
 //    }
 
     vec3 albedo;
-//    #ifdef DEBUG_SHOW_NORMALS
-//        albedo = worldNormal * 0.5 + 0.5;
-//    #else
+    #ifdef DEBUG_SHOW_NORMALS
+        albedo = worldNormal * 0.5 + 0.5;
+    #else
         albedo = props.albedo;
         if (props.textureID >= 0) {
             vec4 texColor = texture(textures[props.textureID], uv);
@@ -79,7 +79,7 @@ void main() {
 
             albedo *= texColor.rgb;
         }
-//    #endif
+    #endif
 
     // Diffuse
 //    rayDir = sampleDiffuse(worldNormal, pld.rngState);
@@ -123,6 +123,7 @@ void main() {
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
 
     bool didRefract = false;
+    bool choseGlass = false;
     vec3 rayDir = sampleDisney(
         hitInfo.tbn,
         albedo,
@@ -136,6 +137,7 @@ void main() {
         worldNormal,
         -gl_WorldRayDirectionEXT,
         didRefract,
+        choseGlass,
         pld.rngState
     );
 
@@ -183,11 +185,7 @@ void main() {
     pld.eta = eta;
     pld.eta = 0;
 
-    if (didRefract) {
-        // TODO: problem with this current apporoach is that pld.insideDielectric is false when the ray is exiting the
-        //  dielectric, which shouldn't be the case (i think?)
-        pld.insideDielectric = hitInfo.frontFace;
-    }
+    pld.insideDielectric = choseGlass;
 
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
