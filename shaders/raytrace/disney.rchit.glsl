@@ -58,15 +58,18 @@ void main() {
     }
 
     vec3 worldNormal = hitInfo.worldNormal;
-//    if (props.normalMapTexID >= 0) {
-//        vec3 tangentNormal = texture(textures[props.normalMapTexID], uv).rgb * 2 - 1;
-//        tangentNormal.y *= -1;
-//        worldNormal = normalize(hitInfo.tbn * tangentNormal);
-//    }
+    if (props.normalMapTexID >= 0) {
+        vec3 tangentNormal = texture(textures[props.normalMapTexID], uv).rgb * 2 - 1;
+        tangentNormal.y *= -1;
+        worldNormal = normalize(hitInfo.tbn * tangentNormal);
+    }
 
     vec3 albedo;
     #ifdef DEBUG_SHOW_NORMALS
-        albedo = worldNormal * 0.5 + 0.5;
+        albedo = hitInfo.tbn[0] * 0.5 + 0.5;
+        if (any(isnan(hitInfo.tbn[0]))) {
+            albedo = vec3(1.0, 1.0, 1.0);  // red color for debugging
+        }
     #else
         albedo = props.albedo;
         if (props.textureID >= 0) {

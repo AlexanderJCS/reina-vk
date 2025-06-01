@@ -86,6 +86,9 @@ Reina::Reina(){
 
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/main1_sponza/NewSponza_Main_glTF_003.gltf");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/sphere/sphere.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/cute/cute.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/mushroom_house/mushroom_house.glb");
+//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/mushroom_house/mushroom_house_grass.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/car/car.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/ferrari/fixed.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/sponza_modified/sponza.glb");

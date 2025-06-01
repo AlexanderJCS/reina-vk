@@ -168,21 +168,58 @@ std::unordered_map<uint32_t, std::vector<reina::scene::gltf::Primitive>> reina::
                     });
             }
 
-            SMikkTSpaceInterface interface = {
-                    .m_getNumFaces         = getNumFaces,
-                    .m_getNumVerticesOfFace= getNumVertsOfFace,
-                    .m_getPosition         = getPosition,
-                    .m_getNormal           = getNormal,
-                    .m_getTexCoord         = getTexCoord,
-                    .m_setTSpace           = setTSpace
-            };
+            if (auto tanIt = prim.findAttribute("TANGENT"); tanIt != prim.attributes.end()) {
+                const auto& acc = asset.accessors[tanIt->accessorIndex];
+                // Vec4 case: apply w as bitangent sign
+                if (acc.type == fastgltf::AccessorType::Vec4) {
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
+                            asset, acc,
+                            [&](const fastgltf::math::fvec4& t, std::size_t i) {
+                                // tangent.xyz
+                                m.vertices[i].tangent  = { t.x(), t.y(), t.z() };
+                                // bitangent = cross(normal, tangent) * w
+                                m.vertices[i].bitangent =
+                                        fastgltf::math::cross(m.vertices[i].normal,
+                                                              m.vertices[i].tangent)
+                                        * t.w();
+                            }
+                    );
+                }
+                    // Vec3 fallback: no handedness, assume w == +1
+                else if (acc.type == fastgltf::AccessorType::Vec3) {
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
+                            asset, acc,
+                            [&](const fastgltf::math::fvec3& t, std::size_t i) {
+                                m.vertices[i].tangent   = t;
+                                // bitangent = cross(normal, tangent)
+                                m.vertices[i].bitangent =
+                                        fastgltf::math::cross(m.vertices[i].normal,
+                                                              m.vertices[i].tangent);
+                            }
+                    );
+                }
+                else {
+                    // Unexpected accessor type—either skip or log a warning
+                    std::cerr << "Warning: TANGENT accessor is neither Vec4 nor Vec3\n";
+                }
+            } else {
+                // Tangents not provided; compute them yourself
+                SMikkTSpaceInterface interface = {
+                        .m_getNumFaces         = getNumFaces,
+                        .m_getNumVerticesOfFace= getNumVertsOfFace,
+                        .m_getPosition         = getPosition,
+                        .m_getNormal           = getNormal,
+                        .m_getTexCoord         = getTexCoord,
+                        .m_setTSpace           = setTSpace
+                };
 
-            SMikkTSpaceContext ctx = {
-                    .m_pInterface = &interface,
-                    .m_pUserData = &m
-            };
+                SMikkTSpaceContext ctx = {
+                        .m_pInterface = &interface,
+                        .m_pUserData = &m
+                };
 
-            genTangSpaceDefault(&ctx);
+                genTangSpaceDefault(&ctx);
+            }
 
             // — TEXCOORD_0
             if (auto a = prim.findAttribute("TEXCOORD_0")) {
@@ -410,7 +447,7 @@ reina::scene::Scene reina::scene::gltf::loadScene(VkDevice logicalDevice, VkPhys
     addInstancesToScene(asset, scene, gltfModelIdToSceneId, gltfModelIdToMaterials);
     reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true};
 
-    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
+//    scene.addObject("models/cornell_light.obj", glm::mat4(1.0f), lightMaterial);
     scene.build(logicalDevice, physicalDevice, cmdPool, queue);
 
     return scene;
