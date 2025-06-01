@@ -105,6 +105,7 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
 }
 
 vec3 traceSegments(Ray ray) {
+    pld.insideDielectric = false;
     vec3 accumulatedRayColor = vec3(1.0);
     vec3 incomingLight = vec3(0.0);
 

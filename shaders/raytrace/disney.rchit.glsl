@@ -122,7 +122,7 @@ void main() {
 
     float eta = hitInfo.frontFace ? 1.0 / props.ior : props.ior;
 
-    bool didRefract;
+    bool didRefract = false;
     vec3 rayDir = sampleDisney(
         hitInfo.tbn,
         albedo,
@@ -183,10 +183,12 @@ void main() {
     pld.eta = eta;
     pld.eta = 0;
 
-    // TODO: there's a bug -- either I can see inside dielectrics by using pld.insideDielectric or I can have colors
-    //  by doing pld.insideDielectric = false, but not both. I need to figure out how to do this properly.
-    pld.insideDielectric = dot(worldNormal, -gl_WorldRayDirectionEXT) < 0.0 || didRefract;
-//    pld.insideDielectric = false;
+    if (didRefract) {
+        // TODO: problem with this current apporoach is that pld.insideDielectric is false when the ray is exiting the
+        //  dielectric, which shouldn't be the case (i think?)
+        pld.insideDielectric = hitInfo.frontFace;
+    }
+
     if (pld.insideDielectric) {
         pld.accumulatedDistance += length(hitInfo.worldPosition - gl_WorldRayOriginEXT);
     } else {
