@@ -619,6 +619,7 @@ vec3 sampleDisney(
     vec3 n,
     vec3 wi,
     out bool didRefract,
+    out bool choseGlass,
     inout uint rngState
 ) {
     float diffuseWt = (1 - specTransmission) * (1 - metallic);
@@ -635,6 +636,7 @@ vec3 sampleDisney(
     didRefract = false;
 
     float rand = random(rngState) * cdf[3];
+    choseGlass = false;
     if (rand < cdf[0]) {
         // Diffuse
         return sampleDiffuse(n, rngState);
@@ -647,6 +649,7 @@ vec3 sampleDisney(
     }
 
     // Glass
+    choseGlass = true;
     return sampleGlass(tbn, wi, roughness, anisotropic, eta, rngState, didRefract);
 }
 

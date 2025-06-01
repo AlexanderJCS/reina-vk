@@ -58,38 +58,28 @@ vec4 directLight(InstanceProperties props, mat3 tbn, uint materialID, vec3 rayIn
         // vec3 diffuse(vec3 baseColor, vec3 n, vec3 wi, vec3 wo, vec3 h)
         vec3 h = normalize(direction + -rayIn);
 
-        // hard-coded for now
-//        brdf = evalDiffuse(props.roughness, props.subsurface, props.albedo, surfaceNormal, direction, -rayIn, h);
-        // vec3 evalMetal(mat3 tbn, vec3 baseColor, float anisotropic, float roughness, vec3 n, vec3 wi, vec3 wo, vec3 h, float specular, vec3 specularTint, float metallic, float eta)
-        brdf = evalMetal(tbn, albedo, props.anisotropic, props.roughness, surfaceNormal, -rayIn, direction, h, props.specularTransmission, props.specularTint, props.metallic, props.ior);
-
-//        float ignorePdf;  // for BSDF sampling only
-//        brdf = glass(tbn, props.albedo, props.anisotropic, props.roughness, eta, surfaceNormal, -rayIn, direction, didRefract, ignorePdf);
-
-//        brdf = sheen(props.albedo, -rayIn, h, surfaceNormal, props.sheenTint);
-
-//        float ignorePdf;
-//        brdf = evalDisney(
-//            tbn,
-//            albedo,
-//            props.specularTint,
-//            props.sheenTint,
-//            props.anisotropic,
-//            props.roughness,
-//            props.subsurface,
-//            props.clearcoatGloss,
-//            eta,
-//            props.metallic,
-//            props.clearcoat,
-//            props.specularTransmission,
-//            props.sheen,
-//            didRefract,
-//            surfaceNormal,
-//            -rayIn,
-//            direction,
-//            h,
-//            ignorePdf
-//        );
+        float ignorePdf;
+        brdf = evalDisney(
+            tbn,
+            albedo,
+            props.specularTint,
+            props.sheenTint,
+            props.anisotropic,
+            props.roughness,
+            props.subsurface,
+            props.clearcoatGloss,
+            eta,
+            props.metallic,
+            props.clearcoat,
+            props.specularTransmission,
+            props.sheen,
+            didRefract,
+            surfaceNormal,
+            -rayIn,
+            direction,
+            h,
+            ignorePdf
+        );
     }
 
     float cosThetai = dot(surfaceNormal, direction);
