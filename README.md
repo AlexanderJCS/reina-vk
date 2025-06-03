@@ -4,19 +4,18 @@ Reina is a Vulkan ray tracer and the successor to [Reina OpenGL](https://www.git
 
 ## Renders
 
-Render of the Stanford bunny model with 6,000 samples per pixel. It has approximately 70,000 triangles and took 34 seconds to render.
+<img src="renders/mushroom_house.png" width="500" alt="Render of a mushroom house">
+
+<img src="renders/plant.png" width="500" alt="Render of a plant">
 
 <img src="renders/bunny4.png" width="500" alt="Render of the Stanford Bunny model">
 
-Render of a plant with 10,000 samples that took approximately 50 seconds to render.
-<img src="renders/plant.png" width="500" alt="Render of a plant">
-
-Render of the Stanford dragon with 2048 samples and took 14 seconds to render.
 <img src="renders/dragon7.png" width="500" alt="Render of the Stanford Dragon model">
 
 ## Features
 
 * Path tracing of the following materials:
+  * Disney BSDF (which can be used to approximate almost any material)
   * Lambertian (diffuse)
   * Metal
   * Transparent dielectric (glass-like)
@@ -24,8 +23,7 @@ Render of the Stanford dragon with 2048 samples and took 14 seconds to render.
     * Fresnel reflection and refraction
 * Lighting
   * BRDF sampling and next event estimation (NEE) weighted with multiple importance sampling (MIS+NEE)
-* OBJ model loading
-  * Vertex normal interpolation for smooth shading
+* OBJ model loading and gLTF support
 * Post-processing
   * Tone mapping
 
