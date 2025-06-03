@@ -1,7 +1,7 @@
 [camera]
 [camera.dof]
-focus_dist = 2.0
-defocus_multiplier = 0.0  # higher = more defocus
+focus_dist = 2.2
+defocus_multiplier = 1.5  # higher = more defocus
 
 [sampling]
 samples_per_pixel = 8
@@ -11,7 +11,7 @@ direct_clamp = 100
 indirect_clamp = 10
 
 [saving]
-save_on_samples = []  # list of integers
+save_on_samples = [100000, 200000, 300000, 500000, 1000000]  # list of integers
 save_on_times = [60, 120, 180]  # list of floats. unit: seconds
 
 [postprocessing]

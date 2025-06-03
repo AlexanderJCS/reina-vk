@@ -51,8 +51,8 @@ Reina::Reina(){
     auto config = toml::parse_file("config/config.toml");
 
     // init
-    renderWidth = 800;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
-    renderHeight = 800;
+    renderWidth = 1080;  // todo: bug - when renderWidth < windowWidth, the image appears stretched
+    renderHeight = 1350;
     const float aspectRatio = static_cast<float>(renderWidth) / static_cast<float>(renderHeight);
 
     windowWidth = 800;
@@ -88,7 +88,7 @@ Reina::Reina(){
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/sphere/sphere.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/cute/cute.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/mushroom_house/mushroom_house.glb");
-//    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/mushroom_house/mushroom_house_grass.glb");
+    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/mushroom_house/mushroom_house_grass_test.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/car/car.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/ferrari/fixed.glb");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/sponza_modified/sponza.glb");
@@ -100,20 +100,20 @@ Reina::Reina(){
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/FlightHelmet/FlightHelmet.gltf");
 //    scene = reina::scene::gltf::loadScene(logicalDevice, physicalDevice, commandPool, graphicsQueue, "scenes/avocado/avocados.glb");
 
-    scene = reina::scene::Scene();
-    uint32_t wallTexID = scene.defineTexture("textures/cornell_texture.png");
-
-    glm::mat4 subjectTransform = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.25f)), glm::vec3(0, 2, 0));
-
-    reina::scene::Material cornellWall{0, (int) wallTexID, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
-    reina::scene::Material subjectMaterial{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.5f, 1.5f, true, 0.0f, false, 0.0f, 0.0f, 0.0f, glm::vec3(1.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
-    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
-    reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
-    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), cornellWall);
-    scene.addObject("models/cornell_light.obj", glm::scale(glm::mat4(1.0f), glm::vec3(1)), lightMaterial);
-    scene.addObject("models/uv_sphere_highres.obj", subjectTransform, subjectMaterial);
-
-    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
+//    scene = reina::scene::Scene();
+//    uint32_t wallTexID = scene.defineTexture("textures/cornell_texture.png");
+//
+//    glm::mat4 subjectTransform = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.25f)), glm::vec3(0, 2, 0));
+//
+//    reina::scene::Material cornellWall{0, (int) wallTexID, -1, -1, glm::vec3(0.9f), glm::vec3(0.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+//    reina::scene::Material subjectMaterial{3, -1, -1, -1, glm::vec3(1.0f), glm::vec3(0.0f), 0.5f, 1.5f, true, 0.0f, false, 0.0f, 0.0f, 0.0f, glm::vec3(1.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+//    reina::scene::Material lightMaterial{0, -1, -1, -1, glm::vec3(0.9f), glm::vec3(16.0f), 0.0f, 0.0f, false, 0.0f, true, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+//    reina::scene::Material glass{2, -1, -1, -1, glm::vec3(0.2, 0.9, 0.4), glm::vec3(0), 0.3f, 1.5f, true, 0.7f, false, 0.0f, 0.0f, 0.0f, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, 0.0f, 0.0f, 0.0f};
+//    scene.addObject("models/cornell_box.obj", glm::mat4(1.0f), cornellWall);
+//    scene.addObject("models/cornell_light.obj", glm::scale(glm::mat4(1.0f), glm::vec3(1)), lightMaterial);
+//    scene.addObject("models/uv_sphere_highres.obj", subjectTransform, subjectMaterial);
+//
+//    scene.build(logicalDevice, physicalDevice, commandPool, graphicsQueue);
 
     rtDescriptorSet = reina::core::DescriptorSet{
             logicalDevice,
@@ -135,7 +135,7 @@ Reina::Reina(){
             }
     };
 
-    glm::vec3 pos = glm::vec3(0, 1.0f, 5.35f);
+    glm::vec3 pos = glm::vec3(-1.6899, 0.317017, 1.6386);
     glm::vec3 lookAt = glm::vec3(0, 0.962f, 0);
     camera = reina::graphics::Camera{renderWindow, glm::radians(25.0f), aspectRatio, pos, glm::normalize(lookAt - pos)};
 

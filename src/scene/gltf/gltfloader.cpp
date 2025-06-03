@@ -89,7 +89,8 @@ fastgltf::Asset reina::scene::gltf::loadGltf(const std::string& filepath) {
             fastgltf::Extensions::KHR_texture_transform |
             fastgltf::Extensions::KHR_materials_variants |
             fastgltf::Extensions::KHR_materials_transmission |
-            fastgltf::Extensions::KHR_materials_clearcoat;
+            fastgltf::Extensions::KHR_materials_clearcoat |
+            fastgltf::Extensions::KHR_materials_emissive_strength;
 
     constexpr auto loadOpts =
             fastgltf::Options::DontRequireValidAssetMember |
@@ -395,6 +396,7 @@ std::unordered_map<uint32_t, std::vector<reina::scene::Material>> reina::scene::
 
                 if (glm::any(glm::greaterThan(toGlm(gltfMaterial.emissiveFactor), glm::vec3(0))) && !gltfMaterial.emissiveTexture.has_value()) {
                     // emission maps are not supported yet so do not include any emissive materials that require an emission map
+                    std::cout << "emissive factor: " << gltfMaterial.emissiveFactor.x() << " " << gltfMaterial.emissiveFactor.y() << " " << gltfMaterial.emissiveFactor.z() << " | strength: " << gltfMaterial.emissiveStrength << "\n";
                     material.emission = toGlm(gltfMaterial.emissiveFactor) * gltfMaterial.emissiveStrength;
                 }
 

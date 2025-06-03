@@ -86,9 +86,9 @@ HitInfo getObjectHitInfo() {
         const uint n1Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 1];
         const uint tbn2Index = tbnsIndices[3 * primitiveID + tbnsIndexOffset + 2];
 
-        const vec3 n0 = tbns[tbn0Index][2];
-        const vec3 n1 = tbns[n1Index][2];
-        const vec3 n2 = tbns[tbn2Index][2];
+        const vec3 n0 = normalize(tbns[tbn0Index][2]);
+        const vec3 n1 = normalize(tbns[n1Index][2]);
+        const vec3 n2 = normalize(tbns[tbn2Index][2]);
 
         objectNormal = normalize(n0 * barycentrics.x + n1 * barycentrics.y + n2 * barycentrics.z);
     }

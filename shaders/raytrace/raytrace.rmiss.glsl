@@ -10,7 +10,7 @@ layout(location = 0) rayPayloadInEXT HitPayload pld;
 void main() {
     const float rayDirY = normalize(gl_WorldRayDirectionEXT).y;
     float t = 0.5 * (rayDirY + 1.0);
-    pld.color = mix(vec3(1), vec3(0.5, 0.7, 1), t);
+    pld.color = mix(vec3(0.1), vec3(0.4, 1.7, 2), t) * 0.07;
 //    pld.color = vec3(0.5);
     pld.albedo = pld.color;
 
